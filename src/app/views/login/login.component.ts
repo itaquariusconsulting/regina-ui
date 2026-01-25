@@ -55,8 +55,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   valida_login(): boolean {
-    if ((this.username == undefined || this.username == null || this.username.length < 3)
-      || (this.password == undefined || this.password == null || this.password == '')) {
+    if ((this.dtoUser.userUsername == undefined || this.dtoUser.userUsername == null || this.dtoUser.userUsername.length < 3)
+      || (this.dtoUser.userPassword == undefined || this.dtoUser.userPassword == null || this.dtoUser.userPassword == '')) {
       Swal.fire({
         title: 'Error!',
         text: "Debe ingresar credenciales de autenticación",
@@ -77,14 +77,15 @@ export class LoginComponent implements OnInit, OnDestroy {
           if (response.error == 0) {
             if (response.resultado == undefined || response.resultado == null || response.resultado.length == 0) {
               this.windowForm = 1;
+              this.onOtp();
             } else {
               this.authToken = response.mensaje ?? '';
               sessionStorage.setItem('isLoggedIn', 'true');
               sessionStorage.setItem('authToken', this.authToken);
               sessionStorage.setItem('user', JSON.stringify(response.resultado));
               this.windowForm = 2;
+              this.onIngresar();
             }
-
             this.pendingOk = false;
           } else {
             Swal.fire({
@@ -117,6 +118,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           sessionStorage.setItem('isLoggedIn', 'true');
           sessionStorage.setItem('authToken', this.authToken);
           sessionStorage.setItem('user', JSON.stringify(response.resultado));
+          this.onIngresar();
         } else {
           Swal.fire({
             title: 'Error!',
@@ -137,8 +139,9 @@ export class LoginComponent implements OnInit, OnDestroy {
     )
   }
 
-  onIngresar(): void {
-    this.getConfiguracionSistema();
+  onIngresar() {
+    this.router.navigate(['/list-orders']);
+    //this.getConfiguracionSistema();
   }
 
   moveToNext(event: Event, index: number): void {

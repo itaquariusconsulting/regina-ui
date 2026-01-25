@@ -1,11 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-:host {
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.8rem;
-}
-body {
-  font-family: 'Poppins', sans-serif !important;
-}
 :host::ng-deep {
   .ng-scrollbar {
     --scrollbar-padding: 1px;
@@ -16,49 +8,21 @@ body {
     --scrollbar-border-radius: 5px;
   }
 
-  c-sidebar-header {
-    //background-color: white !important;
-  }
-
-  c-sidebar {
-    //width: 400px;
-  }
-
   .ng-scroll-content {
     display: flex;
     min-height: 100%;
   }
-
-  //.sidebar-nav {
-  //  scrollbar-color: var(--cui-gray-500, #444) transparent;
-  //}
 }
 
-// ng-scrollbar css variables
-//.cui-scrollbar {
-//  --scrollbar-border-radius: 7px;
-//  --scrollbar-padding: 1px;
-//  --scrollbar-viewport-margin: 0;
-//  --scrollbar-track-color: transparent;
-//  --scrollbar-wrapper-color: transparent;
-//  --scrollbar-thumb-color: rgba(0, 0, 0, 0.2);
-//  --scrollbar-thumb-hover-color: var(--scrollbar-thumb-color);
-//  --scrollbar-size: 5px;
-//  --scrollbar-hover-size: var(--scrollbar-size);
-//  --scrollbar-thumb-transition: height ease-out 150ms, width ease-out 150ms;
-//  --scrollbar-track-transition: height ease-out 150ms, width ease-out 150ms;
-//}
-
-
-.child-item {
-  font-size: 30px !important; /* Ajusta el tamaño de la fuente como desees */
-  padding-left: 12px !important; /* Ajusta el padding izquierdo como desees */
-  color: cyan;
+.layout {
+  display: flex;
 }
 
-.child-menu {
-  padding-left: 30px !important; /* Agrega un poco de margen para diferenciar los hijos */
+.content {
+  flex: 1;
+  padding: 20px;
 }
+
 
 .toggle-button {
   position: fixed; /* Fija el botón en la pantalla */
@@ -102,18 +66,4 @@ body {
 
 .tab-label {
   font-weight: bold;
-}
-
-/* Cambiar el color de los elementos hijos */
-.c-sidebar-nav .nav-item .child-item a {
-    color: #007bff; /* Cambia a tu color deseado */
-}
-
-/* Cambiar el color al pasar el ratón */
-.c-sidebar-nav .nav-item .child-item a:hover {
-    color: #0056b3; /* Color al pasar el ratón */
-}
-
-.sidebar-nav .nav-link.active {
-  color: red !important
 }

@@ -20,7 +20,9 @@ export class AuthService {
   token = sessionStorage.getItem('authToken');
 
   login(dto: RegSecUser): Observable<any> {
-    return this.http.post(this.apiurlAuth + "api/auth/autenticar", dto, {
+    const url = this.apiurlAuth + "/api/auth/autenticar";
+    console.log(url);
+    return this.http.post(this.apiurlAuth + "/api/auth/autenticar", dto, {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' })
     });
   }

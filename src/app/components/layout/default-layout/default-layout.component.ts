@@ -1,10 +1,11 @@
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { RouterLink, RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-
+/* import { SidebarRucComponent } from '../../components/sidebar-ruc/sidebar-ruc.component'; */
+import { DefaultHeaderComponent } from '../../layout/default-layout/default-header/default-header.component';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-default-layout',
   templateUrl: './default-layout.component.html',
   styleUrls: ['./default-layout.component.scss'],
   imports: [

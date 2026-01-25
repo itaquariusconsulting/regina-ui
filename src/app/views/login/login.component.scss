@@ -1,10 +1,15 @@
+/* Aplicar fuente globalmente */
+:root {
+  --app-font-family: 'Hind', Arial, sans-serif;
+}
+
 html,
 body {
   height: 100%;
   overflow: hidden !important;
   margin: 0;
   padding: 0;
-  /* Aplicar la fuente aquí */
+  font-family: var(--app-font-family);
 }
 
 * {
@@ -19,8 +24,9 @@ body {
 }
 
 img {
-  width: 50%;
+  width: 40%;
 }
+
 
 /* login.component.css */
 .btn-casa-container {
@@ -92,31 +98,33 @@ img {
 /* aca termina el input-container */
 
 .login-container {
-  width: 450px;
-  height: 450px;
+  width: 300px;
+  height: 300px;
   border-radius: 50%;
   background-color: #0063A7;
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* centra respecto al propio tamaño */
+  transform: translate(-50%, -50%);
+  /* centra respecto al propio tamaño */
   z-index: 1;
 
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-family: "Segoe UI", sans-serif;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .spinner-container {
-  position: fixed; /* Usa fixed para que no dependa del contenedor padre */
+  position: fixed;
+  /* Usa fixed para que no dependa del contenedor padre */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 
-  width: 110%; /* Ajusta a tamaño real necesario, no 510px */
+  width: 110%;
+  /* Ajusta a tamaño real necesario, no 510px */
   height: 110%;
 
   display: flex;
@@ -124,7 +132,8 @@ img {
   align-items: center;
   border-radius: 50%;
   z-index: 1000;
-  pointer-events: none; /* evita interferencias con clics */
+  pointer-events: none;
+  /* evita interferencias con clics */
 }
 
 .spinner {
@@ -215,8 +224,8 @@ button {
   transition: 0.2s;
 }
 
-input:focus + .form-label,
-input:not(:placeholder-shown) + .form-label {
+input:focus+.form-label,
+input:not(:placeholder-shown)+.form-label {
   top: -20px;
   color: #007bff;
 }
@@ -280,7 +289,6 @@ a:hover {
 ng-select {
   width: 300px;
   margin: 0px 0;
-  font-family: "Poppins", sans-serif;
   font-size: 0.8rem;
 
   .ng-select-container {
@@ -326,7 +334,6 @@ ng-select {
   z-index: -1;
   background-size: cover;
   background-position: center;
-  animation: slideshow 42s infinite;
 }
 
 .overlay {
@@ -335,7 +342,8 @@ ng-select {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(13, 16, 77, 0.75); /* antes 0.6, ahora 0.3 */
+  background-color: #0B1E38;
+  /* antes 0.6, ahora 0.3 */
   z-index: -1;
 }
 
@@ -343,33 +351,43 @@ ng-select {
   0% {
     background-image: url("/sai-web/assets/bg/4d85b-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-4-4.jpg");
   }
+
   12% {
     background-image: url("/sai-web/assets/bg/7f8ef-02-2.jpg");
   }
+
   22% {
     background-image: url("/sai-web/assets/bg/4d533-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-5-5.jpg");
   }
+
   33% {
     background-image: url("/sai-web/assets/bg/3ae28-red-vial-n-6-construccion-y-mantenimiento-de-la-carretera-panamericana-sur-puente-pucusana-cerro-azul-ica-01.jpg");
   }
+
   43% {
     background-image: url("/sai-web/assets/bg/c3aae-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-2-2.jpg");
   }
+
   53% {
     background-image: url("/sai-web/assets/bg/e3c0f-02-1.jpg");
   }
+
   63% {
     background-image: url("/sai-web/assets/bg/d37a0-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-3.jpg");
   }
+
   73% {
     background-image: url("/sai-web/assets/bg/c6c6e-red-vial-n-6-construccion-y-mantenimiento-de-la-carretera-panamericana-sur-puente-pucusana-cerro-azul-ica-01-1.jpg");
   }
+
   83% {
     background-image: url("/sai-web/assets/bg/e6b30-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-1-2.jpg");
   }
+
   93% {
     background-image: url("/sai-web/assets/bg/76695-mejoramiento-y-rehabilitacion-de-la-carretera-mazamari-pangoa-cubantia-1-1.jpg");
   }
+
   100% {
     background-image: url("/sai-web/assets/bg/4d85b-construccion-de-la-carretera-autopista-del-sol-tramo-sullana-trujillo-4-4.jpg");
   }
@@ -377,7 +395,6 @@ ng-select {
 
 .select {
   height: 45px !important;
-  font-family: "Poppins", sans-serif !important;
   font-size: 0.8rem !important;
 }
 
@@ -388,5 +405,6 @@ ng-select {
 
 .input-group-text {
   background-color: transparent;
-  border: none; /* Elimina el borde del ícono */
+  border: none;
+  /* Elimina el borde del ícono */
 }

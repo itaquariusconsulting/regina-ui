@@ -1,0 +1,28 @@
+
+<aside class="sidebar">
+    <img src="assets/images/brand/logo-regina-billing-small.png" />
+  <div 
+    class="menu-item" 
+    *ngFor="let item of items"
+    (click)="toggle(item)"
+  >
+    <div class="menu-header">
+      <i [class]="item.icon"></i>
+      <span>{{ item.label }}</span>
+      <i 
+        class="arrow" 
+        [class.rotate]="item.expanded"
+      >▸</i>
+    </div>
+
+    <div class="submenu" *ngIf="item.expanded">
+      <div 
+        class="submenu-item" 
+        *ngFor="let sub of item.subitems"
+      >
+        <i [class]="sub.icon"></i>
+        <span>{{ sub.label }}</span>
+      </div>
+    </div>
+  </div>
+</aside>

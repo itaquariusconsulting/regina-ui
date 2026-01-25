@@ -1,0 +1,49 @@
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: #0063A7;
+  color: #ffffff;
+  padding: 10px;
+}
+
+.menu-item {
+  cursor: pointer;
+  user-select: none;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.menu-header:hover {
+  background-color: rgba(255,255,255,0.15);
+}
+
+.arrow {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.arrow.rotate {
+  transform: rotate(90deg);
+}
+
+.submenu {
+  padding-left: 25px;
+}
+
+.submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.submenu-item:hover {
+  background-color: rgba(255,255,255,0.2);
+}
