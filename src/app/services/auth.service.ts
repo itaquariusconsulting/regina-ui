@@ -54,6 +54,7 @@ export class AuthService {
 
   // Método para cerrar sesión
   logout(): void {
+    console.log("Hola");
     localStorage.removeItem('authToken');
     this.authStatusListener.next(false); // El usuario ha cerrado sesión
   }

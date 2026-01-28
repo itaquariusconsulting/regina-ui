@@ -1,1 +1,26 @@
-<p>list-orden-pago works!</p>
+<div class="container mt-2">
+
+  <div class="bar-buttons-top">
+    <h4>Listado de Órdenes de Pago</h4>
+  </div>
+  <div class="table-container table-responsive">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <th class="text-center" *ngFor="let column of columns">
+          {{column.label}}
+        </th>
+
+      </thead>
+      <tbody>
+        <tr *ngFor="let reg of data">
+          <td class="text-center">{{reg.numOrden}}</td>
+          <td class="text-center">{{reg.fecOrden | date: 'dd/MM/yyyy'}}</td>
+          <td class="text-center">{{reg.cDesTipoGasto}}</td>
+          <td class="text-center">{{reg.cDesMoneda}}</td>
+          <td class="text-center">{{reg.impOrdPago}}</td>
+          <td class="text-center">{{reg.cDesTado}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<header class="app-header">
+
+  <nav class="nav-bar d-flex align-items-center mb-3">
+
+
+    <!-- Botón toggle (izquierda) -->
+    <button class="btn-toggle input-group w-50" (click)="onToggleSidebar()">☰</button>
+
+ 
+
+
+    <!-- Usuario (derecha) -->
+    <div class="user-area w-50 pull-right" (click)="toggleDropdown()">
+      <i class="fas fa-user"></i>
+      <span class="arrow">▾</span>
+
+      <div class="dropdown" *ngIf="showDropdown">
+        <div class="row"><b>UserID:</b> {{ '0001' }}</div>
+        <div class="row"><b>Empresa:</b> {{ empresa }}</div>
+        <div class="row"><b>Usuario:</b> {{ 'MAURICIO ANGULO MARTÍNEZ' }}</div>
+        <div class="row"><b>Email:</b> {{ 'mangulo@aquariusconsulting.com.pe' }}</div>
+        <div class="row"><b>Perfil:</b> {{ 'JEFE DE PROYECTO' }}</div>
+        <div class="row"><b>Área:</b> {{ 'SISTEMAS Y TECNOLOGÍAS' }}</div>
+        <hr />
+        <button class="dropdown-btn" (click)="onChangePassword()">Cambiar contraseña</button>
+        <button class="dropdown-btn danger" (click)="onLogout()">Cerrar sesión</button>
+      </div>
+    </div>
+  </nav>
+</header>

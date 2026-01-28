@@ -1,28 +1,24 @@
-
 <aside class="sidebar">
-    <img src="assets/images/brand/logo-regina-billing-small.png" />
-  <div 
-    class="menu-item" 
-    *ngFor="let item of items"
-    (click)="toggle(item)"
-  >
-    <div class="menu-header">
+  <img src="assets/images/brand/LOGO-REGINA-SMALL.png" width="90%" style="align-items: center !important;"/>
+
+  <div class="menu-item" *ngFor="let item of items">
+
+    <div class="menu-header" (click)="toggle(item)">
       <i [class]="item.icon"></i>
       <span>{{ item.label }}</span>
-      <i 
-        class="arrow" 
-        [class.rotate]="item.expanded"
-      >▸</i>
+      <i class="arrow" [class.rotate]="item.expanded">▸</i>
     </div>
 
     <div class="submenu" *ngIf="item.expanded">
-      <div 
-        class="submenu-item" 
+      <div
+        class="submenu-item"
         *ngFor="let sub of item.subitems"
+        (click)="navigate(sub, $event)"
       >
         <i [class]="sub.icon"></i>
         <span>{{ sub.label }}</span>
       </div>
     </div>
+
   </div>
 </aside>

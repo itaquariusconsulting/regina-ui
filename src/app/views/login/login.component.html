@@ -13,14 +13,14 @@
       <div class="input-container" style="padding-top: 20px !important;">
         <i class="fas fa-user" style="padding-top: 20px !important"></i>
         <input type="text" placeholder="Usuario" [(ngModel)]="dtoUser.userUsername" name="username" required
-          #usernameInput="ngModel" />
+          #usernameInput="ngModel" class="form-control input-all"/>
       </div>
       <div class="form-group">
         <label for="password" class="form-label">Contraseña</label>
         <div class="input-container">
           <i class="fas fa-lock"></i>
           <input [type]="showPassword ? 'text' : 'password'" name="password" id="password" [(ngModel)]="dtoUser.userPassword"
-            class="form-control" placeholder="Ingrese su contraseña" required #passwordInput="ngModel">
+            class="form-control input-all" placeholder="Contraseña" required #passwordInput="ngModel">
           <button type="button" class="password-toggle" (click)="togglePasswordVisibility()">
             <div class="icono">
               <i [class]="showPassword ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>

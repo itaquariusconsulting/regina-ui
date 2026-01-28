@@ -1,0 +1,101 @@
+.page {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+    width: 200px;       /* 👈 ajusta aquí */
+  max-width: 200px;
+}
+
+.theme-card {
+  width: 400px;       /* 👈 ajusta aquí */
+  max-width: 400px;
+  height: 300px;
+  max-height: 300px;
+}
+
+.theme-card .card-header {
+  background-color: color-mix(
+    in srgb,
+    var(--primary-color) 85%,
+    transparent
+  );
+  color: #ffffff;
+
+  border-bottom: 3px solid var(--primary-color);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  align-items:  flex-start; 
+  gap: 12px;
+  padding-top: 18px;
+}
+
+/* ==========================
+   Contenedor
+========================== */
+
+.donut-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Oculta radio nativo */
+.donut-radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Donut */
+.control {
+  --size: 20px;
+
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  position: relative;
+
+  background: #f1f3f5;
+  border: 2px solid #cfd4da;
+
+  box-shadow:
+    inset 2px 2px 4px rgba(255,255,255,0.9),
+    inset -2px -2px 4px rgba(0,0,0,0.18),
+    0 1px 2px rgba(0,0,0,0.25);
+
+  transition: all 0.2s ease;
+}
+
+/* Anillo interno */
+.control::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+/* Checked → usa variable global */
+.donut-radio input:checked + .control {
+  border-color: var(--primary-color);
+}
+
+.donut-radio input:checked + .control::after {
+  background: var(--primary-color);
+}
+
+/* Hover */
+.donut-radio:hover .control {
+  transform: scale(1.05);
+}
+
+/* Texto */
+.text {
+  font-size: 14px;
+}

@@ -1,0 +1,36 @@
+<footer class="app-default-footer-mobile navbar-footer">
+    AQUARIUS CONSULTING - Rendición de Cuentas
+  <div class="navbar-buttons">
+
+    <div
+      class="nav-item-wrapper"
+      *ngFor="let item of items; let index = index"
+    >
+
+      <button
+        class="nav-item"
+        (click)="item.route ? handleClick(item.route) : toggleDropdown(index)"
+      >
+        <i *ngIf="item.icon" [class]="item.icon"></i>
+        <span>{{ item.label }}</span>
+      </button>
+
+      <div
+        *ngIf="item.subitems"
+        class="subitems-container"
+        [ngClass]="{ open: openIndex === index }"
+      >
+        <button
+          class="subitem"
+          *ngFor="let sub of item.subitems"
+          (click)="handleClick(sub.route)"
+        >
+          <i *ngIf="sub.icon" [class]="sub.icon"></i>
+          <span>{{ sub.label }}</span>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</footer>

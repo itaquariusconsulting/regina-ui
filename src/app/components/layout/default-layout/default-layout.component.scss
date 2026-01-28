@@ -1,69 +1,42 @@
-:host::ng-deep {
-  .ng-scrollbar {
-    --scrollbar-padding: 1px;
-    --scrollbar-size: 5px;
-    --scrollbar-thumb-color: var(--cui-gray-500, #aab3c5);
-    --scrollbar-thumb-hover-color: var(--cui-gray-400, #cfd4de);
-    --scrollbar-hover-size: calc(var(--scrollbar-size) * 1.5);
-    --scrollbar-border-radius: 5px;
-  }
-
-  .ng-scroll-content {
-    display: flex;
-    min-height: 100%;
-  }
-}
-
 .layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 60px 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar content";
+  height: 100vh;
+  overflow: hidden;
+
+  &.no-sidebar {
+    grid-template-columns: 0 1fr; /* quitar espacio del sidebar */
+    grid-template-areas:
+      "header header"
+      "content content";
+  }
 }
 
-.content {
-  flex: 1;
-  padding: 20px;
+/* Sidebar */
+.sidebar {
+  grid-area: sidebar;
+  background-color: white;
+  color: rgb(45, 45, 45);
+  overflow: hidden;
 }
 
-
-.toggle-button {
-  position: fixed; /* Fija el botón en la pantalla */
-  top: 20px; /* Ajusta la posición vertical */
-  right: 20px; /* Ajusta la posición horizontal */
-  z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
-}
-
-.container {
-  margin: 0;
-  padding-top: 5px;
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
-/* Estilos para el botón en forma de pestaña */
-.tab-button {
-  position: fixed;
-  top: 50%; /* Centrado verticalmente */
-  right: 0; /* Pegado al borde derecho */
-  background-color: #1b0e68bb;
-  border: solid 3 0.9;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 50px 0 0 50px; /* Bordes redondeados en el lado izquierdo */
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.6);
+/* Header */
+.header {
+  grid-area: header;
+  background-color: var(--primary-color) !important;
+  border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  cursor: pointer;
-  transform: translateY(-50%); /* Centrado verticalmente */
-  z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.75rem;
 }
 
-.tab-icon {
-  width: 24px; /* Ajusta el tamaño de la imagen */
-  height: 24px; /* Ajusta el tamaño de la imagen */
-  margin-right: 5px; /* Espacio entre la imagen y el texto */
-}
-
-.tab-label {
-  font-weight: bold;
+/* Content */
+.content {
+  grid-area: content;
+  overflow: auto;
+  padding: 16px;
+  background: #f5f6fa;
 }

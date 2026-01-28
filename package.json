@@ -20,11 +20,14 @@
     "@angular/service-worker": "^19.2.0",
     "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@fortawesome/fontawesome-free": "^7.1.0",
-    "aquarius-controls": "github:mangulom/aquarius-controls",
+    "@popperjs/core": "^2.11.8",
+    "aquarius-controls": "file:../../../aquarius-controls/aquarius-controls",
+    "bootstrap": "^5.3.8",
     "jwt-decode": "^4.0.0",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.26.17",
     "tslib": "^2.3.0",
+    "yocto-queue": "^1.2.2",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {

@@ -1,14 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, input, OnInit } from '@angular/core';
+import { Component, input, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
 import { Router} from '@angular/router';
 import { RegSecUser } from '../../../../models/reg-sec-user';
 
 import { Subscription } from 'rxjs';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-default-header',
+  standalone: true,
   templateUrl: './default-header.component.html',
-  imports: [CommonModule]
+  styleUrl: './default-header.component.scss',
+  imports: [CommonModule, FormsModule],
+  schemas: [NO_ERRORS_SCHEMA]
 })
 export class DefaultHeaderComponent  implements OnInit {
   nombresCompletos: string = '';
@@ -16,6 +20,7 @@ export class DefaultHeaderComponent  implements OnInit {
   user: RegSecUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   count = 0;
+  showDropdown: boolean = false;
 
   meses = [
     { nombre: 'Enero', value: 1 },
@@ -50,6 +55,15 @@ export class DefaultHeaderComponent  implements OnInit {
     this.empresa = sessionStorage.getItem('razonSocial') || '';
     this.periodo = (this.meses.find(m => m.value === parseInt(sessionStorage.getItem('periodo_month') || ''))?.nombre ?? '') + ' del ' + sessionStorage.getItem('periodo_year');
   }
+
+  toggleDropdown() {
+    this.showDropdown = !this.showDropdown;
+  }
+
+  onToggleSidebar() {
+
+  }
+
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();

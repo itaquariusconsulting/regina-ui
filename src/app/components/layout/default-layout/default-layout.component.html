@@ -1,8 +1,15 @@
-<div class="layout">
-  <app-sidebar></app-sidebar>
+<div class="layout" [class.no-sidebar]="!isDesktop">
+  <aside *ngIf="isDesktop" class="sidebar">
+    <app-sidebar></app-sidebar>
+  </aside>
+
+  <header class="header">
+    <app-default-header (toggleSidebar)="toggleSidebar()"></app-default-header>
+  </header>
 
   <main class="content">
     <router-outlet></router-outlet>
   </main>
 </div>
 <app-footer></app-footer>
+<app-default-footer-mobile *ngIf="!isDesktop"></app-default-footer-mobile>
