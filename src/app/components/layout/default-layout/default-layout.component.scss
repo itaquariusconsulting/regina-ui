@@ -9,7 +9,7 @@
   overflow: hidden;
 
   &.no-sidebar {
-    grid-template-columns: 0 1fr; /* quitar espacio del sidebar */
+    grid-template-columns: 0 1fr;
     grid-template-areas:
       "header header"
       "content content";
@@ -31,8 +31,8 @@
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  width: 100%;           /* ✅ obligatorio */
-  padding: 0;            /* evita colapsos */
+  width: 100%;
+  padding: 0;
 }
 
 /* Content */
@@ -41,4 +41,81 @@
   overflow: auto;
   padding: 16px;
   background: #f5f6fa;
+}
+
+/* ============================= */
+/* Chat Regina */
+/* ============================= */
+
+.regina-chat-slot {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+
+  width: 64px;
+  height: 64px;
+
+  border-radius: 50%;
+  background: #0063A7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  cursor: pointer;
+  z-index: 3000;
+}
+
+.regina-chat-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 100px;
+
+  width: 320px;
+  height: 420px;
+
+  background: #ffffff;
+  border-radius: 12px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+
+  display: flex;
+  flex-direction: column;
+
+  z-index: 3000;
+}
+
+.regina-chat-header {
+  height: 44px;
+  background: #0063A7;
+  color: #ffffff;
+
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-radius: 12px 12px 0 0;
+
+  button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 16px;
+  }
+}
+
+.regina-chat-body {
+  flex: 1;
+  padding: 12px;
+  overflow: auto;
+  font-size: 13px;
 }

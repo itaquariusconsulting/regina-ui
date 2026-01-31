@@ -22,7 +22,7 @@ import { DefaultFooterComponent } from './default-footer/default-footer.componen
 })
 export class DefaultLayoutComponent implements OnInit {
 
-  constructor(private router: Router, public deviceService: DeviceService) {}
+  constructor(private router: Router, public deviceService: DeviceService) { }
 
   user = sessionStorage.getItem('user')
     ? JSON.parse(sessionStorage.getItem('user')!)
@@ -30,9 +30,14 @@ export class DefaultLayoutComponent implements OnInit {
 
   isSidebarVisible: boolean = true;
   isDesktop: boolean = true;
+  showReginaChat = false;
 
   ngOnInit(): void {
     this.isDesktop = this.deviceService.isDesktopDevice();
+  }
+
+  toggleReginaChat(): void {
+    this.showReginaChat = !this.showReginaChat;
   }
 
   getUserRole(): string {

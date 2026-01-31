@@ -14,4 +14,5 @@ export class RegSecUser {
     userUpdatedAt?: Date;
     userUsername?: string;
     userOldPassword?: string;
+    authToken: string = '';
 }

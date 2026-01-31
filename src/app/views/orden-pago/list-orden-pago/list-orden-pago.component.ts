@@ -3,6 +3,7 @@ import { User } from '../../../models/user';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OrdenPago } from '../../../models/orden-pago';
+import { OrdenPagoService } from '../../../services/orden-pago.service';
 
 @Component({
   selector: 'app-list-orden-pago',
@@ -13,6 +14,7 @@ import { OrdenPago } from '../../../models/orden-pago';
 })
 export class ListOrdenPagoComponent implements OnInit {
 
+  constructor() { ordenPagoService: OrdenPagoService }
 
   @ViewChild('myTable', { static: true }) tableRef!: ElementRef;
 
@@ -30,6 +32,20 @@ export class ListOrdenPagoComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+/*     const userString = sessionStorage.getItem('user');
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);
+        const permiso = user.permisos.find(
+          (p: any) => p.codMenu === 14 && p.codItem === 1 && p.idProfile === user.idProfile
+        );
+        return permiso ? 'ADMIN' : 'USER';
+      } catch (e) {
+        console.error('Error al parsear User desde sessionStorage', e);
+        return 'USER';
+      }
+    } */
+
     const ORDEN_PAGO_MOCK: OrdenPago = {
       numOrden: '000016172',
       fecOrden: new Date('2026-01-21T00:00:00'),
@@ -40,6 +56,10 @@ export class ListOrdenPagoComponent implements OnInit {
     };
 
     this.data.push(ORDEN_PAGO_MOCK);
+  }
+
+  getOrdenesPago() {
+
   }
 
 }

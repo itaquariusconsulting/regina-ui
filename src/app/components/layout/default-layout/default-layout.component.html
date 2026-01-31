@@ -10,6 +10,26 @@
   <main class="content">
     <router-outlet></router-outlet>
   </main>
+
+  <!-- Botón flotante Regina -->
+<div class="regina-chat-slot" (click)="toggleReginaChat()">
+  <!-- <img src="assets/images/regina.png" width="50%" class="regina-avatar" alt="Regina"><br /> -->
+  <span>Regina</span>
 </div>
+
+  <!-- Panel de chat -->
+  <div class="regina-chat-panel" *ngIf="showReginaChat">
+    <div class="regina-chat-header">
+      <span>Regina</span>
+      <button type="button" (click)="toggleReginaChat()">✕</button>
+    </div>
+
+    <div class="regina-chat-body">
+      Chat en construcción…
+    </div>
+  </div>
+
+</div>
+
 <app-footer></app-footer>
 <app-default-footer-mobile *ngIf="!isDesktop"></app-default-footer-mobile>

@@ -79,11 +79,12 @@ export class LoginComponent implements OnInit, OnDestroy {
               this.windowForm = 1;
               this.onOtp();
             } else {
-              this.authToken = response.mensaje ?? '';
+              this.dtoUser = response.resultado;
+              this.authToken = this.dtoUser.authToken;
+              this.dtoUser.authToken = '';
               sessionStorage.setItem('isLoggedIn', 'true');
               sessionStorage.setItem('authToken', this.authToken);
               sessionStorage.setItem('user', JSON.stringify(response.resultado));
-              this.dtoUser = response.resultado;
               this.windowForm = 2;
               this.onIngresar();
             }
@@ -115,11 +116,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.service.otp(this.dtoUser).subscribe(
       (response: Response) => {
         if (response.error == 0) {
-          this.authToken = response.mensaje ?? '';
+          this.dtoUser = response.resultado;
+          this.authToken = this.dtoUser.authToken;
+          this.dtoUser.authToken = '';
           sessionStorage.setItem('isLoggedIn', 'true');
           sessionStorage.setItem('authToken', this.authToken);
           sessionStorage.setItem('user', JSON.stringify(response.resultado));
-          this.dtoUser = response.resultado;
           this.onIngresar();
         } else {
           Swal.fire({
@@ -142,7 +144,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onIngresar() {
-    
+
     this.router.navigate(['/list-orders']);
     this.getConfiguracionSistema();
   }
