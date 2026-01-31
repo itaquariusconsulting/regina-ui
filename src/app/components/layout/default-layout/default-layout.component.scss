@@ -16,7 +16,6 @@
   }
 }
 
-/* Sidebar */
 .sidebar {
   grid-area: sidebar;
   background-color: white;
@@ -24,7 +23,6 @@
   overflow: hidden;
 }
 
-/* Header */
 .header {
   grid-area: header;
   background-color: var(--primary-color) !important;
@@ -35,7 +33,6 @@
   padding: 0;
 }
 
-/* Content */
 .content {
   grid-area: content;
   overflow: auto;
@@ -51,23 +48,17 @@
   position: fixed;
   right: 24px;
   bottom: 24px;
-
   width: 64px;
   height: 64px;
-
   border-radius: 50%;
   background: #0063A7;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
-
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-
   cursor: pointer;
   z-index: 3000;
 }
@@ -76,18 +67,13 @@
   position: fixed;
   right: 24px;
   bottom: 100px;
-
   width: 320px;
   height: 420px;
-
   background: #ffffff;
   border-radius: 12px;
-
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-
   display: flex;
   flex-direction: column;
-
   z-index: 3000;
 }
 
@@ -95,13 +81,10 @@
   height: 44px;
   background: #0063A7;
   color: #ffffff;
-
   padding: 0 12px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   border-radius: 12px 12px 0 0;
 
   button {
@@ -116,6 +99,59 @@
 .regina-chat-body {
   flex: 1;
   padding: 12px;
-  overflow: auto;
+  overflow: hidden;
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+.regina-messages {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.msg {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 90%;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: #e7f1fb;
+}
+
+.msg.bot {
+  align-self: flex-start;
+  background: #f1f1f1;
+}
+
+.regina-input {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  input {
+    flex: 1;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: #0063A7;
+    color: white;
+  }
 }

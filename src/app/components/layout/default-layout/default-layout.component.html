@@ -1,5 +1,6 @@
 <div class="layout" [class.no-sidebar]="!isDesktop">
-  <aside *ngIf="isDesktop" class="sidebar">
+
+  <aside *ngIf="isDesktop && isSidebarVisible" class="sidebar">
     <app-sidebar></app-sidebar>
   </aside>
 
@@ -12,24 +13,48 @@
   </main>
 
   <!-- Botón flotante Regina -->
-<div class="regina-chat-slot" (click)="toggleReginaChat()">
-  <!-- <img src="assets/images/regina.png" width="50%" class="regina-avatar" alt="Regina"><br /> -->
-  <span>Regina</span>
-</div>
+  <div class="regina-chat-slot" (click)="toggleReginaChat()">
+    <span>Regina</span>
+  </div>
 
   <!-- Panel de chat -->
   <div class="regina-chat-panel" *ngIf="showReginaChat">
+
     <div class="regina-chat-header">
       <span>Regina</span>
       <button type="button" (click)="toggleReginaChat()">✕</button>
     </div>
 
     <div class="regina-chat-body">
-      Chat en construcción…
+
+      <div class="regina-messages">
+        <div
+          *ngFor="let m of messages"
+          class="msg"
+          [class.user]="m.from === 'user'"
+          [class.bot]="m.from === 'bot'">
+
+          <b>{{ m.from === 'user' ? 'Tú' : 'Regina' }}:</b>
+          {{ m.text }}
+        </div>
+      </div>
+
+      <div class="regina-input">
+
+        <input
+          type="text"
+          [(ngModel)]="userInput"
+          placeholder="Escribe a Regina..." />
+
+        <button type="button" class="mic" (click)="hablar()">🎤</button>
+        <button type="button" class="send" (click)="enviarTexto()">➤</button>
+
+      </div>
+
     </div>
   </div>
 
 </div>
 
-<app-footer></app-footer>
+<app-default-footer></app-default-footer>
 <app-default-footer-mobile *ngIf="!isDesktop"></app-default-footer-mobile>
