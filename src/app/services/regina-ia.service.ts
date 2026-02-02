@@ -26,7 +26,7 @@ export class ReginaIaService {
     codPeriodo?: string,
     codAuxiliar?: string
   ): Observable<ChatResponse> {
-
+    try {
     const payload: any = { mensaje };
 
     if (codEmpresa) payload.codEmpresa = codEmpresa;
@@ -34,7 +34,10 @@ export class ReginaIaService {
     if (anoPeriodo) payload.anoPeriodo = anoPeriodo;
     if (codPeriodo) payload.codPeriodo = codPeriodo;
     if (codAuxiliar) payload.codAuxiliar = codAuxiliar;
-
     return this.http.post<ChatResponse>(`${this.baseUrl}/chat`, payload);
-  }
+  } catch (error) {
+    console.error('Error al enviar la pregunta:', error);
+    throw error;
+  } 
+}
 }
