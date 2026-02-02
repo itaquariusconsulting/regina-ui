@@ -14,7 +14,7 @@ export interface ChatResponse {
 })
 export class ReginaIaService {
 
-  private baseUrl = 'http://TU_SERVIDOR:6700'; // Cambiar por tu IP o localhost
+  private baseUrl = 'http://localhost:6700'; // Cambiar por tu IP o localhost
 
   constructor(private http: HttpClient) { }
 
