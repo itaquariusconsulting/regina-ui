@@ -9,6 +9,10 @@
             Capturar/Subir
             <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
         </label>
+        <!-- Guardar -->
+        
+        <button (click)="onSave()" type="button" class="general-button btn-primary"><i class="fa fa-save"></i>  Guardar</button> 
+        
         <div class="right-buttons" *ngIf="imageChangedEvent">
             <button *ngIf='showImageCropper' type="button" class="general-button btn-primary btn-sm me-1"
                 (click)="toggleImageCropper()">
@@ -49,7 +53,7 @@
         </div>
         <div class="col-md-9">
             <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
-            <input class="form-control" name="proveedor" id="proveedor" [(ngModel)]="dataImagen.issuerName" />
+            <input class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
         </div>
     </div>
     <div class="row">

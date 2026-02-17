@@ -363,6 +363,35 @@ button.general-button i {
   border-bottom: none;
 }
 
+/* Anillo interno */
+.control::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+/* Checked → usa variable global */
+.donut-radio input:checked+.control {
+  border-color: var(--primary-color);
+}
+
+.donut-radio input:checked+.control::after {
+  background: var(--primary-color);
+}
+
+/* Hover */
+.donut-radio:hover .control {
+  transform: scale(1.05);
+}
+
+/* Texto */
+.text {
+  font-size: 14px;
+}
+
 input,
 select,
 textarea,

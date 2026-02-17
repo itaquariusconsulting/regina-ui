@@ -1,0 +1,156 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+    <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container mt-2">
+
+    <div class="bar-buttons-top">
+        <div class="title-f6">Nueva regla de validación</div>
+    </div>
+
+    <div class="bar-buttons-top d-flex justify-content-end w-100">
+        <button (click)="onGuardarRegla()" class="general-button btn-primary me-2">
+            <i class="fas fa-save"></i>
+            Guardar
+        </button>
+
+        <button (click)="onBack()" class="general-button btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Regresar
+        </button>
+    </div>
+    <div class="row mb-3">
+
+        <div class="col-md-12">
+            <label class="form-label fw-semibold">Nombre de la regla</label>
+            <input class="form-control" [(ngModel)]="regla.ruleName" name="ruleName" type="text"
+                placeholder="Ej: Validar logo vs razón social por RUC">
+        </div>
+
+    </div>
+    <!-- ========================= -->
+    <!-- Datos principales -->
+    <!-- ========================= -->
+
+    <div class="row mb-3">
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Campo a validar</label>
+            <input class="form-control" [(ngModel)]="regla.fieldCode" name="fieldCode" type="text">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de dato</label>
+            <select class="form-select" [(ngModel)]="regla.dataType" name="dataType">
+                <option [ngValue]="'string'">CADENA</option>
+                <option [ngValue]="'number'">NÚMERO</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo de documento</label>
+            <input class="form-control" [(ngModel)]="regla.documentType" name="documentType" type="text">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Sección del documento</label>
+            <input class="form-control" [(ngModel)]="regla.documentSection" name="documentSection" type="text">
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- Reglas de validación -->
+    <!-- ========================= -->
+
+    <div class="row mb-3">
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Requerido</label>
+            <select class="form-select" [(ngModel)]="regla.isRequired" name="isRequired">
+                <option [ngValue]="true">SÍ</option>
+                <option [ngValue]="false">NO</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Valor mínimo</label>
+            <input class="form-control" type="number" [(ngModel)]="regla.minValue" name="minValue">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Valor máximo</label>
+            <input class="form-control" type="number" [(ngModel)]="regla.maxValue" name="maxValue">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Long. mínima</label>
+            <input class="form-control" type="number" [(ngModel)]="regla.minLength" name="minLength">
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Long. máxima</label>
+            <input class="form-control" type="number" [(ngModel)]="regla.maxLength" name="maxLength">
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- Validaciones avanzadas -->
+    <!-- ========================= -->
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Expresión regular</label>
+            <input class="form-control" [(ngModel)]="regla.regexPattern" name="regexPattern" type="text">
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Valores permitidos</label>
+            <input class="form-control" [(ngModel)]="regla.allowedValues" name="allowedValues" type="text"
+                placeholder="Ej: A,B,C">
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Mensaje de error</label>
+            <input class="form-control" [(ngModel)]="regla.errorMessage" name="errorMessage" type="text">
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- Dependencias -->
+    <!-- ========================= -->
+
+    <div class="row mb-3">
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Campo dependiente</label>
+            <input class="form-control" [(ngModel)]="regla.dependsOnField" name="dependsOnField" type="text">
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor dependiente</label>
+            <input class="form-control" [(ngModel)]="regla.dependsOnValue" name="dependsOnValue" type="text">
+        </div>
+
+        <div class="col-md-4">
+
+            <label class="form-label fw-semibold mb-2 d-block">
+                Estado de la Regla
+            </label>
+
+            <label class="donut-radio">
+                <input type="checkbox" name="isActive" [(ngModel)]="regla.isActive">
+                <span class="control"></span>
+                <span class="text">
+                    {{ regla.isActive ? 'Activa' : 'Inactiva' }}
+                </span>
+            </label>
+
+        </div>
+
+    </div>
+
+</div>

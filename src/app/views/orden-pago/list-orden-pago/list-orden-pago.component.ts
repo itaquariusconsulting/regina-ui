@@ -20,9 +20,7 @@ import { OcrService } from '../../../services/ocr.service';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 
-
 export class Imagen {
-  // Propiedades de la clase
   documentType?: string;
   documentNumber?: string;
   issuerRuc?: string;
@@ -55,17 +53,19 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private ocrService: OcrService,
-    private loadingService: LoadingService) { 
-      this.isLoading$ = this.loadingService.loading$;
-    }
-
+    private loadingService: LoadingService
+  ) {
+    this.isLoading$ = this.loadingService.loading$;
+  }
 
   wrapperRequestOrdenPago: WrapperRequestOrdenPago = new WrapperRequestOrdenPago();
   isAdminUser: boolean = false;
   isLoading$: Observable<boolean>;
-  ordenes: OrdenPago[] = [];      // lista completa (la que ya cargas)
+
+  ordenes: OrdenPago[] = [];
   ordenesGeneral: OrdenPago[] = [];
-  pagedOrdenes: OrdenPago[] = [];  // lista que se muestra
+  pagedOrdenes: OrdenPago[] = [];
+
   filtrarOrden: string = '';
 
   pageSize = 6;
@@ -78,6 +78,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   imagen: Imagen = new Imagen();
 
   ngOnInit(): void {
+
     this.inicializarWrapperDesdeSession();
     this.cargarDesdeStateOApi();
 
@@ -118,17 +119,20 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
 
     const state = history.state;
 
+    this.loadingService.show();
+
     if (state && state.data && state.data.resultado) {
 
       this.ordenes = state.data.resultado;
+      this.ordenesGeneral = state.data.resultado;
+
       this.currentPage = 0;
       this.buildPagination();
+      this.loadingService.hide();
 
     } else {
 
       this.getOrdenesPago();
-      this.currentPage = 0;
-      this.buildPagination();
 
     }
   }
@@ -142,7 +146,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     const end = start + this.pageSize;
 
     this.pagedOrdenes = this.ordenes.slice(start, end);
-    this.loadingService.hide();
   }
 
   changePage(page: number): void {
@@ -156,15 +159,22 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   getOrdenesPago(): void {
-    this.loadingService.show();
+
     this.ordenPagoService
       .getOrdenesPago(this.wrapperRequestOrdenPago)
-      .subscribe((response: Response) => {
-        this.ordenes = response.resultado || [];
-        this.ordenesGeneral = response.resultado;
-        this.totalItems = this.ordenes.length;   // ← faltaba
-        this.currentPage = 0;
-        this.buildPagination();
+      .subscribe({
+        next: (response: Response) => {
+
+          this.ordenes = response.resultado || [];
+          this.ordenesGeneral = response.resultado || [];
+
+          this.currentPage = 0;
+          this.buildPagination();
+          this.loadingService.hide();
+        },
+        error: () => {
+          this.loadingService.hide();
+        }
       });
   }
 
@@ -178,7 +188,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       height: '90%',
       maxWidth: '90%',
       maxHeight: '90%',
-      panelClass: 'custom-dialog-container',  // Clase para estilos adicionales
+      panelClass: 'custom-dialog-container',
       autoFocus: false
     });
   }
@@ -197,8 +207,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
 
     const file = input.files[0];
 
-    const formData = new FormData();
-    formData.append('file', file);
     this.ocrService.uploadImage(file).subscribe(
       (response: any) => {
         console.log('Respuesta del OCR:', response);
@@ -209,17 +217,20 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
         this.imagen.issuerAddress = response.detectedData.issuerAddress;
         this.imagen.documentDate = response.detectedData.documentDate;
       }
-    )
+    );
   }
 
   openEditOrdenPago(orden: OrdenPago) {
-    console.log("Orden de Pago a editar:", orden);
+    console.log('Orden de Pago a editar:', orden);
     this.router.navigate(['/edit-order'], { state: { data: orden } });
   }
 
   filtrarOrdenPago() {
+
     const term = this.filtrarOrden.toLowerCase();
+
     if (term) {
+
       this.ordenes = this.ordenesGeneral.filter(orden => {
         return (
           (orden.codAuxiliar && orden.codAuxiliar.toLowerCase().includes(term)) ||
@@ -230,10 +241,14 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
           (orden.impOrdPago?.toString() && orden.impOrdPago.toString().toLowerCase().includes(term))
         );
       });
+
+      this.currentPage = 0;
       this.buildPagination();
+
     } else {
-      // Si no hay término de búsqueda, restablecer la lista a la lista original
+
       this.ordenes = this.ordenesGeneral;
+      this.currentPage = 0;
       this.buildPagination();
     }
   }

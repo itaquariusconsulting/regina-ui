@@ -16,6 +16,8 @@ import { SunatService } from '../../../services/sunat-service';
 import { Response } from '../../../models/response';
 import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
+import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
+import { RegRenValidate } from '../../../models/reg-ren-validate';
 
 
 export class ItemDetalle {
@@ -56,6 +58,7 @@ export class EditOrdenPagoComponent implements OnInit {
     private loadingService: LoadingService,
     private sunatService: SunatService,
     private router: Router,
+    private regRenValidateService: RegRenValidateService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -73,16 +76,77 @@ export class EditOrdenPagoComponent implements OnInit {
   validate: boolean = false;
   mensaje: string = "";
   padronRuc: PadronRuc = new PadronRuc();
+  reglas: RegRenValidate[] = [];
 
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data;
     }
+    this.loadValidationRules();
   }
 
   onBack(): void {
     this.location.back();
+  }
+
+  loadValidationRules() {
+    this.regRenValidateService.getRegRenValidateRules().subscribe(
+      (response: Response) => {
+        this.reglas = response.resultado;
+        this.reglas = this.reglas.filter(regla => regla.documentType == 'FACTURA' || regla.documentSection == 'ENCABEZADO');
+      },
+      (error) => {
+        console.error('Error al cargar reglas de validación', error);
+      }
+    )
+  }
+
+  validateRules(): boolean {
+    this.mensaje = '';
+    this.validate = true;
+
+    this.reglas.forEach(rule => {
+      const { fieldCode, isRequired, dependsOnField, dependsOnValue, errorMessage } = rule;
+
+      let fieldValue: any;
+      switch (fieldCode) {
+        case 'LOGO_TEXT':
+          fieldValue = this.dataImagen.issuerName?.trim().toLocaleLowerCase();
+          break;
+        // agrega otros fieldCodes si es necesario
+      }
+
+      let dependsValue: any;
+      switch (dependsOnField) {
+        case 'RUC':
+          console.log("aqui entré");
+          if (dependsOnValue === 'RAZON_SOCIAL_BY_RUC') {
+            dependsValue = this.padronRuc.razonSocial?.trim().toLocaleLowerCase();
+          }
+          break;
+        // agrega otros dependsOnFields si es necesario
+      }
+
+      // Validación
+      if (isRequired && (!fieldValue || !dependsValue)) {
+        this.mensaje += errorMessage + '\n';
+        this.validate = false;
+        return;
+      }
+
+      if (fieldCode === 'LOGO_TEXT' && dependsValue) {
+        // comparación ignorando mayúsculas
+        if (!fieldValue.includes(dependsValue)) {
+          console.log("No son iguales");   
+           console.log("Texto Logo de Factura: ", fieldValue);
+    console.log("Texto RUC Real ", dependsValue);
+          this.mensaje += errorMessage + '\n';
+          this.validate = false;
+        }
+      }
+    });
+    return this.validate;
   }
 
   onGetDatosRuc() {
@@ -90,17 +154,21 @@ export class EditOrdenPagoComponent implements OnInit {
       (response: Response) => {
         if (response.error == 0) {
           this.padronRuc = response.resultado;
-          console.log("Pdrón RUC ",this.padronRuc);
+          console.log("Padrón RUC ", this.padronRuc);
           this.mensaje = "";
-          if (this.padronRuc.estado!=='ACTIVO') {
-            this.mensaje+='EL CONRIBUYENTE NO EN ENCUENTRA ACTIVO '
+          if (this.padronRuc.estado !== 'ACTIVO') {
+            this.mensaje += 'EL CONRIBUYENTE NO EN ENCUENTRA ACTIVO '
             this.validate = false;
+            console.log(this.mensaje);
+            return;
           }
-          if (this.padronRuc.condicion!=='HABIDO') {
-            this.mensaje+='EL CONRIBUYENTE NO EN ENCUENTRA HABIDO '
+          if (this.padronRuc.condicion !== 'HABIDO') {
+            this.mensaje += 'EL CONRIBUYENTE NO EN ENCUENTRA HABIDO '
             this.validate = false;
+            console.log(this.mensaje);
+            return;
           }
-          this.dataImagen.issuerName = response.resultado.razonSocial;
+          //this.dataImagen.issuerName = response.resultado.razonSocial;
           const direccion =
             (response.resultado.tipoVia ? response.resultado.tipoVia + ' ' + response.resultado.nombreVia : '') + ' ' +
             (response.resultado.codZona ? response.resultado.codZona + ' ' + response.resultado.tipoZona : '') + ' ' +
@@ -242,6 +310,14 @@ export class EditOrdenPagoComponent implements OnInit {
     } else {
       this.mensaje = "";
       this.validate = false;
+    }
+  }
+
+  onSave(): void {
+    console.log("aqui estoy");
+    if (!this.validateRules()) {
+      console.log("Errores");
+      return; // detiene el guardado si falla alguna regla
     }
   }
 }

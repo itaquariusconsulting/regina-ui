@@ -1,0 +1,153 @@
+:host {
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.form-container {
+  font-size: 0.8rem;
+
+  flex: 1 1 auto;
+  min-height: 0;
+  /* clave para que no se recorte */
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding-right: 15px;
+}
+
+.form-container .row {
+  margin-bottom: 0.5rem;
+}
+
+.btn-capture-image {
+  /*   background-color: var(--primary-color);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  border: none;
+  cursor: pointer; */
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  font-size: 0.9rem;
+  padding: 10px 22px;
+  border-radius: 20px;
+  border: none;
+  background: #0063A7;
+  color: white;
+  cursor: pointer;
+
+  box-shadow: none;
+  height: 40px !important;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.btn-capture-image:before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  pointer-events: none;
+  transition: border-color 0.15s ease;
+}
+
+.btn-capture-image:hover {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 90%;
+  gap: 6px;
+  margin-bottom: 5px !important;
+  /* opcional, separación entre botones */
+}
+
+.right-buttons {
+  display: flex;
+  gap: 10px;
+  /* separación entre los dos botones de la derecha */
+}
+
+.card-body {
+  height: 90% !important;
+  margin: 2px !important;
+}
+
+.mensaje-alerta {
+  font-size: 0.8rem !important;
+  color: red !important;
+  font-weight: 600 !important;
+}
+
+.donut-radio input:checked + .control {
+  border-color: var(--primary-color);
+}
+
+.donut-radio {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+  padding-top: 5px !important;
+
+  input {
+    display: none;
+  }
+
+  .control {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #b5b5b5;
+    border-radius: 50%;
+    position: relative;
+    box-sizing: border-box;
+    transition: border-color .2s ease;
+  }
+
+  /* círculo interno */
+  .control::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform .15s ease;
+  }
+
+  /* tu regla principal */
+  input:checked + .control {
+    border-color: var(--primary-color);
+  }
+
+  /* mostrar el punto interno al marcar */
+  input:checked + .control::after {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .text {
+    font-size: 0.8rem !important;
+    font-weight: 600;
+  }
+}
