@@ -10,9 +10,10 @@
             <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
         </label>
         <!-- Guardar -->
-        
-        <button (click)="onSave()" type="button" class="general-button btn-primary"><i class="fa fa-save"></i>  Guardar</button> 
-        
+
+        <button [disabled]="!validate" (click)="onSave()" type="button" class="general-button btn-primary"><i class="fa fa-save"></i>
+            Guardar</button>
+
         <div class="right-buttons" *ngIf="imageChangedEvent">
             <button *ngIf='showImageCropper' type="button" class="general-button btn-primary btn-sm me-1"
                 (click)="toggleImageCropper()">
@@ -47,13 +48,22 @@
 
     <!-- Datos -->
     <div class="row mt-1">
-        <div class="col-md-3">
+        <h6 class="h6-header">DATOS REALES DEL PROVEEDOR</h6>
+        <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
             <input maxlength="11" (input)="ruccompleto()" class="form-control" name="ruc" id="ruc" [(ngModel)]="ruc" />
         </div>
-        <div class="col-md-9">
+        <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
             <input class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Estado</label>
+            <input class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.estado" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Condición</label>
+            <input class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.condicion" />
         </div>
     </div>
     <div class="row">
@@ -68,6 +78,8 @@
             <input class="form-control" name="direccion" id="direccion" [(ngModel)]="dataImagen.issuerAddress" />
         </div>
     </div>
+
+    <h6 class="h6-header">DATOS DEL DOCUMENTO</h6>
 
     <div class="row mt-2">
         <div class="col-md-3">

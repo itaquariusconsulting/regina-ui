@@ -138,10 +138,7 @@ export class EditOrdenPagoComponent implements OnInit {
       if (fieldCode === 'LOGO_TEXT' && dependsValue) {
         // comparación ignorando mayúsculas
         if (!fieldValue.includes(dependsValue)) {
-          console.log("No son iguales");   
-           console.log("Texto Logo de Factura: ", fieldValue);
-    console.log("Texto RUC Real ", dependsValue);
-          this.mensaje += errorMessage + '\n';
+          this.mensaje += errorMessage + " - Razón Social obtenida " + dependsValue + '\n';
           this.validate = false;
         }
       }
@@ -157,15 +154,13 @@ export class EditOrdenPagoComponent implements OnInit {
           console.log("Padrón RUC ", this.padronRuc);
           this.mensaje = "";
           if (this.padronRuc.estado !== 'ACTIVO') {
-            this.mensaje += 'EL CONRIBUYENTE NO EN ENCUENTRA ACTIVO '
+            this.mensaje += 'EL CONTRIBUYENTE NO SE ENCUENTRA ACTIVO';
             this.validate = false;
-            console.log(this.mensaje);
             return;
           }
           if (this.padronRuc.condicion !== 'HABIDO') {
-            this.mensaje += 'EL CONRIBUYENTE NO EN ENCUENTRA HABIDO '
+            this.mensaje += 'EL CONTRIBUYENTE TIENE CONDICIÓN NO HABIDO';
             this.validate = false;
-            console.log(this.mensaje);
             return;
           }
           //this.dataImagen.issuerName = response.resultado.razonSocial;
