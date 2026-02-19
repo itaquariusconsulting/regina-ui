@@ -1,5 +1,4 @@
 export class MaeAuxiliarDTO {
-
   codEmpresa?: string;
   codAuxiliar?: string;
   desAuxiliar?: string;
@@ -9,5 +8,4 @@ export class MaeAuxiliarDTO {
   numEmail?: string;
   tipEstado?: string;
   codTipoAuxi?: string;
-
 }
