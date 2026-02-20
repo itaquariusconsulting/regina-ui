@@ -145,6 +145,9 @@ export class EditRendirCuentaComponent implements OnInit {
       }
 
       if (fieldCode === 'LOGO_TEXT' && dependsValue) {
+        if(dependsValue!==fieldValue) {
+          console.log("Different");
+        }
         // comparación ignorando mayúsculas
         if (!fieldValue.includes(dependsValue)) {
           this.mensaje += errorMessage + " - Razón Social obtenida " + dependsValue + '\n';
