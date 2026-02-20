@@ -23,11 +23,15 @@
             <th class="text-center">Acciones</th>
         </thead>
         <tbody>
-            <tr *ngFor="let reg of validaciones">
+            <tr style="vertical-align: middle;" *ngFor="let reg of validaciones" >
                 <td class="text-center">{{reg.idRule}}</td>
-                <td class="text-start">{{reg.ruleName}}</td>
+                <td class="text-start">{{reg.ruleName?.toUpperCase() }}</td>
                 <td class="text-center">{{reg.documentSection}}</td>
-                <td class="text-start">{{reg.isActive ? 'ACTIVA' : 'INACTIVA'}}</td>
+                <td class="text-center">
+                    <button style="font-size: 0.7rem; cursor: default !important;" class="general-button btn-sm" [ngClass]="reg.isActive ? 'btn-primary' : 'btn-danger'">
+                        {{ reg.isActive ? 'ACTIVA' : 'INACTIVA' }}
+                    </button>
+                </td>
                 <td class="text-center">
                     <button type="button" title="Editar Regla" type="button" class="btn btn-warning btn-sm me-1"><i
                             class="fa fa-edit"></i></button>

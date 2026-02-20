@@ -164,9 +164,15 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       .getOrdenesPago(this.wrapperRequestOrdenPago)
       .subscribe({
         next: (response: Response) => {
+          
 
           this.ordenes = response.resultado || [];
-          this.ordenesGeneral = response.resultado || [];
+
+          if(this.isAdminUser==false) {
+            this.ordenes = this.ordenes.filter(filtro=> filtro.tipEstado=="PR" || filtro.tipEstado=="LQ")
+          }
+
+          this.ordenesGeneral = this.ordenes;
 
           this.currentPage = 0;
           this.buildPagination();
