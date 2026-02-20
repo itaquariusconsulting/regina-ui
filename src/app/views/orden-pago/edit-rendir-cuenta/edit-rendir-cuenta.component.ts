@@ -205,6 +205,7 @@ export class EditRendirCuentaComponent implements OnInit {
           if (this.dataImagen.issuerRuc) {
             this.ruc = this.dataImagen.issuerRuc[0];
           }
+          console.log("El ruc verdadero ", this.ruc);
           this.dataImagen.issuerAddress = response.detectedData.issuerAddress;
           this.dataImagen.documentDate = response.detectedData.documentDate;
           this.dataImagen.amount = response.detectedData.amount;
