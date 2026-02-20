@@ -160,7 +160,9 @@ export class EditRendirCuentaComponent implements OnInit {
 
   onGetDatosRuc() {
     this.sunatService.getDataRUC(this.ruc).subscribe(
+      
       (response: Response) => {
+        console.log("Response ", response);
         if (response.error == 0) {
           this.padronRuc = response.resultado;
           this.mensaje = "";
