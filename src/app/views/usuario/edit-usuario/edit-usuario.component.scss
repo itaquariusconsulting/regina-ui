@@ -95,3 +95,14 @@
   color: red !important;
   font-weight: 600 !important;
 }
+
+.loading-overlay {
+  position: fixed;   
+  inset: 0;          
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8); 
+  backdrop-filter: blur(2px);          
+  z-index: 9999;
+}
