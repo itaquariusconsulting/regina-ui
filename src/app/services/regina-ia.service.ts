@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { WrapperRequestIA } from '../models/wrappers/wrapper-request-ia';
+import { environment } from '../../environments/environment';
 
 // Interfaz para tipar la respuesta del servicio FastAPI
 export interface ChatResponse {
@@ -15,14 +16,12 @@ export interface ChatResponse {
 })
 export class ReginaIaService {
 
-  private baseUrl = 'http://localhost:6700'; // Cambiar por tu IP o localhost
-
   constructor(private http: HttpClient) { }
 
   enviarPregunta(payload: WrapperRequestIA
   ): Observable<ChatResponse> {
     try {
-    return this.http.post<ChatResponse>(`${this.baseUrl}/chat`, payload);
+    return this.http.post<ChatResponse>(`${environment.apiUrlIA}/chat`, payload);
   } catch (error) {
     console.error('Error al enviar la pregunta:', error);
     throw error;
