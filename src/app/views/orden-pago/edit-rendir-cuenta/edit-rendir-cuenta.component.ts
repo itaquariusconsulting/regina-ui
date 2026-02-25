@@ -17,11 +17,10 @@ import { RegRenValidateService } from '../../../services/reg-ren-validate.servic
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
 import { MatDialog } from '@angular/material/dialog';
+import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
 import {
   DocumentType,
   DocumentSection,
-  FieldCode,
-  DependsOnValue,
   RucStatus,
   RucCondition
 } from '../../../shared/constants/validation-constants';
@@ -71,8 +70,9 @@ export class EditRendirCuentaComponent implements OnInit {
     private loadingService: LoadingService,
     private sunatService: SunatService,
     private router: Router,
+    private dialog: MatDialog,
     private regRenValidateService: RegRenValidateService,
-    private dialog: MatDialog
+    private validationEngine: ValidationEngineService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -124,66 +124,16 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   validateRules(): boolean {
-    this.mensaje = '';
-    this.validate = true;
-
-    this.reglas.forEach(rule => {
-      if (!rule.fieldCode || !rule.errorMessage || !rule.dependsOnField || !rule.dependsOnValue) {
-        console.warn('Regla inválida, falta fieldCode o errorMessage:', rule);
-        return;
-      }
-
-      const fieldValue = this.getFieldValue(rule.fieldCode);
-      const dependsValue = this.getDependsValue(
-        rule.dependsOnField,
-        rule.dependsOnValue
-      );
-
-      if (rule.isRequired && (!fieldValue || !dependsValue)) {
-        this.addError(rule.errorMessage);
-        return;
-      }
-
-      if (rule.fieldCode === FieldCode.LOGO_TEXT && dependsValue) {
-        if (!fieldValue?.includes(dependsValue)) {
-          this.addError(
-            `${rule.errorMessage} - Razón Social obtenida ${dependsValue}`
-          );
-        }
-      }
+    const result = this.validationEngine.validate({
+      reglas: this.reglas,
+      dataImagen: this.dataImagen,
+      padronRuc: this.padronRuc
     });
 
-    return this.validate;
-  }
+    this.mensaje = result.errors.join('\n');
+    this.validate = result.isValid;
 
-  private getFieldValue(fieldCode: string): string | undefined {
-    const fieldMap: Record<string, () => string | undefined> = {
-      LOGO_TEXT: () =>
-        this.dataImagen.issuerName?.trim().toLowerCase()
-    };
-
-    return fieldMap[fieldCode]?.();
-  }
-
-  private getDependsValue(
-    dependsOnField: string,
-    dependsOnValue: string
-  ): string | undefined {
-    const dependsMap: Record<string, () => string | undefined> = {
-      RUC: () => {
-        if (dependsOnValue === DependsOnValue.RAZON_SOCIAL_BY_RUC) {
-          return this.padronRuc?.razonSocial?.trim().toLowerCase();
-        }
-        return undefined;
-      }
-    };
-
-    return dependsMap[dependsOnField]?.();
-  }
-
-  private addError(message: string): void {
-    this.mensaje += message + '\n';
-    this.validate = false;
+    return result.isValid;
   }
 
   onGetDatosRuc(): void {
