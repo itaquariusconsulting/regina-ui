@@ -1,12 +1,10 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RegSecUser } from '../../../models/reg-sec-user';
-import { RegSecUserService } from '../../../services/reg-sec-user.service';
-import { WrapperRequestUsuario } from '../../../models/wrappers/wrapper-request-usuario';
-import { Response } from '../../../models/response';
-import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+
+import { Response } from '../../../models/response';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 
@@ -16,8 +14,9 @@ import { RegRenValidate } from '../../../models/reg-ren-validate';
   templateUrl: './list-validaciones.component.html',
   styleUrl: './list-validaciones.component.scss'
 })
-export class ListValidacionesComponent {
-  constructor(private regRenValidateService: RegRenValidateService, private location: Location,
+export class ListValidacionesComponent implements OnInit {
+  constructor(private regRenValidateService: RegRenValidateService,
+    private location: Location,
     private router: Router,
     private dialog: MatDialog
   ) { }
@@ -29,31 +28,45 @@ export class ListValidacionesComponent {
   codSucursal: string = "";
 
   ngOnInit(): void {
-    const userString = sessionStorage.getItem('user');
-    const state = history.state;
+    this.loadUserFromSession();
+    this.loadStateOrFetch();
+  }
 
-    if (userString) {
-      try {
-        const user = JSON.parse(userString);
-        this.codEmpresa = user.codEmpresa || '';
-        this.codSucursal = user.codSucursal || '';
-        if (state.data) {
-          this.validaciones = state.data.resultado;
-        } else {
-          this.getValidaciones();
-        }
-      } catch (e) {
-        console.error('Error al parsear User desde sessionStorage', e);
-      }
+  private loadUserFromSession(): void {
+    const userString = sessionStorage.getItem('user');
+    if (!userString) return;
+
+    try {
+      const user = JSON.parse(userString);
+      this.codEmpresa = user.codEmpresa ?? '';
+      this.codSucursal = user.codSucursal ?? '';
+    } catch (error) {
+      console.error('Error parsing user from sessionStorage', error);
     }
   }
 
-  getValidaciones() {
-    this.regRenValidateService.getRegRenValidateRules().subscribe(
-      (response: Response) => {
-        this.validaciones = response.resultado || [];
-      }
-    );
+  private loadStateOrFetch(): void {
+    const navigationState = history.state;
+
+    if (navigationState?.data?.resultado) {
+      this.validaciones = navigationState.data.resultado;
+      return;
+    }
+
+    this.getValidaciones();
+  }
+
+  private getValidaciones(): void {
+    this.regRenValidateService.getRegRenValidateRules()
+      .subscribe({
+        next: (response: Response) => {
+          this.validaciones = response?.resultado ?? [];
+        },
+        error: (error) => {
+          console.error('Error fetching validaciones', error);
+          this.validaciones = [];
+        }
+      });
   }
 
   onBack() {
@@ -61,7 +74,6 @@ export class ListValidacionesComponent {
   }
 
   onNewValidacion() {
-    console.log("Nueva Regla");
     this.router.navigate(['/edit-validacion']);
   }
 }
