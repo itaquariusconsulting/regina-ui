@@ -49,8 +49,7 @@ export class TypeMovement {
     FormsModule,
     ImageCropperComponent,
     LoadingDancingSquaresComponent,
-    NgxCurrencyDirective,
-    ConfirmDialogComponent
+    NgxCurrencyDirective
   ],
   templateUrl: './edit-rendir-cuenta.component.html',
   styleUrl: './edit-rendir-cuenta.component.scss'

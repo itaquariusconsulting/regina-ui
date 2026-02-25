@@ -17,7 +17,7 @@ import { RegSecUserService } from '../../../services/reg-sec-user.service';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
 @Component({
   selector: 'app-edit-usuario',
-  imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
   templateUrl: './edit-usuario.component.html',
   styleUrl: './edit-usuario.component.scss'
 })

@@ -16,8 +16,7 @@ import { Response } from '../../../models/response';
   imports: [
     CommonModule,
     FormsModule,
-    LoadingDancingSquaresComponent,
-    ConfirmDialogComponent
+    LoadingDancingSquaresComponent
   ],
   templateUrl: './edit-validacion.component.html',
   styleUrl: './edit-validacion.component.scss'
@@ -112,7 +111,7 @@ export class EditRegRenValidateComponent implements OnInit {
 
       if (rule.isRequired) {
         if (value === null || value === undefined || value === '') {
-          errores.push(rule.errorMessage ?? 'Error de validación' ?? 'Error de validación');
+          errores.push(rule.errorMessage ?? 'Error de validación');
           continue;
         }
       }
