@@ -17,6 +17,14 @@ import { RegRenValidateService } from '../../../services/reg-ren-validate.servic
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
 import { MatDialog } from '@angular/material/dialog';
+import {
+  DocumentType,
+  DocumentSection,
+  FieldCode,
+  DependsOnValue,
+  RucStatus,
+  RucCondition
+} from '../../../shared/constants/validation-constants';
 
 export class ItemDetalle {
   descripcion?: string;
@@ -83,8 +91,9 @@ export class EditRendirCuentaComponent implements OnInit {
   mensaje: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   reglas: RegRenValidate[] = [];
-  typeMovements: TypeMovement[] = [{idMovement: 1, detMovement: "Alimentación"}, {idMovement: 2, detMovement: "Transpporte"}]
+  typeMovements: TypeMovement[] = [{ idMovement: 1, detMovement: "Alimentación" }, { idMovement: 2, detMovement: "Transpporte" }]
   TypeMovement: TypeMovement = new TypeMovement();
+
   ngOnInit(): void {
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
@@ -98,16 +107,20 @@ export class EditRendirCuentaComponent implements OnInit {
     this.location.back();
   }
 
-  loadValidationRules() {
-    this.regRenValidateService.getRegRenValidateRules().subscribe(
-      (response: Response) => {
-        this.reglas = response.resultado;
-        this.reglas = this.reglas.filter(regla => regla.documentType == 'FACTURA' || regla.documentSection == 'ENCABEZADO');
+  loadValidationRules(): void {
+    this.regRenValidateService.getRegRenValidateRules().subscribe({
+      next: (response: Response) => {
+        this.reglas = (response?.resultado ?? []).filter(
+          ({ documentType, documentSection }: RegRenValidate) =>
+            documentType === DocumentType.FACTURA ||
+            documentSection === DocumentSection.ENCABEZADO
+        );
       },
-      (error) => {
+      error: (error) => {
         console.error('Error al cargar reglas de validación', error);
+        this.reglas = [];
       }
-    )
+    });
   }
 
   validateRules(): boolean {
@@ -115,146 +128,193 @@ export class EditRendirCuentaComponent implements OnInit {
     this.validate = true;
 
     this.reglas.forEach(rule => {
-      const { fieldCode, isRequired, dependsOnField, dependsOnValue, errorMessage } = rule;
-
-      let fieldValue: any;
-      switch (fieldCode) {
-        case 'LOGO_TEXT':
-          fieldValue = this.dataImagen.issuerName?.trim().toLocaleLowerCase();
-          break;
-        // agrega otros fieldCodes si es necesario
-      }
-
-      let dependsValue: any;
-      switch (dependsOnField) {
-        case 'RUC':
-          console.log("aqui entré");
-          if (dependsOnValue === 'RAZON_SOCIAL_BY_RUC') {
-            dependsValue = this.padronRuc.razonSocial?.trim().toLocaleLowerCase();
-          }
-          break;
-        // agrega otros dependsOnFields si es necesario
-      }
-
-      // Validación
-      if (isRequired && (!fieldValue || !dependsValue)) {
-        this.mensaje += errorMessage + '\n';
-        this.validate = false;
+      if (!rule.fieldCode || !rule.errorMessage || !rule.dependsOnField || !rule.dependsOnValue) {
+        console.warn('Regla inválida, falta fieldCode o errorMessage:', rule);
         return;
       }
 
-      if (fieldCode === 'LOGO_TEXT' && dependsValue) {
-        if(dependsValue!==fieldValue) {
-          console.log("Different");
-        }
-        // comparación ignorando mayúsculas
-        if (!fieldValue.includes(dependsValue)) {
-          this.mensaje += errorMessage + " - Razón Social obtenida " + dependsValue + '\n';
-          this.validate = false;
+      const fieldValue = this.getFieldValue(rule.fieldCode);
+      const dependsValue = this.getDependsValue(
+        rule.dependsOnField,
+        rule.dependsOnValue
+      );
+
+      if (rule.isRequired && (!fieldValue || !dependsValue)) {
+        this.addError(rule.errorMessage);
+        return;
+      }
+
+      if (rule.fieldCode === FieldCode.LOGO_TEXT && dependsValue) {
+        if (!fieldValue?.includes(dependsValue)) {
+          this.addError(
+            `${rule.errorMessage} - Razón Social obtenida ${dependsValue}`
+          );
         }
       }
     });
+
     return this.validate;
   }
 
-  onGetDatosRuc() {
-    this.sunatService.getDataRUC(this.ruc).subscribe(
-      
-      (response: Response) => {
-        console.log("Response ", response);
-        if (response.error == 0) {
-          this.padronRuc = response.resultado;
-          this.mensaje = "";
-          if (this.padronRuc.estado !== 'ACTIVO') {
-            this.mensaje += 'EL CONTRIBUYENTE NO SE ENCUENTRA ACTIVO';
-            this.validate = false;
-            return;
-          }
-          if (this.padronRuc.condicion !== 'HABIDO') {
-            this.mensaje += 'EL CONTRIBUYENTE TIENE CONDICIÓN NO HABIDO';
-            this.validate = false;
-            return;
-          }
-          //this.dataImagen.issuerName = response.resultado.razonSocial;
-          const direccion =
-            (response.resultado.tipoVia ? response.resultado.tipoVia + ' ' + response.resultado.nombreVia : '') + ' ' +
-            (response.resultado.codZona ? response.resultado.codZona + ' ' + response.resultado.tipoZona : '') + ' ' +
-            (response.resultado.numero ? ' NRO.' + response.resultado.numero : '') +
-            (response.resultado.interior ? ' INT. ' + response.resultado.interior : '') +
-            (response.resultado.manzana && response.resultado.manzana != '-' ? ' MZA. ' + response.resultado.manzana : '') +
-            (response.resultado.lote && response.resultado.lote != '-' ? ' LTE. ' + response.resultado.manzana : '');
-          this.dataImagen.issuerAddress = direccion.trim();
-        }
-      },
-      (error) => {
-        this.validate = false;
-        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-          width: '280px',
-          data: {
-            title: 'Error',
-            message: 'El RUC no existe'
-          }
-        });
+  private getFieldValue(fieldCode: string): string | undefined {
+    const fieldMap: Record<string, () => string | undefined> = {
+      LOGO_TEXT: () =>
+        this.dataImagen.issuerName?.trim().toLowerCase()
+    };
 
-        dialogRef.afterClosed().subscribe(result => {
-
-          if (!result) {
-            return;
-          }
-
-        });
-      }
-    )
+    return fieldMap[fieldCode]?.();
   }
 
-  // ===============================
-  // Selección de imagen
-  // ===============================
+  private getDependsValue(
+    dependsOnField: string,
+    dependsOnValue: string
+  ): string | undefined {
+    const dependsMap: Record<string, () => string | undefined> = {
+      RUC: () => {
+        if (dependsOnValue === DependsOnValue.RAZON_SOCIAL_BY_RUC) {
+          return this.padronRuc?.razonSocial?.trim().toLowerCase();
+        }
+        return undefined;
+      }
+    };
+
+    return dependsMap[dependsOnField]?.();
+  }
+
+  private addError(message: string): void {
+    this.mensaje += message + '\n';
+    this.validate = false;
+  }
+
+  onGetDatosRuc(): void {
+    this.sunatService.getDataRUC(this.ruc).subscribe({
+      next: (response: Response) => this.handleRucResponse(response),
+      error: () => this.handleRucError()
+    });
+  }
+
+  private handleRucResponse(response: Response): void {
+    if (!response || response.error !== 0) {
+      this.validate = false;
+      return;
+    }
+
+    this.padronRuc = response.resultado;
+    this.mensaje = '';
+    this.validate = true;
+
+    if (this.padronRuc.estado !== RucStatus.ACTIVO) {
+      this.setValidationError('EL CONTRIBUYENTE NO SE ENCUENTRA ACTIVO');
+      return;
+    }
+
+    if (this.padronRuc.condicion !== RucCondition.HABIDO) {
+      this.setValidationError('EL CONTRIBUYENTE TIENE CONDICIÓN NO HABIDO');
+      return;
+    }
+
+    this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
+
+    this.validateRules();
+  }
+
+  private buildDireccion(data: any): string {
+    const parts = [
+      data.tipoVia && data.nombreVia ? `${data.tipoVia} ${data.nombreVia}` : '',
+      data.codZona && data.tipoZona ? `${data.codZona} ${data.tipoZona}` : '',
+      data.numero ? `NRO. ${data.numero}` : '',
+      data.interior ? `INT. ${data.interior}` : '',
+      data.manzana && data.manzana !== '-' ? `MZA. ${data.manzana}` : '',
+      data.lote && data.lote !== '-' ? `LTE. ${data.lote}` : ''
+    ];
+
+    return parts.filter(Boolean).join(' ').trim();
+  }
+
+  private setValidationError(message: string): void {
+    this.mensaje = message;
+    this.validate = false;
+  }
+
+  private handleRucError(): void {
+    this.validate = false;
+
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Error',
+        message: 'El RUC no existe'
+      }
+    });
+  }
+
   onSelectImage(event: Event): void {
-    this.loadingService.show();
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) {
       return;
     }
+
+    this.loadingService.show();
+
     const file = input.files[0];
     this.imageChangedEvent = event;
+
+    this.loadPreview(file);
+    this.processImage(file);
+  }
+
+  private loadPreview(file: File): void {
     const reader = new FileReader();
+
     reader.onload = () => {
       this.previewImage = reader.result as string;
     };
+
     reader.readAsDataURL(file);
+  }
+
+  private processImage(file: File): void {
     this.ocrService.uploadImage(file).subscribe({
       next: (response: any) => {
-        if (response?.detectedData) {
-          console.log("Deteted ", response.detectedData)
-          this.dataImagen.documentType = response.detectedData.documentType;
-          this.dataImagen.documentNumber = response.detectedData.documentNumber;
-          this.dataImagen.issuerName = response.detectedData.issuerName;
-          const issuerRuc = response.detectedData.issuerRuc;
-          this.dataImagen.issuerRuc = issuerRuc;
-          if (issuerRuc) {
-            this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
-          }
-          console.log("El ruc verdadero ", this.ruc);
-          this.dataImagen.issuerAddress = response.detectedData.issuerAddress;
-          this.dataImagen.documentDate = response.detectedData.documentDate;
-          this.dataImagen.amount = response.detectedData.amount;
-          this.dataImagen.documentCurrency = response.detectedData.documentCurrency;
-          this.dataImagen.items = response.detectedData.items;
-          this.detalle = "";
-          for (let e = 0; e < this.dataImagen.items?.length; e++) {
-            this.detalle += this.dataImagen.items[e].descripcion;
-          }
-          this.onGetDatosRuc();
-          this.validateRules();
-          this.loadingService.hide();
+        const detected = response?.detectedData;
+        if (!detected) {
+          return;
         }
+
+        this.mapDetectedData(detected);
+        this.buildDetalle();
+        this.onGetDatosRuc();
       },
-      error: err => {
+      error: (err) => {
         console.error(err);
+      },
+      complete: () => {
         this.loadingService.hide();
       }
     });
+  }
+
+  private mapDetectedData(detected: any): void {
+    this.dataImagen.documentType = detected.documentType;
+    this.dataImagen.documentNumber = detected.documentNumber;
+    this.dataImagen.issuerName = detected.issuerName;
+    this.dataImagen.issuerAddress = detected.issuerAddress;
+    this.dataImagen.documentDate = detected.documentDate;
+    this.dataImagen.amount = detected.amount;
+    this.dataImagen.documentCurrency = detected.documentCurrency;
+    this.dataImagen.items = detected.items;
+
+    const issuerRuc = detected.issuerRuc;
+    this.dataImagen.issuerRuc = issuerRuc;
+
+    this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
+    console.log('RUC detectado:', this.ruc);
+  }
+
+  private buildDetalle(): void {
+    this.detalle = this.dataImagen.items
+      ?.map(item => item.descripcion)
+      .join(' ') || '';
   }
 
   // ===============================
