@@ -1,23 +1,36 @@
+export enum FieldCode {
+  LOGO_TEXT = 'LOGO_TEXT',
+  RUC_INPUT = 'RUC_INPUT',
+  RUC_STATUS = 'RUC_STATUS',
+  RUC_CONDITION = 'RUC_CONDITION',
+  DOCUMENT_TYPE = 'DOCUMENT_TYPE'
+}
+
+export enum RucInput {
+  LENGTH = 11
+}
+
+export enum RucStatus {
+  ACTIVO = 'ACTIVO',
+  SUSPENSION_TEMPORAL = 'SUSPENSION _TEMPORAL',
+  BAJA_PROVISIONAL = 'BAJA_PROVISIONAL',
+  BAJA_DEFINITIVA = 'BAJA_DEFINITIVA',
+  BAJA_PROVISIONAL_DE_OFICIO = 'BAJA_PROVISIONAL_DE_OFICIO',
+  BAJA_DEFINITIVA_DE_OFICIO = 'BAJA_DEFINITIVA_DE_OFICIO',
+}
+
+export enum RucCondition {
+  HABIDO = 'HABIDO',
+  NO_HABIDO = 'NO HABIDO',
+  NO_HALLADO = 'NO HALLADO',
+}
+
 export enum DocumentType {
-  FACTURA = 'FACTURA'
+  FACTURA = 'FACTURA',
+  BOLETA = 'BOLETA',
+  RECIBO_POR_HONORARIOS = 'RECIBO POR HONORARIOS'
 }
 
 export enum DocumentSection {
   ENCABEZADO = 'ENCABEZADO'
-}
-
-export enum FieldCode {
-  LOGO_TEXT = 'LOGO_TEXT'
-}
-
-export enum DependsOnValue {
-  RAZON_SOCIAL_BY_RUC = 'RAZON_SOCIAL_BY_RUC'
-}
-
-export enum RucStatus {
-  ACTIVO = 'ACTIVO'
-}
-
-export enum RucCondition {
-  HABIDO = 'HABIDO'
 }

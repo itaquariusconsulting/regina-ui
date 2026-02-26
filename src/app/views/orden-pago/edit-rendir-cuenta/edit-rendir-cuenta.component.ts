@@ -1,6 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import Tesseract from 'tesseract.js';
 import { OrdenPago } from '../../../models/orden-pago';
@@ -19,15 +20,13 @@ import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dial
 import { MatDialog } from '@angular/material/dialog';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
 import {
+  RucInput,
   DocumentType,
   DocumentSection,
-  RucStatus,
-  RucCondition
 } from '../../../shared/constants/validation-constants';
 
 export class ItemDetalle {
   descripcion?: string;
-  // agrega aquí otras propiedades si las tienes
 }
 
 export class DatosImagen {
@@ -139,7 +138,7 @@ export class EditRendirCuentaComponent implements OnInit {
   onGetDatosRuc(): void {
     this.sunatService.getDataRUC(this.ruc).subscribe({
       next: (response: Response) => this.handleRucResponse(response),
-      error: () => this.handleRucError()
+      error: (err) => this.handleRucError(err)
     });
   }
 
@@ -153,22 +152,12 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensaje = '';
     this.validate = true;
 
-    if (this.padronRuc.estado !== RucStatus.ACTIVO) {
-      this.setValidationError('EL CONTRIBUYENTE NO SE ENCUENTRA ACTIVO');
-      return;
-    }
-
-    if (this.padronRuc.condicion !== RucCondition.HABIDO) {
-      this.setValidationError('EL CONTRIBUYENTE TIENE CONDICIÓN NO HABIDO');
-      return;
-    }
-
     this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
 
     this.validateRules();
   }
 
-  private buildDireccion(data: any): string {
+  private buildDireccion(data: PadronRuc): string {
     const parts = [
       data.tipoVia && data.nombreVia ? `${data.tipoVia} ${data.nombreVia}` : '',
       data.codZona && data.tipoZona ? `${data.codZona} ${data.tipoZona}` : '',
@@ -181,22 +170,21 @@ export class EditRendirCuentaComponent implements OnInit {
     return parts.filter(Boolean).join(' ').trim();
   }
 
-  private setValidationError(message: string): void {
-    this.mensaje = message;
-    this.validate = false;
-  }
-
-  private handleRucError(): void {
-    this.validate = false;
+  private handleRucError(error?: HttpErrorResponse): void {
+    let message = error?.error.mensaje
+      || 'No se pudo consultar SUNAT. Intente nuevamente.';
 
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
       data: {
         title: 'Error',
-        message: 'El RUC no existe',
+        message,
         type: 'alert'
       }
     });
+
+    this.validate = false;
+    this.mensaje = message;
   }
 
   onSelectImage(event: Event): void {
@@ -268,9 +256,16 @@ export class EditRendirCuentaComponent implements OnInit {
       .join(' ') || '';
   }
 
-  // ===============================
-  // Recorte
-  // ===============================
+  ruccompleto(): void {
+    if (this.ruc.length !== RucInput.LENGTH) {
+      this.mensaje = 'El RUC debe contener 11 dígitos.';
+      this.validate = false;
+      return;
+    }
+
+    this.onGetDatosRuc();
+  }
+
   onImageCropped(event: ImageCroppedEvent): void {
     if (event.base64) {
       this.croppedImage = event.base64;
@@ -289,9 +284,6 @@ export class EditRendirCuentaComponent implements OnInit {
     this.showImageCropper = !this.showImageCropper;
   }
 
-  // ===============================
-  // OCR sobre el recorte
-  // ===============================
   async runOcr(): Promise<void> {
     try {
       const result = await Tesseract.recognize(
@@ -340,20 +332,11 @@ export class EditRendirCuentaComponent implements OnInit {
     this.router.navigate(['/list-orders']);
   }
 
-  ruccompleto() {
-    if (this.ruc.length == 11) {
-      this.onGetDatosRuc();
-    } else {
-      this.mensaje = "";
-      this.validate = false;
-    }
-  }
-
   onSave(): void {
     console.log("aqui estoy");
     if (!this.validateRules()) {
       console.log("Errores");
-      return; // detiene el guardado si falla alguna regla
+      return;
     }
   }
 }

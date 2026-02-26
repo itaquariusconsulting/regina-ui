@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ValidationContext } from '../models/validation-context';
-import { FieldCode, DependsOnValue } from '../constants/validation-constants';
+import {
+  FieldCode,
+  RucStatus,
+  RucCondition,
+  DocumentType
+} from '../constants/validation-constants';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -16,22 +21,18 @@ export class ValidationEngineService {
     const errors: string[] = [];
 
     context.reglas.forEach(rule => {
-      if (!rule.fieldCode || !rule.errorMessage || !rule.dependsOnField || !rule.dependsOnValue) {
+      if (!rule.fieldCode || !rule.errorMessage) {
         return;
       }
 
-      const fieldValue = this.getFieldValue(rule.fieldCode, context);
-      const dependsValue = this.getDependsValue(rule.dependsOnField, rule.dependsOnValue, context);
-
-      if (rule.isRequired && (!fieldValue || !dependsValue)) {
-        errors.push(rule.errorMessage);
+      const validator = this.validators[rule.fieldCode as FieldCode];
+      if (!validator) {
         return;
       }
 
-      if (rule.fieldCode === FieldCode.LOGO_TEXT && dependsValue) {
-        if (!fieldValue?.includes(dependsValue)) {
-          errors.push(`${rule.errorMessage} - Razón Social obtenida ${dependsValue}`);
-        }
+      const error = validator.call(this, rule, context);
+      if (error) {
+        errors.push(error);
       }
     });
 
@@ -41,31 +42,70 @@ export class ValidationEngineService {
     };
   }
 
-  private getFieldValue(fieldCode: string, context: ValidationContext): string | undefined {
-
-    const fieldMap: Record<string, () => string | undefined> = {
-      LOGO_TEXT: () =>
-        context.dataImagen.issuerName?.trim().toLowerCase()
+  //--VALIDATION STRATEGY MAP--
+  private validators: Record<
+    FieldCode,
+    (rule: any, context: ValidationContext) => string | null
+  > = {
+      [FieldCode.LOGO_TEXT]: this.validateLogoText,
+      [FieldCode.RUC_INPUT]: this.validateRucInput,
+      [FieldCode.RUC_STATUS]: this.validateRucState,
+      [FieldCode.RUC_CONDITION]: this.validateRucCondition,
+      [FieldCode.DOCUMENT_TYPE]: this.validateDocumentType,
     };
 
-    return fieldMap[fieldCode]?.();
+  //--VALIDATION METHODS--
+  private validateLogoText(rule: any, context: ValidationContext): string | null {
+    const logoText = context.dataImagen?.issuerName?.trim().toLowerCase();
+    const razonSocial = context.padronRuc?.razonSocial?.trim().toLowerCase();
+
+    if (!logoText || !razonSocial) {
+      return rule.errorMessage;
+    }
+
+    return logoText.includes(razonSocial)
+      ? null
+      : `${rule.errorMessage} - Razón Social obtenida ${razonSocial}`;
   }
 
-  private getDependsValue(
-    dependsOnField: string,
-    dependsOnValue: string,
-    context: ValidationContext
-  ): string | undefined {
+  private validateRucInput(rule: any, context: ValidationContext): string | null {
+    const ruc = context.padronRuc?.ruc;
 
-    const dependsMap: Record<string, () => string | undefined> = {
-      RUC: () => {
-        if (dependsOnValue === DependsOnValue.RAZON_SOCIAL_BY_RUC) {
-          return context.padronRuc?.razonSocial?.trim().toLowerCase();
-        }
-        return undefined;
-      }
-    };
+    if (!ruc) {
+      return rule.errorMessage;
+    }
 
-    return dependsMap[dependsOnField]?.();
+    const validLength = /^\d{11}$/.test(ruc);
+    const validPrefix = /^(10|15|17|20)/.test(ruc);
+
+    return validLength && validPrefix
+      ? null
+      : rule.errorMessage;
+  }
+
+  private validateRucState(rule: any, context: ValidationContext): string | null {
+    return context.padronRuc?.estado === RucStatus.ACTIVO
+      ? null
+      : rule.errorMessage;
+  }
+
+  private validateRucCondition(rule: any, context: ValidationContext): string | null {
+    return context.padronRuc?.condicion === RucCondition.HABIDO
+      ? null
+      : rule.errorMessage;
+  }
+
+  private validateDocumentType(rule: any, context: ValidationContext): string | null {
+    const type = context.dataImagen?.documentType?.trim().toUpperCase();
+
+    if (!type) {
+      return rule.errorMessage;
+    }
+
+    const allowedTypes = Object.values(DocumentType);
+
+    return allowedTypes.includes(type as DocumentType)
+      ? null
+      : rule.errorMessage;
   }
 }
