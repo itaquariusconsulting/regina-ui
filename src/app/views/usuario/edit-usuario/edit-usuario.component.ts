@@ -147,7 +147,8 @@ export class EditUsuarioComponent implements OnInit {
       width: '280px',
       data: {
         title: 'Confirmar',
-        message: '¿Deseas guardar los cambios?'
+        message: '¿Deseas guardar los cambios?',
+        type: 'confirm'
       }
     });
 

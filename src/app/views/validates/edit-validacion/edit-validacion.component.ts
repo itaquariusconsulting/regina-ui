@@ -42,8 +42,9 @@ export class EditRegRenValidateComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.regla.dataType="01";
+    this.regla.dataType = "01";
     this.regla.isRequired = true;
+    this.regla.isActive = true;
     this.regla.maxLength = 0;
     this.regla.minLength = 0
     this.regla.minValue = 0;
@@ -183,7 +184,8 @@ export class EditRegRenValidateComponent implements OnInit {
         width: '380px',
         data: {
           title: 'Validación',
-          message: errores[0]
+          message: errores[0],
+          type: 'alert'
         }
       });
 
@@ -194,7 +196,8 @@ export class EditRegRenValidateComponent implements OnInit {
       width: '280px',
       data: {
         title: 'Confirmar',
-        message: '¿Deseas guardar los cambios?'
+        message: '¿Deseas guardar los cambios?',
+        type: 'confirm'
       }
     });
 
@@ -207,7 +210,7 @@ export class EditRegRenValidateComponent implements OnInit {
       this.regRenValidateService
         .saveRegRenValidateRule(this.regla)
         .subscribe(() => {
-          this.router.navigate(['/list-reg-ren-validate']);
+          this.router.navigate(['/list-validaciones']);
         });
     });
   }

@@ -193,7 +193,8 @@ export class EditRendirCuentaComponent implements OnInit {
       width: '280px',
       data: {
         title: 'Error',
-        message: 'El RUC no existe'
+        message: 'El RUC no existe',
+        type: 'alert'
       }
     });
   }
