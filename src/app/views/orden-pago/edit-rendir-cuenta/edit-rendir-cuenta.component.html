@@ -11,7 +11,8 @@
         </label>
         <!-- Guardar -->
 
-        <button [disabled]="!validate" (click)="onSave()" type="button" class="general-button btn-primary"><i class="fa fa-save"></i>
+        <button [disabled]="!validate" (click)="onSave()" type="button" class="general-button btn-primary"><i
+                class="fa fa-save"></i>
             Guardar</button>
 
         <div class="right-buttons" *ngIf="imageChangedEvent">
@@ -81,7 +82,7 @@
 
     <div class="row">
         <div class="col-md-12">
-            <select name="typemovement" id="typemovement"  class="form-select" [(ngModel)]="TypeMovement.idMovement">
+            <select name="typemovement" id="typemovement" class="form-select" [(ngModel)]="TypeMovement.idMovement">
                 <option *ngFor="let tm of typeMovements" [value]="tm.idMovement">{{tm.detMovement}}</option>
             </select>
         </div>
@@ -90,31 +91,33 @@
     <h6 class="h6-header">DATOS DEL DOCUMENTO</h6>
 
     <div class="row mt-2">
-        <div class="col-md-3">
-            <label class="form-label fw-semibold mb-2 d-block">Fecha de Documento</label>
-            <input class="form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
-        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold mb-2 d-block">Fecha de Documento</label>
+                <input class="form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
+            </div>
 
-        <div class="col-md-3">
-            <label class="fform-label fw-semibold mb-2 d-block">Tipo de Documento</label>
-            <input class="form-control" name="tipodoc" id="tipodoc" [(ngModel)]="dataImagen.documentType" />
-        </div>
+            <div class="col-md-3">
+                <label class="fform-label fw-semibold mb-2 d-block">Tipo de Documento</label>
+                <input class="form-control" name="tipodoc" id="tipodoc" [(ngModel)]="dataImagen.documentType" />
+            </div>
 
-        <div class="col-md-3">
-            <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
-            <input class="form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
-        </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
+                <input class="form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
+            </div>
 
-        <div class="col-md-1">
-            <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
-            <input class="form-control" name="moneda" id="moneda" [(ngModel)]="dataImagen.documentCurrency" />
-        </div>
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
+                <input class="form-control" name="moneda" id="moneda" [(ngModel)]="dataImagen.documentCurrency" />
+            </div>
 
-        <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2 d-block">Importe {{dataImagen.currency}}</label>
-            <input readonly type="text" name="importe" id="importe" class="form-control text-end"
-                [(ngModel)]="dataImagen.amount" currencyMask
-                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            <div class="col-md-2">
+                <label class="form-label fw-semibold mb-2 d-block">Importe {{dataImagen.currency}}</label>
+                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                    [(ngModel)]="dataImagen.amount" currencyMask
+                    [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            </div>
         </div>
         <div class="row">
             <div class="col-md-12">
