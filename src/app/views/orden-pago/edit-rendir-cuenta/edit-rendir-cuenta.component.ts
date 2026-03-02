@@ -15,7 +15,9 @@ import { Response } from '../../../models/response';
 import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
+import { RegRenKeywordService } from '../../../services/reg-ren-keyword.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
+import { RegRenKeywordDTO } from '../../../models/reg-ren-keyword-dto';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
 import { MatDialog } from '@angular/material/dialog';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
@@ -73,6 +75,7 @@ export class EditRendirCuentaComponent implements OnInit {
     private router: Router,
     private dialog: MatDialog,
     private regRenValidateService: RegRenValidateService,
+    private regRenKeywordService: RegRenKeywordService,
     private validationEngine: ValidationEngineService
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -92,6 +95,7 @@ export class EditRendirCuentaComponent implements OnInit {
   mensaje: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   reglas: RegRenValidate[] = [];
+  keywords: RegRenKeywordDTO[] = [];
   typeMovements: TypeMovement[] = [{ idMovement: 1, detMovement: "Alimentación" }, { idMovement: 2, detMovement: "Transpporte" }]
   TypeMovement: TypeMovement = new TypeMovement();
 
@@ -102,6 +106,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.orden = state.data;
     }
     this.loadValidationRules();
+    this.loadValidationKeywords();
   }
 
   onBack(): void {
@@ -120,6 +125,18 @@ export class EditRendirCuentaComponent implements OnInit {
       error: (error) => {
         console.error('Error al cargar reglas de validación', error);
         this.reglas = [];
+      }
+    });
+  }
+
+  loadValidationKeywords(): void {
+    this.regRenKeywordService.getKeywords().subscribe({
+      next: (keywords: RegRenKeywordDTO[]) => {
+        this.keywords = keywords;
+      },
+      error: (error) => {
+        console.error('Error al cargar palabras clave de validación', error);
+        this.keywords = [];
       }
     });
   }
