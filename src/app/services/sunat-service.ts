@@ -14,11 +14,10 @@ export class SunatService {
     constructor(private http: HttpClient) { }
 
     getDataRUC(buscarruc: string): Observable<Response> {
-        console.log("RUC", buscarruc)
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json',
-            'Skip-Interceptor': 'true'
+            'X-Skip-Error-Handler': 'true'
         });
         return this.http.get<Response>(`${this.apiUrlUtils}ruc/${buscarruc}`, {
             headers,

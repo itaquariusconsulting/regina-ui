@@ -20,10 +20,6 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private router: Router) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-/*     if (req.headers.has('Skip-Interceptor')) {
-      return next.handle(req);
-    } */
-
     const token = sessionStorage.getItem('authToken');
     if (token) {
       const expirationDate = this.decodeToken(token);
@@ -39,10 +35,11 @@ export class AuthInterceptor implements HttpInterceptor {
       });
     }
 
-
-
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
+        if (req.headers.has('X-Skip-Error-Handler')) {
+          return throwError(() => error);
+        }
         switch (error.status) {
           case 0:
             Swal.fire('Sin conexión', 'No se pudo conectar con el servidor.', 'error');
