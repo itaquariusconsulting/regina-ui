@@ -17,24 +17,24 @@ export interface ValidationResult {
 })
 export class ValidationEngineService {
 
-  validate(context: ValidationContext): ValidationResult {
-    const errors: string[] = [];
+  public validateRule(rule: any, context: ValidationContext): string | null {
+    if (!rule.fieldCode || !rule.errorMessage) {
+      return null;
+    }
 
-    context.reglas.forEach(rule => {
-      if (!rule.fieldCode || !rule.errorMessage) {
-        return;
-      }
+    const validator = this.validators[rule.fieldCode as FieldCode];
 
-      const validator = this.validators[rule.fieldCode as FieldCode];
-      if (!validator) {
-        return;
-      }
+    return validator ? validator(rule, context) : null;
+  }
 
-      const error = validator.call(this, rule, context);
-      if (error) {
-        errors.push(error);
-      }
-    });
+  public validate(context: ValidationContext): ValidationResult {
+    if (!context.reglas?.length) {
+      return { isValid: true, errors: [] };
+    }
+
+    const errors = context.reglas
+      .map(rule => this.validateRule(rule, context))
+      .filter((error): error is string => !!error);
 
     return {
       isValid: errors.length === 0,
@@ -47,11 +47,12 @@ export class ValidationEngineService {
     FieldCode,
     (rule: any, context: ValidationContext) => string | null
   > = {
-      [FieldCode.LOGO_TEXT]: this.validateLogoText,
-      [FieldCode.RUC_INPUT]: this.validateRucInput,
-      [FieldCode.RUC_STATUS]: this.validateRucState,
-      [FieldCode.RUC_CONDITION]: this.validateRucCondition,
-      [FieldCode.DOCUMENT_TYPE]: this.validateDocumentType,
+      [FieldCode.LOGO_TEXT]: (r, c) => this.validateLogoText(r, c),
+      [FieldCode.RUC_INPUT]: (r, c) => this.validateRucInput(r, c),
+      [FieldCode.RUC_STATUS]: (r, c) => this.validateRucState(r, c),
+      [FieldCode.RUC_CONDITION]: (r, c) => this.validateRucCondition(r, c),
+      [FieldCode.DOCUMENT_TYPE]: (r, c) => this.validateDocumentType(r, c),
+      [FieldCode.DOCUMENT_ITEMS]: (r, c) => this.validateDocumentItems(r, c)
     };
 
   //--VALIDATION METHODS--
@@ -96,16 +97,18 @@ export class ValidationEngineService {
   }
 
   private validateDocumentType(rule: any, context: ValidationContext): string | null {
-    const type = context.dataImagen?.documentType?.trim().toUpperCase();
-
-    if (!type) {
-      return rule.errorMessage;
-    }
-
+    const docType = context.dataImagen?.documentType?.trim().toUpperCase();
     const allowedTypes = Object.values(DocumentType);
 
-    return allowedTypes.includes(type as DocumentType)
+    return docType && allowedTypes.includes(docType as DocumentType)
       ? null
       : rule.errorMessage;
+  }
+
+  private validateDocumentItems(rule: any, context: ValidationContext): string | null {
+    //function logic goes here.
+    const items = context.dataImagen?.items || [];
+
+    return null;
   }
 }

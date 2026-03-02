@@ -3,7 +3,7 @@ import { PadronRuc } from '../../models/padron-ruc';
 import { RegRenValidate } from '../../models/reg-ren-validate';
 
 export interface ValidationContext {
-  reglas: RegRenValidate[];
+  reglas?: RegRenValidate[];
   dataImagen: DatosImagen;
   padronRuc: PadronRuc;
 }
