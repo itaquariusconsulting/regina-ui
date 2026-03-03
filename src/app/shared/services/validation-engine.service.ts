@@ -52,7 +52,8 @@ export class ValidationEngineService {
       [FieldCode.RUC_STATUS]: (r, c) => this.validateRucState(r, c),
       [FieldCode.RUC_CONDITION]: (r, c) => this.validateRucCondition(r, c),
       [FieldCode.DOCUMENT_TYPE]: (r, c) => this.validateDocumentType(r, c),
-      [FieldCode.DOCUMENT_ITEMS]: (r, c) => this.validateDocumentItems(r, c)
+      [FieldCode.DOCUMENT_ITEMS]: (r, c) => this.validateDocumentItems(r, c),
+      [FieldCode.CONSUMPTION_TEXT]: (r, c) => this.validateConsumptionText(r, c)
     };
 
   //--VALIDATION METHODS--
@@ -124,6 +125,18 @@ export class ValidationEngineService {
       if (foundItem) {
         return `${rule.errorMessage} (Category: ${group.category} - Detected: ${foundItem})`;
       }
+    }
+
+    return null;
+  }
+
+  private validateConsumptionText(rule: any, context: ValidationContext): string | null {
+    const rawText = context.dataImagen?.rawText || '';
+
+    const regex = new RegExp(rule.regexPattern, 'i');
+
+    if (regex.test(rawText)) {
+      return rule.errorMessage; 
     }
 
     return null;

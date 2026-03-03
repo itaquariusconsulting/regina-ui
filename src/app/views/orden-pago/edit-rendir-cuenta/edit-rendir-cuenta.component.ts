@@ -44,6 +44,7 @@ export class DatosImagen {
   amount?: string;
   items: ItemDetalle[] = [];
   currency?: string;
+  rawText?: string;
 }
 
 export class TypeMovement {
@@ -260,12 +261,11 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.amount = detected.amount;
     this.dataImagen.documentCurrency = detected.documentCurrency;
     this.dataImagen.items = detected.items;
+    this.dataImagen.rawText = detected.rawText;
 
     const issuerRuc = detected.issuerRuc;
     this.dataImagen.issuerRuc = issuerRuc;
-
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
-    console.log('RUC detectado:', this.ruc);
   }
 
   onDetalleChange(value: string): void {
