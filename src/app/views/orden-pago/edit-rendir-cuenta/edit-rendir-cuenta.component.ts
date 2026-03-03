@@ -240,7 +240,6 @@ export class EditRendirCuentaComponent implements OnInit {
         }
 
         this.mapDetectedData(detected);
-        //this.buildDetalle();
         this.onGetDatosRuc();
       },
       error: (err) => {
@@ -270,27 +269,24 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   onDetalleChange(value: string): void {
-    if (value && value.trim().length > 0) {
-      const rule = this.reglas.find(r => r.fieldCode === FieldCode.DOCUMENT_ITEMS);
-      if (!rule) {
-        return;
-      }
-
-      const context: ValidationContext = {
-        dataImagen: {issuerRuc: [this.ruc], items: [{ descripcion: value }]},
-        padronRuc: this.padronRuc
-      };
-      
-      const error = this.validationEngine.validateRule(rule, context);
-      this.mensaje = error || '';
+    const rule = this.reglas.find(r => r.fieldCode === FieldCode.DOCUMENT_ITEMS);
+    if (!rule || !value || value.trim().length === 0) {
+      this.mensaje = '';
+      return;
     }
-  }
 
-  /* private buildDetalle(): void {
-    this.detalle = this.dataImagen.items
-      ?.map(item => item.descripcion)
-      .join(' ') || '';
-  } */
+    const context: ValidationContext = {
+      dataImagen: {
+        issuerRuc: [this.ruc],
+        items: [{ descripcion: value }]
+      },
+      padronRuc: this.padronRuc,
+      forbiddenKeywords: this.keywords
+    };
+
+    const error = this.validationEngine.validateRule(rule, context);
+    this.mensaje = error || '';
+  }
 
   ruccompleto(): void {
     if (this.ruc.length !== RucInput.LENGTH) {

@@ -106,8 +106,25 @@ export class ValidationEngineService {
   }
 
   private validateDocumentItems(rule: any, context: ValidationContext): string | null {
-    //function logic goes here.
-    const items = context.dataImagen?.items || [];
+    const textToValidate = context.dataImagen?.items?.[0]?.descripcion?.toUpperCase() || '';
+    if (!textToValidate) {
+      return null;
+    }
+
+    const keywordGroups = context.forbiddenKeywords || [];
+
+    for (const group of keywordGroups) {
+      if (!group.items?.length) continue;
+
+      const foundItem = group.items.find(word => {
+        const regex = new RegExp(`\\b${word.toUpperCase()}\\b`, 'i');
+        return regex.test(textToValidate);
+      });
+
+      if (foundItem) {
+        return `${rule.errorMessage} (Category: ${group.category} - Detected: ${foundItem})`;
+      }
+    }
 
     return null;
   }
