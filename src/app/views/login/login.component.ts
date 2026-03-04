@@ -40,6 +40,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.selectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     sessionStorage.setItem('periodo_month', this.selectedMonth);
     sessionStorage.setItem('periodo_year', this.selectedYear);
+    sessionStorage.setItem('codempresa', '0001');
 
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
       // Redirige al Dashboard si la sesión está activa

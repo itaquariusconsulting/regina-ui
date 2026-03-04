@@ -81,9 +81,16 @@
     </div>
 
     <div class="row">
-        <div class="col-md-12">
-            <select name="typemovement" id="typemovement" class="form-select" [(ngModel)]="TypeMovement.idMovement">
-                <option *ngFor="let tm of typeMovements" [value]="tm.idMovement">{{tm.detMovement}}</option>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2 d-block">Rubro</label>
+            <select (change)="changeRubro()" name="rubro" id="rubro" class="form-select" [(ngModel)]="ordenPagoDet.codRubro">
+                <option *ngFor="let rubro of rubros" [value]="rubro.codRubro">{{rubro.desRubro}}</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2 d-block">Concepto</label>
+            <select name="concepto" id="concepto" class="form-select" [(ngModel)]="ordenPagoDet.codTipoGasto">
+                <option *ngFor="let tipoGasto of tiposGasto" [value]="tipoGasto.codTipoGasto">{{tipoGasto.desTipoGasto}}</option>
             </select>
         </div>
     </div>

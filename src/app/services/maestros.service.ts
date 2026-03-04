@@ -24,4 +24,26 @@ export class MaestrosService {
       responseType: 'json'
     });
   }
+
+  getRubros(codEmpresa: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}mae-rubro/listar/${codEmpresa}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
+  getTiposGasto(codEmpresa: string, codRubro: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}tipo-gasto/listar/${codEmpresa}/${codRubro}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
 }

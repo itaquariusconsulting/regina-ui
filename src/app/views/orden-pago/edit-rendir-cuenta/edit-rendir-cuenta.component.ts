@@ -11,7 +11,6 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
 import { LoadingService } from '../../../services/loading.service';
 import { Observable } from 'rxjs';
 import { SunatService } from '../../../services/sunat-service';
-import { Response } from '../../../models/response';
 import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
@@ -28,7 +27,11 @@ import {
   DocumentSection,
   FieldCode,
 } from '../../../shared/constants/validation-constants';
-
+import { MaestrosService } from '../../../services/maestros.service';
+import { Response } from '../../../models/response';
+import { MaeRubro } from '../../../models/mae-rubro';
+import { OrdenPagoDet } from '../../../models/orden-pago-det';
+import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -77,11 +80,12 @@ export class EditRendirCuentaComponent implements OnInit {
     private dialog: MatDialog,
     private regRenValidateService: RegRenValidateService,
     private regRenKeywordService: RegRenKeywordService,
-    private validationEngine: ValidationEngineService
+    private validationEngine: ValidationEngineService,
+    private maestrosService: MaestrosService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
-
+  codEmpresa: string = sessionStorage.getItem('codempresa') || '';
   orden: OrdenPago = new OrdenPago();
   dataImagen: DatosImagen = new DatosImagen();
   imageChangedEvent: Event | null = null;
@@ -99,13 +103,21 @@ export class EditRendirCuentaComponent implements OnInit {
   keywords: RegRenKeywordDTO[] = [];
   typeMovements: TypeMovement[] = [{ idMovement: 1, detMovement: "Alimentación" }, { idMovement: 2, detMovement: "Transpporte" }]
   TypeMovement: TypeMovement = new TypeMovement();
-
+  rubros: MaeRubro[] = [];
+  tiposGasto: MaeTipoGasto[] = [];
+  ordenPagoDet: OrdenPagoDet = new OrdenPagoDet();
   ngOnInit(): void {
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data;
     }
+
+    const user = sessionStorage.getItem('user')
+      ? JSON.parse(sessionStorage.getItem('user')!)
+      : null;
+    this.codEmpresa = user?.codEmpresa || '';
+    this.getRubros();
     this.loadValidationRules();
     this.loadValidationKeywords();
   }
@@ -160,6 +172,37 @@ export class EditRendirCuentaComponent implements OnInit {
       next: (response: Response) => this.handleRucResponse(response),
       error: (err) => this.handleRucError(err)
     });
+  }
+
+  getRubros(): void {
+    this.maestrosService.getRubros(this.codEmpresa).subscribe(
+      (response: Response) => {
+        this.rubros = response.resultado || [];
+        this.ordenPagoDet.codRubro = this.rubros.length > 0 ? this.rubros[0].codRubro : '';
+        this.getTiposGasto(this.ordenPagoDet.codRubro ?? '');
+      },
+      (error) => {
+        console.error('Error al cargar rubros', error);
+      }
+    );
+  }
+
+  getTiposGasto(codRubro: string): void {
+    this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
+      (response: Response) => {
+        this.tiposGasto = response.resultado || [];
+        this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+      },
+      (error) => {
+        console.error('Error al cargar tipos de gasto', error);
+      }
+    );
+  }
+
+  changeRubro(): void {
+    if (this.ordenPagoDet.codRubro) {
+      this.getTiposGasto(this.ordenPagoDet.codRubro);
+    }
   }
 
   private handleRucResponse(response: Response): void {
