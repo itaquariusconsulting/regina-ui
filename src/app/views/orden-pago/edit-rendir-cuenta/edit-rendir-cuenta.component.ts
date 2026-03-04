@@ -32,6 +32,8 @@ import { Response } from '../../../models/response';
 import { MaeRubro } from '../../../models/mae-rubro';
 import { OrdenPagoDet } from '../../../models/orden-pago-det';
 import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
+import { MaeDocumento } from '../../../models/mae-documento';
+import { MaeMoneda } from '../../../models/mae-moneda';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -105,6 +107,13 @@ export class EditRendirCuentaComponent implements OnInit {
   TypeMovement: TypeMovement = new TypeMovement();
   rubros: MaeRubro[] = [];
   tiposGasto: MaeTipoGasto[] = [];
+  documentos: MaeDocumento[] = [];
+  documentosGeneral: MaeDocumento[] = [];
+  documentoSeleccionado: MaeDocumento = new MaeDocumento();
+  rubroSeleccionado: MaeRubro = new MaeRubro();
+  tipoGastoSeleccionado: MaeTipoGasto = new MaeTipoGasto();
+  monedas: MaeMoneda[] = [];
+  monedasGeneral: MaeMoneda[] = [];
   ordenPagoDet: OrdenPagoDet = new OrdenPagoDet();
   ngOnInit(): void {
     this.TypeMovement = this.typeMovements[0];
@@ -117,9 +126,9 @@ export class EditRendirCuentaComponent implements OnInit {
       ? JSON.parse(sessionStorage.getItem('user')!)
       : null;
     this.codEmpresa = user?.codEmpresa || '';
-    this.getRubros();
     this.loadValidationRules();
     this.loadValidationKeywords();
+    this.getRubros();
   }
 
   onBack(): void {
@@ -146,10 +155,12 @@ export class EditRendirCuentaComponent implements OnInit {
     this.regRenKeywordService.getKeywords().subscribe({
       next: (keywords: RegRenKeywordDTO[]) => {
         this.keywords = keywords;
+        this.loadingService.hide();
       },
       error: (error) => {
         console.error('Error al cargar palabras clave de validación', error);
         this.keywords = [];
+        this.loadingService.hide();
       }
     });
   }
@@ -175,6 +186,7 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   getRubros(): void {
+    this.loadingService.show();
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
       (response: Response) => {
         this.rubros = response.resultado || [];
@@ -192,9 +204,38 @@ export class EditRendirCuentaComponent implements OnInit {
       (response: Response) => {
         this.tiposGasto = response.resultado || [];
         this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+        this.getMonedas();
+
       },
       (error) => {
         console.error('Error al cargar tipos de gasto', error);
+      }
+    );
+  }
+
+  getTiposDocumento() {
+    this.maestrosService.getTiposDocumento(this.codEmpresa).subscribe(
+      (response: Response) => {
+        this.documentos = response.resultado || [];
+        this.documentosGeneral = this.documentos;
+        this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'NN';
+      },
+      (error) => {
+        console.error('Error al cargar tipos de documento', error);
+      }
+    );
+  }
+
+  getMonedas() {
+    this.maestrosService.getMonedas().subscribe(
+      (response: Response) => {
+        this.monedas = response.resultado || [];
+        this.monedasGeneral = this.monedas;
+        this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '';
+        this.getTiposDocumento();
+      },
+      (error) => {
+        console.error('Error al cargar monedas', error);
       }
     );
   }
@@ -203,6 +244,14 @@ export class EditRendirCuentaComponent implements OnInit {
     if (this.ordenPagoDet.codRubro) {
       this.getTiposGasto(this.ordenPagoDet.codRubro);
     }
+  }
+
+  changeDocumento() {
+    console.log("Doc ", this.ordenPagoDet.codDocumento);
+  }
+
+  changeMoneda() {
+    console.log("Moneda ", this.ordenPagoDet.codMoneda);
   }
 
   private handleRucResponse(response: Response): void {
@@ -297,12 +346,25 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): void {
     this.dataImagen.documentType = detected.documentType;
+    if(detected.documentType) {
+      this.documentos = this.documentosGeneral.filter(doc => doc.desDocumento?.includes(detected.documentType));
+      this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FV';
+    }
     this.dataImagen.documentNumber = detected.documentNumber;
     this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
     this.dataImagen.amount = detected.amount;
     this.dataImagen.documentCurrency = detected.documentCurrency;
+
+    if (detected.documentCurrency) {
+      this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
+        || mon.desMoneda === detected.documentCurrency
+        || mon.codMoneda === detected.documentCurrency
+      );
+      this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '';
+    }
+
     this.dataImagen.items = detected.items;
     this.dataImagen.rawText = detected.rawText;
 
@@ -407,7 +469,20 @@ export class EditRendirCuentaComponent implements OnInit {
     this.router.navigate(['/list-orders']);
   }
 
+  onPrepareSave(): void {
+    this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
+    this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
+    this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
+
+
+    this.ordenPagoDet.codEmpresa = this.codEmpresa;
+    this.ordenPagoDet.numOrden = this.orden.numOrden;
+    this.ordenPagoDet.codMoneda = this.dataImagen.documentCurrency;
+    this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
+    
+  }
   onSave(): void {
+    console.log("Guardando orden de pago...", this.ordenPagoDet);
     console.log("aqui estoy");
     if (!this.validateRules()) {
       console.log("Errores");

@@ -46,4 +46,26 @@ export class MaestrosService {
       responseType: 'json'
     });
   }
+
+  getTiposDocumento(codEmpresa: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}documento/listar/${codEmpresa}`, {
+      headers,
+      responseType: 'json'
+    }); 
+  }
+
+  getMonedas(): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}moneda/listar`, {
+      headers,
+      responseType: 'json'
+    });
+  }
 }
