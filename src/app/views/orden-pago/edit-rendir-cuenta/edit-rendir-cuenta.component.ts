@@ -348,13 +348,14 @@ export class EditRendirCuentaComponent implements OnInit {
       this.documentos = this.documentosGeneral.filter(doc => doc.desDocumento?.includes(detected.documentType));
       this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FV';
     }
+
     this.dataImagen.documentNumber = detected.documentNumber;
     this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
     this.dataImagen.amount = detected.amount;
-    this.dataImagen.documentCurrency = detected.documentCurrency;
 
+    this.dataImagen.documentCurrency = detected.documentCurrency;
     if (detected.documentCurrency) {
       this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
         || mon.desMoneda === detected.documentCurrency
@@ -362,8 +363,7 @@ export class EditRendirCuentaComponent implements OnInit {
         || mon.codSunat === detected.documentCurrency
         || mon.codEquiv === detected.documentCurrency
       );
-
-      if (this.monedas) {
+      if (this.monedas.length > 0) {
         this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '';
       } else {
         this.monedas = this.monedasGeneral;
