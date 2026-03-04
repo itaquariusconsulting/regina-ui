@@ -67,12 +67,6 @@
             <input readonly class="form-control" name="condicion" id="condicion" [(ngModel)]="padronRuc.condicion" />
         </div>
     </div>
-    <div class="row">
-        <div *ngIf="mensaje" class="col-md-12">
-            <span class="mensaje-alerta">{{mensaje}}</span>
-        </div>
-    </div>
-
     <div class="row mt-2">
         <div class="col-md-12">
             <label class="form-label fw-semibold mb-2 d-block">Dirección</label>
@@ -80,8 +74,8 @@
         </div>
     </div>
     <div class="row">
-        <div *ngIf="mensajeDetalle" class="col-md-12">
-            <span class="mensaje-alerta">{{mensajeDetalle}}</span>
+        <div *ngIf="mensaje" class="col-md-12">
+            <span class="mensaje-alerta">{{mensaje}}</span>
         </div>
     </div>
 
@@ -147,6 +141,11 @@
                 <label class="form-label fw-semibold mb-2 d-block">Detalle</label>
                 <textarea class="form-control" rows="2" [(ngModel)]="detalle"
                     (ngModelChange)="onDetalleChange($event)"></textarea>
+            </div>
+        </div>
+        <div class="row">
+            <div *ngIf="mensajeDetalle" class="col-md-12">
+                <span class="mensaje-alerta">{{mensajeDetalle}}</span>
             </div>
         </div>
     </div>
