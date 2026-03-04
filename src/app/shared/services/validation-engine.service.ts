@@ -65,7 +65,13 @@ export class ValidationEngineService {
       return rule.errorMessage;
     }
 
-    return logoText.includes(razonSocial)
+    const normalizedLogo = this.normalizeProperty(logoText);
+    const normalizedRazon = this.normalizeProperty(razonSocial);
+
+    const isValid = normalizedLogo.includes(normalizedRazon)
+      || normalizedRazon.includes(normalizedLogo);
+
+    return isValid
       ? null
       : `${rule.errorMessage} - Razón Social obtenida ${razonSocial}`;
   }
@@ -136,9 +142,16 @@ export class ValidationEngineService {
     const regex = new RegExp(rule.regexPattern, 'i');
 
     if (regex.test(rawText)) {
-      return rule.errorMessage; 
+      return rule.errorMessage;
     }
 
     return null;
+  }
+
+  private normalizeProperty(text: string): string {
+    return text
+      .replace(/\b(s\.?a\.?c\.?|s\.?a\.?|e\.?i\.?r\.?l\.?|s\.?r\.?l\.?|s\.?a\.?a\.?)\b/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
   }
 }
