@@ -79,6 +79,11 @@
             <input class="form-control" name="direccion" id="direccion" [(ngModel)]="dataImagen.issuerAddress" />
         </div>
     </div>
+    <div class="row">
+        <div *ngIf="mensajeDetalle" class="col-md-12">
+            <span class="mensaje-alerta">{{mensajeDetalle}}</span>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-md-6">

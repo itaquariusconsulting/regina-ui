@@ -100,6 +100,7 @@ export class EditRendirCuentaComponent implements OnInit {
   ruc: string = "";
   validate: boolean = false;
   mensaje: string = "";
+  mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   reglas: RegRenValidate[] = [];
   keywords: RegRenKeywordDTO[] = [];
@@ -155,12 +156,10 @@ export class EditRendirCuentaComponent implements OnInit {
     this.regRenKeywordService.getKeywords().subscribe({
       next: (keywords: RegRenKeywordDTO[]) => {
         this.keywords = keywords;
-        this.loadingService.hide();
       },
       error: (error) => {
         console.error('Error al cargar palabras clave de validación', error);
         this.keywords = [];
-        this.loadingService.hide();
       }
     });
   }
@@ -186,7 +185,6 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   getRubros(): void {
-    this.loadingService.show();
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
       (response: Response) => {
         this.rubros = response.resultado || [];
@@ -383,7 +381,7 @@ export class EditRendirCuentaComponent implements OnInit {
   onDetalleChange(value: string): void {
     const rule = this.reglas.find(r => r.fieldCode === FieldCode.DOCUMENT_ITEMS);
     if (!rule || !value || value.trim().length === 0) {
-      this.mensaje = '';
+      this.mensajeDetalle = '';
       return;
     }
 
@@ -397,7 +395,7 @@ export class EditRendirCuentaComponent implements OnInit {
     };
 
     const error = this.validationEngine.validateRule(rule, context);
-    this.mensaje = error || '';
+    this.mensajeDetalle = error || '';
   }
 
   ruccompleto(): void {
