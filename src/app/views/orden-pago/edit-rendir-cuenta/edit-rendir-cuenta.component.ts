@@ -344,7 +344,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): void {
     this.dataImagen.documentType = detected.documentType;
-    if(detected.documentType) {
+    if (detected.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.desDocumento?.includes(detected.documentType));
       this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FV';
     }
@@ -475,20 +475,38 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   onPrepareSave(): void {
+    const numserie = this.dataImagen.documentNumber?.split('-')[0] ?? '';
+    const numdoc = this.dataImagen.documentNumber?.split('-')[1] ?? '';
+
     this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
     this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
     this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
 
+    this.ordenPagoDet.anoEmisionDua = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
+    this.ordenPagoDet.anoProcesoDeclara = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
+    this.ordenPagoDet.codAuxiliar = this.ruc;
+    this.ordenPagoDet.codCCostos = this.ordenPagoDet.codCCostos;
+
+    this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda === '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
+    this.ordenPagoDet.codCuentaDocumento = this.ordenPagoDet.codMoneda === '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
+
+    this.ordenPagoDet.codEmpresa = this.codEmpresa;
+    this.ordenPagoDet.codSucursal = '001';
+
+    this.ordenPagoDet.numSerieDoc = numserie;
+    this.ordenPagoDet.numDocumento = numdoc;
 
     this.ordenPagoDet.codEmpresa = this.codEmpresa;
     this.ordenPagoDet.numOrden = this.orden.numOrden;
     this.ordenPagoDet.codMoneda = this.dataImagen.documentCurrency;
     this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
-    
+
+    console.log("OrdenPagoDet preparado: ", this.ordenPagoDet);
+
   }
+
   onSave(): void {
-    console.log("Guardando orden de pago...", this.ordenPagoDet);
-    console.log("aqui estoy");
+    this.onPrepareSave();
     if (!this.validateRules()) {
       console.log("Errores");
       return;

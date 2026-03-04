@@ -68,4 +68,15 @@ export class MaestrosService {
       responseType: 'json'
     });
   }
+
+  getTiposCambio(): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}tipo-cambio/listar`, {
+      headers,
+      responseType: 'json'
+    });
+  }
 }

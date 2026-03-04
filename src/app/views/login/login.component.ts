@@ -7,6 +7,8 @@ import Swal from 'sweetalert2';
 import { Response } from '../../models/response';
 import { environment } from '../../../environments/environment';
 import { RegSecUser } from '../../models/reg-sec-user';
+import { MaeTipoCambio } from '../../models/mae-tipo-cambio';
+import { MaestrosService } from '../../services/maestros.service';
 
 @Component({
   selector: 'app-login',
@@ -34,8 +36,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   dtoUser: RegSecUser = new RegSecUser();
   selectedYear: string = "";
   selectedMonth: string = "";
+  tiposCambio: MaeTipoCambio[] = [];
 
-  constructor(private router: Router, private service: AuthService) {
+  constructor(private router: Router, private service: AuthService, private maestrosService: MaestrosService) {
     this.selectedYear = (new Date().getFullYear()).toString();
     this.selectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     sessionStorage.setItem('periodo_month', this.selectedMonth);
@@ -52,6 +55,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.documentElement.style.overflow = 'hidden';
+    this.getTiposCambio();
   }
 
   ngOnDestroy(): void {
@@ -176,5 +180,24 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   getConfiguracionSistema(): void {
+  }
+
+  getTiposCambio(): void {
+    this.maestrosService.getTiposCambio().subscribe(
+      (response: Response) => {
+        this.tiposCambio = response.resultado || [];
+        if (this.tiposCambio.length > 0) {
+          sessionStorage.setItem('tipocambio', JSON.stringify(this.tiposCambio[0]));
+        } else {
+          let tipoCambio = new MaeTipoCambio();
+          tipoCambio.impVenta = 0;
+          tipoCambio.impCompra = 0;
+          sessionStorage.setItem('tipocambio', JSON.stringify(tipoCambio));
+        }
+      },
+      (error) => {
+        console.error('Error al cargar tipos de cambio', error);
+      }
+    );
   }
 }
