@@ -361,8 +361,15 @@ export class EditRendirCuentaComponent implements OnInit {
       this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
         || mon.desMoneda === detected.documentCurrency
         || mon.codMoneda === detected.documentCurrency
+        || mon.codSunat === detected.documentCurrency
+        || mon.codEquiv === detected.documentCurrency
       );
-      this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '';
+
+      if (this.monedas) {
+        this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '';
+      } else {
+        this.monedas = this.monedasGeneral;
+      }
     }
 
     this.dataImagen.items = detected.items;
