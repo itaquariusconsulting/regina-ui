@@ -19,12 +19,13 @@
   <div class="table-container table-responsive">
     <table class="table global-table table-striped table-hover">
       <thead>
-        <th class="text-center">Nro de Orden</th>
+        <th class="text-center">Orden</th>
         <th *ngIf="isAdminUser" class="text-center">Auxiliar</th>
         <th class="text-center">Fecha de Orden</th>
         <th class="text-center">Tipo de Gasto</th>
         <th class="text-center">Moneda</th>
         <th class="text-center">Importe</th>
+        <th class="text-center">Rendido</th>
         <th class="text-center">Estado</th>
         <th class="text-center">Acciones</th>
       </thead>
@@ -36,6 +37,7 @@
           <td class="text-start">{{reg.cdesTipoGasto}}</td>
           <td class="text-center">{{reg.cdesMoneda}}</td>
           <td class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
+          <td class="text-end">{{(reg.codMoneda=='01' ? reg.impRendidoSoles ?? 0 : 0) + (reg.impRendidoDolares ?? 0) | number: '1.2-2'}}</td>
           <td class="text-center">{{reg.tipEstado}}</td>
           <td class="text-center">
             <button (click)="openEditRendirCuenta(reg)" type="button" title="Rendir cuenta" type="button"

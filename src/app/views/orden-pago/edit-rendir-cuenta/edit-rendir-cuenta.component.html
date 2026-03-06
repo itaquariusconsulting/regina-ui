@@ -2,20 +2,27 @@
     <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
 </div>
 <div class="form-container">
-    <div class="button-row">
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="h6-header">Rendir Cuenta Orden - {{orden.numOrden}}</h6>
+        </div>
+    </div>
+    <div class="bar-buttons-top d-flex w-100">
+        <label class="form-label fw-semibold mb-2 d-block">Saldo Soles</label>
+        <input style="width: 200px !important;" type="text" name="saldoSoles" id="saldoSoles"
+            class="form-control text-end" [(ngModel)]="saldoSoles" currencyMask
+            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+        <label class="form-label fw-semibold mb-2 d-block">Saldo Dólares</label>
+        <input style="width: 200px !important;" readonly type="text" name="saldoDolares" id="saldoDolares"
+            class="form-control text-end" [(ngModel)]="saldoDolares" currencyMask
+            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
         <!-- Captura de imagen -->
         <label class="general-button btn-primary btn-capture-image">
             <i class="fa fa-camera me-2"></i>
             Capturar/Subir
             <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
         </label>
-        <!-- Guardar -->
-
-        <button  (click)="onSave()" type="button" class="general-button btn-primary"><i
-                class="fa fa-save"></i>
-            Guardar</button>
-
-        <div class="right-buttons" *ngIf="imageChangedEvent">
+        <div *ngIf="imageChangedEvent">
             <button *ngIf='showImageCropper' type="button" class="general-button btn-primary btn-sm me-1"
                 (click)="toggleImageCropper()">
                 <i class="fa-solid fa-eye-slash"></i> Ocultar
@@ -25,15 +32,16 @@
                 <i class="fa-solid fa-image"></i> Mostrar
             </button>
             <button type="button" class="general-button btn-success btn-sm me-1" (click)="runOcr()">
-                <i class="fas fa-book-open-reader"></i> Leer texto
+                <i class="fas fa-book-open-reader"></i> Copiar
             </button>
             <button [disabled]="!validate" type="button" class="general-button btn-primary btn-sm me-1">
                 <i class="fas fa-save"></i> Guardar
             </button>
-            <button (click)="onClose()" type="button" class="general-button btn-danger btn-sm">
-                <i class="fas fa-times"></i> Cerrar
-            </button>
         </div>
+        <button (click)="onBack()" class="general-button btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Regresar
+        </button>
     </div>
 
     <!-- Imagen capturada / cropper -->
@@ -122,7 +130,8 @@
 
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
-                <select name="moneda" id="moneda" class="form-select" [(ngModel)]="ordenPagoDet.codMoneda">
+                <select (change)="onMonedaChange()" name="moneda" id="moneda" class="form-select"
+                    [(ngModel)]="ordenPagoDet.codMoneda">
                     <option *ngFor="let moneda of monedas" [value]="moneda.codMoneda">
                         {{ moneda.desMoneda }}
                     </option>

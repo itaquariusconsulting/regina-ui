@@ -19,7 +19,7 @@ import { Response } from '../../../models/response';
 import { OcrService } from '../../../services/ocr.service';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
-
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
 export class Imagen {
   documentType?: string;
   documentNumber?: string;
@@ -37,7 +37,8 @@ export class Imagen {
   imports: [
     CommonModule,
     FormsModule,
-    LoadingDancingSquaresComponent
+    LoadingDancingSquaresComponent,
+    ConfirmDialogComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -159,21 +160,15 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   getOrdenesPago(): void {
-
     this.ordenPagoService
       .getOrdenesPago(this.wrapperRequestOrdenPago)
       .subscribe({
         next: (response: Response) => {
-          
-
           this.ordenes = response.resultado || [];
-
-          if(this.isAdminUser==false) {
-            this.ordenes = this.ordenes.filter(filtro=> filtro.tipEstado=="PR" || filtro.tipEstado=="LQ")
+          if (this.isAdminUser == false) {
+            this.ordenes = this.ordenes.filter(filtro => filtro.tipEstado == "PR" || filtro.tipEstado == "LQ")
           }
-
           this.ordenesGeneral = this.ordenes;
-
           this.currentPage = 0;
           this.buildPagination();
           this.loadingService.hide();
@@ -227,7 +222,29 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   openEditRendirCuenta(orden: OrdenPago) {
-    this.router.navigate(['/edit-rendir-cuenta'], { state: { data: orden } });
+    const hoy = new Date();
+    if (orden.fecRendicion) {
+
+      const fechaRendicion = new Date(orden.fecRendicion);
+
+      if (fechaRendicion.getTime() < hoy.getTime()) {
+        console.log("Fecha de Rendición vencida");
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+          width: '280px',
+          disableClose: true,
+          data: {
+            title: 'Alerta',
+            message: 'La fecha de rendición de esta orden de pago ha vencido. No podrá realizar la rendición de cuenta.',
+            type: 'alert',
+            autoClose: true,
+            duration: 2000
+          }
+        });
+      } else {
+        this.router.navigate(['/edit-rendir-cuenta'], { state: { data: orden } });
+      }
+    }
+
   }
 
   viewOrdenesPagoDet(orden: OrdenPago) {

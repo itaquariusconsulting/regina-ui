@@ -55,7 +55,7 @@ export class MaestrosService {
     return this.http.get<Response>(`${this.apiUrlMaestros}documento/listar/${codEmpresa}`, {
       headers,
       responseType: 'json'
-    }); 
+    });
   }
 
   getMonedas(): Observable<Response> {
@@ -75,6 +75,17 @@ export class MaestrosService {
       'Content-Type': 'application/json'
     });
     return this.http.get<Response>(`${this.apiUrlMaestros}tipo-cambio/listar`, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
+  getImpuestos(codEmpresa: string, codDocumento: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}impuesto/listar/${codEmpresa}/${codDocumento}`, {
       headers,
       responseType: 'json'
     });
