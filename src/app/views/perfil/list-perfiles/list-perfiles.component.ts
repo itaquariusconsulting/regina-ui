@@ -1,11 +1,40 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Response } from '../../../models/response';
+import { RegSecProfile } from '../../../models/reg-sec-profile';
+import { RegSecProfileService } from '../../../services/reg-sec-profile.service';
 
 @Component({
   selector: 'app-list-perfiles',
-  imports: [],
+  imports: [CommonModule, FormsModule],
   templateUrl: './list-perfiles.component.html',
   styleUrl: './list-perfiles.component.scss'
 })
-export class ListPerfilesComponent {
+export class ListPerfilesComponent implements OnInit {
+  constructor(private profileService: RegSecProfileService, 
+    private router: Router
+  ) { }
 
+  profiles: RegSecProfile[] = [];
+
+  ngOnInit(): void {
+    this.getProfiles();
+  }
+
+  getProfiles() {
+    this.profileService.getRegSecProfiles().subscribe({
+      next: (response: Response) => {
+        this.profiles = response.resultado;
+      },
+      error: (err) => {
+        console.error(err);
+      }
+    });
+  }
+
+  onNewProfile() {
+    this.router.navigate(['/edit-perfil']);
+  }
 }
