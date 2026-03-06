@@ -1,1 +1,48 @@
-<p>edit-perfil works!</p>
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+    <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+<div class="container mt-2">
+    <div class="bar-buttons-top">
+        <div class="title-f6">Nuevo Perfil</div>
+    </div>
+    <div class="bar-buttons-top d-flex justify-content-end w-100">
+        <button (click)="onSaveProfile()" class="general-button btn-primary me-2">
+            <i class="fas fa-save"></i>
+            Guardar
+        </button>
+        <button (click)="onBack()" class="general-button btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Regresar
+        </button>
+    </div>
+</div>
+
+<div class="row mb-2">
+    <div class="col-md-4">
+        <label class="form-label fw-semibold mb-2 d-block">Cod Empresa</label>
+        <input type="text" class="form-control" name="codEmpresa" [(ngModel)]="codEmpresa">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold mb-2 d-block">Cod Sucursal</label>
+        <input type="text" class="form-control" name="codSucursal" [(ngModel)]="codSucursal">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold mb-2 d-block">Nombre Corto</label>
+        <input type="text" class="form-control" name="profileShortName" [(ngModel)]="profileShortName">
+    </div>
+</div>  
+<div class="row mb-2">
+    <div class="col-md-6">
+        <label class="form-label fw-semibold mb-2 d-block">Nombre Detallado</label>
+        <input type="text" class="form-control" name="profileLongName" [(ngModel)]="profileLongName">
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold mb-2 d-block">Tipo de Perfil</label>
+        <select class="form-select" name="profileType" [(ngModel)]="profileType">
+            <option value="">Seleccione...</option>
+            <option value="A">Administrador</option>
+            <option value="U">Usuario Standard</option>
+        </select>
+    </div>
+</div> 

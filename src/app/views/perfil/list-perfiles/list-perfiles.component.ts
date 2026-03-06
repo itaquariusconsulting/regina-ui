@@ -5,18 +5,25 @@ import { Router } from '@angular/router';
 import { Response } from '../../../models/response';
 import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { RegSecProfileService } from '../../../services/reg-sec-profile.service';
+import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
+import { LoadingService } from '../../../services/loading.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-list-perfiles',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
   templateUrl: './list-perfiles.component.html',
   styleUrl: './list-perfiles.component.scss'
 })
 export class ListPerfilesComponent implements OnInit {
-  constructor(private profileService: RegSecProfileService, 
-    private router: Router
-  ) { }
+  constructor(private profileService: RegSecProfileService,
+    private router: Router,
+    private loadingService: LoadingService
+  ) {
+    this.isLoading$ = this.loadingService.loading$;
+  }
 
+  isLoading$: Observable<boolean>;
   profiles: RegSecProfile[] = [];
 
   ngOnInit(): void {
