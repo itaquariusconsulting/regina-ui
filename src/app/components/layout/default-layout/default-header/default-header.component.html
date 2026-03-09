@@ -6,13 +6,11 @@
       <i class="fas fa-bars"></i>
     </button>
 
-    <span class="mensaje-header me-4">TIPO DE CAMBIO: S/ 3.75</span>
-    <span class="mensaje-header">{{currentDate}}</span>
+    <span *ngIf="isDesktop" class="mensaje-header me-4">TIPO DE CAMBIO: S/ {{tipoCambioVenta}}</span>
+    <span *ngIf="!isDesktop" class="mensaje-header me-4">T.C.: S/ {{tipoCambioVenta}}</span>
+    <span class="mensaje-header">{{isDesktop ? currentDateLarge : currentDateShort}}</span>
     <!-- Spacer -->
     <div class="spacer"></div>
-
-
-
 
     <!-- User area -->
     <div class="user-area" (click)="toggleDropdown()">

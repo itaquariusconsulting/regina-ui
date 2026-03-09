@@ -37,9 +37,9 @@ export class DefaultLayoutComponent implements OnInit {
 
   constructor(
     private router: Router,
-    public deviceService: DeviceService,
     private zone: NgZone,
-    private reginaService: ReginaIaService
+    private reginaService: ReginaIaService,
+    private deviceService: DeviceService
   ) { }
 
   user = sessionStorage.getItem('user')
@@ -47,7 +47,7 @@ export class DefaultLayoutComponent implements OnInit {
     : null;
 
   isSidebarVisible = true;
-  isDesktop = true;
+  isDesktop: boolean = false;
   showReginaChat = false;
 
   userInput = '';
@@ -66,9 +66,7 @@ export class DefaultLayoutComponent implements OnInit {
   isListening = false;
 
   ngOnInit(): void {
-
     this.isDesktop = this.deviceService.isDesktopDevice();
-
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
       try {

@@ -1,4 +1,4 @@
-.app-default-footer-mobile{
+.app-default-footer-mobile {
   width: 100%;
   text-align: center;
   font-size: 0.7rem !important;
@@ -26,20 +26,26 @@
   background: var(--primary-color);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 6px 0;
+  align-items: flex-start; /* 🔹 ahora todo inicia desde la izquierda */
+  padding: 6px 10px;
   z-index: 1000;
 }
 
-/* Botones principales */
-:host .navbar-buttons {
+/* =========================
+   Botones principales
+========================= */
+.navbar-buttons {
   display: flex;
-  gap: 10px;
+  justify-content: flex-start; /* 🔹 alineación izquierda */
+  align-items: center;
+  gap: 6px;
   margin-bottom: 4px;
+  width: 100%;
 }
 
 .nav-item-wrapper {
   position: relative;
+  flex: 0 0 auto; /* 🔹 evita que se expandan */
 }
 
 .nav-item {
@@ -72,9 +78,6 @@
 /* =========================
    Subitems
 ========================= */
-/* =========================
-   Subitems
-========================= */
 .subitems-container {
   position: absolute;
   bottom: 100%;
@@ -85,12 +88,12 @@
   flex-direction: column;
   background: var(--primary-color);
   border-radius: 12px;
-  padding: 8px; /* Añadir padding general */
+  padding: 8px;
   min-width: 180px;
   pointer-events: none;
   transition: all 0.3s ease;
   z-index: 10;
-  border: 2px solid white; /* Borde blanco */
+  border: 2px solid white;
 }
 
 .subitems-container.open {
@@ -103,7 +106,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 8px; /* Espacio de 5px entre el borde y el subitem */
+  padding: 5px 8px;
   background: transparent;
   color: white;
   border: 2px solid transparent;

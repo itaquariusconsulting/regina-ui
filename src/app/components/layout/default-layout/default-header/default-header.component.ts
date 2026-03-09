@@ -44,8 +44,10 @@ export class DefaultHeaderComponent implements OnInit {
   years: number[] = [];
   selectedMonth: number;
   selectedYear: number;
-  currentDate: string = ("Lima, " + (new Date()).getDate() + " de " + this.meses[(new Date()).getMonth()].nombre + " de " + (new Date()).getFullYear()).toUpperCase();
-
+  currentDateLarge: string = ("Lima, " + (new Date()).getDate() + " de " + this.meses[(new Date()).getMonth()].nombre + " de " + (new Date()).getFullYear()).toUpperCase();
+  isDesktop: boolean = false;
+  tipoCambioVenta: number = 0;
+  currentDateShort: string = ("Lima, " + (new Date()).getDate() + "/" + this.meses[(new Date()).getMonth()].value.toString().padStart(2, '0') + "/" + (new Date()).getFullYear()).toUpperCase();
   private subscription: Subscription = new Subscription();
 
   readonly colorModes = [
@@ -55,7 +57,7 @@ export class DefaultHeaderComponent implements OnInit {
   ];
 
   constructor(private router: Router, public deviceService: DeviceService) {
-        const currentYear = new Date().getFullYear();
+    const currentYear = new Date().getFullYear();
     this.years = Array.from({ length: 10 }, (_, i) => currentYear - i);
     this.selectedYear = currentYear;
     this.selectedMonth = new Date().getMonth() + 1;
@@ -65,10 +67,18 @@ export class DefaultHeaderComponent implements OnInit {
     this.nombresCompletos = sessionStorage.getItem('nombresCompletos') || '';
     this.empresa = sessionStorage.getItem('razonSocial') || '';
     this.periodo = (this.meses.find(m => m.value === parseInt(sessionStorage.getItem('periodo_month') || ''))?.nombre ?? '') + ' del ' + sessionStorage.getItem('periodo_year');
-  
+
     //RECUPERA DATOS DEL SESSION STORAGE
     const userString = sessionStorage.getItem("user");
     this.dtoUser = userString ? JSON.parse(userString) : new RegSecUser();
+    this.isDesktop = this.deviceService.isDesktopDevice();
+
+    const data = sessionStorage.getItem('tipocambio');
+
+    if (data) {
+      const tipoCambio = JSON.parse(data);
+      this.tipoCambioVenta = tipoCambio.impVenta;
+    }
   }
 
   toggleDropdown() {

@@ -16,24 +16,23 @@ import { AuthService } from '../../services/auth.service';
 })
 export class SidebarComponent implements OnInit {
 
-  constructor(private router: Router, private authService: AuthService) { }
+  constructor(private router: Router, private authService: AuthService, private deviceService: DeviceService) { }
 
-  codEmpresa: string = '0001';
+  codEmpresa: string = sessionStorage.getItem('codempresa') || '';
   userId: number = -1;
   items: NavItem[] = [];
+  isDesktop: boolean = false;
 
   ngOnInit(): void {
     const userString = sessionStorage.getItem('user');
-
-   
-      const user = JSON.parse(userString || '{}');
-      this.userId = user.userId;
-      this.authService.obtenerItemsMenu(this.userId, this.codEmpresa).subscribe(
-        (response: any)=>{
-          this.items = response;
-        }
-
-      )
+    const user = JSON.parse(userString || '{}');
+    this.userId = user.userId;
+    this.authService.obtenerItemsMenu(this.userId, this.codEmpresa).subscribe(
+      (response: any) => {
+        this.items = response;
+      }
+    )
+    this.isDesktop = this.deviceService.isDesktopDevice();
   }
 
   home(): void {

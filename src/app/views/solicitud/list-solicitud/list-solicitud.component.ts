@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -9,5 +9,9 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './list-solicitud.component.scss'
 })
 export class ListSolicitudComponent {
+  constructor(private location: Location) { }
 
+  onBack() {
+    this.location.back();
+  }
 }

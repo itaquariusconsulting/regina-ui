@@ -7,40 +7,53 @@
             <h6 class="h6-header">Rendir Cuenta Orden - {{orden.numOrden}}</h6>
         </div>
     </div>
-    <div class="bar-buttons-top d-flex w-100">
-        <label class="form-label fw-semibold mb-2 d-block">Saldo Soles</label>
-        <input style="width: 200px !important;" type="text" name="saldoSoles" id="saldoSoles"
-            class="form-control text-end" [(ngModel)]="saldoSoles" currencyMask
-            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
-        <label class="form-label fw-semibold mb-2 d-block">Saldo Dólares</label>
-        <input style="width: 200px !important;" readonly type="text" name="saldoDolares" id="saldoDolares"
-            class="form-control text-end" [(ngModel)]="saldoDolares" currencyMask
-            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
-        <!-- Captura de imagen -->
-        <label class="general-button btn-primary btn-capture-image">
-            <i class="fa fa-camera me-2"></i>
-            Capturar/Subir
-            <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
-        </label>
+    <div class="bar-buttons-top d-flex w-100 justify-content-between flex-wrap">
+
+        <!-- SALDOS -->
+        <div class="d-flex flex-wrap gap-3">
+
+            <div>
+                <label class="form-label fw-semibold mb-1">Saldo Soles</label>
+                <input style="width:200px" type="text" name="saldoSoles" id="saldoSoles" class="form-control text-end"
+                    [(ngModel)]="saldoSoles" currencyMask
+                    [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            </div>
+
+            <div>
+                <label class="form-label fw-semibold mb-1">Saldo Dólares</label>
+                <input style="width:200px" readonly type="text" name="saldoDolares" id="saldoDolares"
+                    class="form-control text-end" [(ngModel)]="saldoDolares" currencyMask
+                    [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            </div>
+
+
+            <label class="general-button btn-primary btn-capture-image">
+                <i class="fa fa-camera me-2"></i>
+                {{isDesktop ? 'Subir' : 'Capturar'}}
+                <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
+            </label>
+
+        </div>
+
         <div *ngIf="imageChangedEvent">
             <button *ngIf='showImageCropper' type="button" class="general-button btn-primary btn-sm me-1"
                 (click)="toggleImageCropper()">
-                <i class="fa-solid fa-eye-slash"></i> Ocultar
+                <i class="fa-solid fa-eye-slash"></i> {{isDesktop ? 'Ocultar' : ''}}
             </button>
             <button *ngIf='!showImageCropper' type="button" class="general-button btn-primary btn-sm me-1"
                 (click)="toggleImageCropper()">
-                <i class="fa-solid fa-image"></i> Mostrar
+                <i class="fa-solid fa-image"></i> {{isDesktop ? 'Mostrar' : ''}}
             </button>
             <button type="button" class="general-button btn-success btn-sm me-1" (click)="runOcr()">
-                <i class="fas fa-book-open-reader"></i> Copiar
+                <i class="fas fa-book-open-reader"></i> {{isDesktop ? 'Copiar' : ''}}
             </button>
             <button [disabled]="!validate" type="button" class="general-button btn-primary btn-sm me-1">
-                <i class="fas fa-save"></i> Guardar
+                <i class="fas fa-save"></i> {{isDesktop ? 'Guardar' : ''}}
             </button>
         </div>
         <button (click)="onBack()" class="general-button btn-secondary">
             <i class="fas fa-arrow-left"></i>
-            Regresar
+            {{isDesktop ? 'Regresar' : ''}}
         </button>
     </div>
 

@@ -36,6 +36,7 @@ import { MaeDocumento } from '../../../models/mae-documento';
 import { MaeMoneda } from '../../../models/mae-moneda';
 import { MaeImpuesto } from '../../../models/mae-impuesto';
 import { OrdenPagoDetProv } from '../../../models/orden-pago-det-prov';
+import { DeviceService } from '../../../services/core-service/device.service';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -88,7 +89,8 @@ export class EditRendirCuentaComponent implements OnInit {
     private regRenValidateService: RegRenValidateService,
     private regRenKeywordService: RegRenKeywordService,
     private validationEngine: ValidationEngineService,
-    private maestrosService: MaestrosService
+    private maestrosService: MaestrosService,
+    private deviceService: DeviceService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -126,7 +128,7 @@ export class EditRendirCuentaComponent implements OnInit {
   ordenPagoDetProvs: OrdenPagoDetProv[] = [];
   saldoSoles: number = 0;
   saldoDolares: number = 0;
-
+  isDesktop: boolean = false;
   ngOnInit(): void {
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
@@ -135,7 +137,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
       this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
     }
-
+    this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
       ? JSON.parse(sessionStorage.getItem('user')!)
       : null;
