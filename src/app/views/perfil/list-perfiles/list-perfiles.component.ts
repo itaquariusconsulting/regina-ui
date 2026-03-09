@@ -7,7 +7,7 @@ import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { RegSecProfileService } from '../../../services/reg-sec-profile.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { LoadingService } from '../../../services/loading.service';
-import { Observable } from 'rxjs';
+import { finalize, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-list-perfiles',
@@ -31,7 +31,10 @@ export class ListPerfilesComponent implements OnInit {
   }
 
   getProfiles() {
-    this.profileService.getRegSecProfiles().subscribe({
+    this.loadingService.show(); 
+    this.profileService.getRegSecProfiles()
+    .pipe(finalize(() => this.loadingService.hide()))
+    .subscribe({
       next: (response: Response) => {
         this.profiles = response.resultado;
       },

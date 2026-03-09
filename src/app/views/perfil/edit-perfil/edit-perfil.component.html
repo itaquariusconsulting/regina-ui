@@ -1,48 +1,61 @@
 <div class="loading-overlay" *ngIf="isLoading$ | async">
     <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
 </div>
-<div class="container mt-2">
-    <div class="bar-buttons-top">
-        <div class="title-f6">Nuevo Perfil</div>
-    </div>
-    <div class="bar-buttons-top d-flex justify-content-end w-100">
-        <button (click)="onSaveProfile()" class="general-button btn-primary me-2">
-            <i class="fas fa-save"></i>
-            Guardar
-        </button>
-        <button (click)="onBack()" class="general-button btn-secondary">
-            <i class="fas fa-arrow-left"></i>
-            Regresar
-        </button>
-    </div>
-</div>
 
-<div class="row mb-2">
-    <div class="col-md-4">
-        <label class="form-label fw-semibold mb-2 d-block">Cod Empresa</label>
-        <input type="text" class="form-control" name="codEmpresa" [(ngModel)]="codEmpresa">
+<form #profileForm="ngForm">
+    <div class="container mt-2">
+        <div class="bar-buttons-top">
+            <div class="title-f6">Nuevo Perfil</div>
+        </div>
+        <div class="bar-buttons-top d-flex justify-content-end w-100">
+            <button (click)="onSaveProfile()" class="general-button btn-primary me-2" [disabled]="profileForm.invalid">
+                <i class="fas fa-save"></i>
+                Guardar
+            </button>
+            <button (click)="onBack()" class="general-button btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Regresar
+            </button>
+        </div>
     </div>
-    <div class="col-md-4">
-        <label class="form-label fw-semibold mb-2 d-block">Cod Sucursal</label>
-        <input type="text" class="form-control" name="codSucursal" [(ngModel)]="codSucursal">
+    <div class="row mb-2">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold mb-2 d-block">Cod Empresa</label>
+            <input type="text" class="form-control" name="codEmpresa" disabled [(ngModel)]="codEmpresa">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold mb-2 d-block">Cod Sucursal</label>
+            <input type="text" class="form-control" name="codSucursal" disabled [(ngModel)]="codSucursal">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold mb-2 d-block">Nombre Corto *</label>
+            <input type="text" class="form-control" name="profileShortName" [(ngModel)]="profileShortName" required
+                #shortName="ngModel" [class.is-invalid]="shortName.invalid && shortName.touched">
+            <div class="invalid-feedback" *ngIf="shortName.invalid && shortName.touched">
+                El nombre corto es obligatorio.
+            </div>
+        </div>
     </div>
-    <div class="col-md-4">
-        <label class="form-label fw-semibold mb-2 d-block">Nombre Corto</label>
-        <input type="text" class="form-control" name="profileShortName" [(ngModel)]="profileShortName">
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2 d-block">Nombre Detallado *</label>
+            <input type="text" class="form-control" name="profileLongName" [(ngModel)]="profileLongName" required
+                #longName="ngModel" [class.is-invalid]="longName.invalid && longName.touched">
+            <div class="invalid-feedback" *ngIf="longName.invalid && longName.touched">
+                El nombre detallado es obligatorio.
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2 d-block">Tipo de Perfil *</label>
+            <select class="form-select" name="profileType" [(ngModel)]="profileType" required #pType="ngModel"
+                [class.is-invalid]="pType.invalid && pType.touched">
+                <option value="">Seleccione...</option>
+                <option value="A">Administrador</option>
+                <option value="U">Usuario Standard</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="pType.invalid && pType.touched">
+                El tipo de perfil es obligatorio.
+            </div>
+        </div>
     </div>
-</div>  
-<div class="row mb-2">
-    <div class="col-md-6">
-        <label class="form-label fw-semibold mb-2 d-block">Nombre Detallado</label>
-        <input type="text" class="form-control" name="profileLongName" [(ngModel)]="profileLongName">
-    </div>
-
-    <div class="col-md-6">
-        <label class="form-label fw-semibold mb-2 d-block">Tipo de Perfil</label>
-        <select class="form-select" name="profileType" [(ngModel)]="profileType">
-            <option value="">Seleccione...</option>
-            <option value="A">Administrador</option>
-            <option value="U">Usuario Standard</option>
-        </select>
-    </div>
-</div> 
+</form>
