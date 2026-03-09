@@ -26,7 +26,7 @@
             <th class="text-center">Tipo de Perfil</th>
             <th class="text-center">Acciones</th>
         </thead>
-        <tbody>
+        <tbody *ngIf="profiles.length > 0">
             <tr *ngFor="let profile of profiles">
                 <td class="text-center">{{profile.codEmpresa}}</td>
                 <td class="text-start">{{profile.codSucursal}}</td>
@@ -37,10 +37,16 @@
                     <button type="button" title="Rendir cuenta" type="button" class="btn btn-success btn-sm me-1">
                         <i class="fa fa-plus"></i>
                     </button>
-                    <button style="background-color: #0063A7;" title="Ver Detalle" type="button" class="btn btn-primary btn-sm">
+                    <button style="background-color: #0063A7;" title="Ver Detalle" type="button"
+                        class="btn btn-primary btn-sm">
                         <i class="fa fa-eye"></i>
                     </button>
                 </td>
+            </tr>
+        </tbody>
+        <tbody *ngIf="profiles.length === 0 && !(isLoading$ | async)">
+            <tr>
+                <td colspan="6" class="text-center">No se encontraron perfiles.</td>
             </tr>
         </tbody>
     </table>

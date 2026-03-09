@@ -17,8 +17,8 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
   styleUrl: './edit-perfil.component.scss'
 })
 export class EditPerfilComponent {
-  codEmpresa: string = '';
-  codSucursal: string = '';
+  codEmpresa: string = '0001';
+  codSucursal: string = '001';
   profileShortName: string = '';
   profileLongName: string = '';
   profileType: string = '';
