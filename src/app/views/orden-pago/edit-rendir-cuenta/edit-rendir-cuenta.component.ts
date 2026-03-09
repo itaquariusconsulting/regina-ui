@@ -17,7 +17,7 @@ import { RegRenValidateService } from '../../../services/reg-ren-validate.servic
 import { RegRenKeywordService } from '../../../services/reg-ren-keyword.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { RegRenKeywordDTO } from '../../../models/reg-ren-keyword-dto';
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
 import { ValidationContext } from '../../../shared/models/validation-context';
@@ -286,6 +286,8 @@ export class EditRendirCuentaComponent implements OnInit {
       ordenPagoDetProv.indAfecto = 'S';
       this.ordenPagoDetProvs.push(ordenPagoDetProv);
     }
+    console.log("Orden de Pago Det :  ", this.ordenPagoDet);
+    console.log("Orden Det Provs : ", this.ordenPagoDetProvs);
   }
 
   changeRubro(): void {

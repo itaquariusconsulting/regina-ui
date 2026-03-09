@@ -3,7 +3,7 @@ import { RegSecProfileService } from '../../../services/reg-sec-profile.service'
 import { Router } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';

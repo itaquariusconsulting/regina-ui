@@ -19,7 +19,8 @@ import { Response } from '../../../models/response';
 import { OcrService } from '../../../services/ocr.service';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { MessageRenderAccount } from '../../../shared/constants/messages';
 export class Imagen {
   documentType?: string;
   documentNumber?: string;
@@ -37,8 +38,7 @@ export class Imagen {
   imports: [
     CommonModule,
     FormsModule,
-    LoadingDancingSquaresComponent,
-    ConfirmDialogComponent
+    LoadingDancingSquaresComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -234,7 +234,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
           disableClose: true,
           data: {
             title: 'Alerta',
-            message: 'La fecha de rendición de esta orden de pago ha vencido. No podrá realizar la rendición de cuenta.',
+            message: MessageRenderAccount.FECHA_VENCIMIENTO,
             type: 'alert',
             autoClose: true,
             duration: 2000

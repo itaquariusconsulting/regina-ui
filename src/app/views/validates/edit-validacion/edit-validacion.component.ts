@@ -6,7 +6,7 @@ import { LoadingService } from '../../../services/loading.service';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, firstValueFrom } from 'rxjs';
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { Response } from '../../../models/response';

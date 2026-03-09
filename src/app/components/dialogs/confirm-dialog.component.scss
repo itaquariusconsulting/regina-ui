@@ -1,0 +1,26 @@
+.dialog-header {
+    display: flex;
+    align-items: center;
+    background-color: var(--primary-color);
+    color: white !important;
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+}
+
+.dialog-header i {
+    font-size: 28px;
+}
+
+.dialog-content {
+    text-align: justify;
+    font-family: var(--app-font-family);
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.h4 {
+    color: white;
+    font-size: 20px;
+    margin: 0;
+    padding-left: -10px !important;
+}

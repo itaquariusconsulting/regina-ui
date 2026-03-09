@@ -14,7 +14,7 @@ import * as bcrypt from 'bcryptjs';
 import { RegSecProfileService } from '../../../services/reg-sec-profile.service';
 import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { RegSecUserService } from '../../../services/reg-sec-user.service';
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog-component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 @Component({
   selector: 'app-edit-usuario',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
