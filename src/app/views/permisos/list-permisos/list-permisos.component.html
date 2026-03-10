@@ -40,10 +40,26 @@
             <i *ngIf="!item.menuParentId" class="fas fa-folder"></i>
             {{ item.menuLabel }}
           </td>
-          <td><input type="checkbox" [(ngModel)]="item.permitView"></td>
-          <td><input type="checkbox" [(ngModel)]="item.permitCreate"></td>
-          <td><input type="checkbox" [(ngModel)]="item.permitEdit"></td>
-          <td><input type="checkbox" [(ngModel)]="item.permitDelete"></td>
+          <td>
+            <input type="checkbox" 
+              [(ngModel)]="item.permitView" 
+              (change)="onPermissionChange(item, 'permitView')">
+          </td>
+          <td>
+            <input type="checkbox" 
+              [(ngModel)]="item.permitCreate" 
+              (change)="onPermissionChange(item, 'permitCreate')">
+          </td>
+          <td>
+            <input type="checkbox" 
+              [(ngModel)]="item.permitEdit" 
+              (change)="onPermissionChange(item, 'permitEdit')">
+          </td>
+          <td>
+            <input type="checkbox" 
+              [(ngModel)]="item.permitDelete" 
+              (change)="onPermissionChange(item, 'permitDelete')">
+          </td> 
         </tr>
       </tbody>
     </table>
