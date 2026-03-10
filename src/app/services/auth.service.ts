@@ -8,6 +8,7 @@ import { RegSecUser } from '../models/reg-sec-user';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { NavItem } from '../models/globals/nav-item';
 import { RegSecPermissions } from '../models/reg-sec-permissions';
+import { RegSecProfilePermissions } from '../models/reg-sec-profile-permissions-dto';
 
 @Injectable({
   providedIn: 'root'
@@ -99,6 +100,14 @@ export class AuthService {
       map(response => this.convertPermissionsToMenu(response.resultado))
     );
   }
+
+  obtainProfilePermissions(profileId: number, codEmpresa: string): Observable<RegSecProfilePermissions[]> {
+  const url = `${this.apiurlAuth}/api/permissions/listar-permisos-por-perfil?profileId=${profileId}&codEmpresa=${codEmpresa}`;
+  
+  return this.http.get<Response>(url).pipe(
+    map((res: Response) => res.resultado as RegSecProfilePermissions[])
+  );
+}
 
   convertPermissionsToMenu(data: RegSecPermissions[]): NavItem[] {
 

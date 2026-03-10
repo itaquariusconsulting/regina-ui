@@ -156,8 +156,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onIngresar() {
-        sessionStorage.setItem('periodo_month', this.selectedMonth.toString().padStart(2, '0'));
+    sessionStorage.setItem('periodo_month', this.selectedMonth.toString().padStart(2, '0'));
     sessionStorage.setItem('periodo_year', this.selectedYear.toString().padStart(4, '0'));
+    sessionStorage.setItem('codempresa', '0001');
     this.router.navigate(['/home']);
     this.getConfiguracionSistema();
   }
