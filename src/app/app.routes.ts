@@ -14,6 +14,7 @@ import { HomeComponent } from './views/home/home.component';
 import { ListValidacionesComponent } from './views/validates/list-validaciones/list-validaciones.component';
 import { EditRegRenValidateComponent } from './views/validates/edit-validacion/edit-validacion.component';
 import { EditRendirCuentaComponent } from './views/orden-pago/edit-rendir-cuenta/edit-rendir-cuenta.component';
+import { ListPermisosComponent } from './views/permisos/list-permisos/list-permisos.component';
 
 export const routes: Routes = [
 
@@ -70,6 +71,10 @@ export const routes: Routes = [
       {
         path: 'edit-perfil',
         component: EditPerfilComponent
+      },
+      {
+        path: 'list-permisos',
+        component: ListPermisosComponent
       },
       {
         path: 'list-validaciones',

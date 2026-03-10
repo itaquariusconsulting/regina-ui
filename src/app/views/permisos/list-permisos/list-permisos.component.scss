@@ -1,0 +1,51 @@
+:host {
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.loading-overlay {
+  position: fixed;   
+  inset: 0;          
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8); 
+  backdrop-filter: blur(2px);          
+  z-index: 9999;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    position: sticky;
+    top: 0;
+    background-color: #0063a7;
+    color: white;
+    z-index: 10;
+  }
+
+  .is-parent {
+    background-color: #dedede;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  td {
+    padding: 12px;
+    border-bottom: 1px solid #bebdbd;
+  }
+}
+
+.matrix-table input[type="checkbox"] {
+  accent-color: #0063a7;
+  cursor: pointer;
+  transform: scale(1.2); 
+}
+
+.is-parent input[type="checkbox"] {
+  accent-color: #706f6f;
+  cursor: pointer;
+  transform: scale(1.2); 
+}

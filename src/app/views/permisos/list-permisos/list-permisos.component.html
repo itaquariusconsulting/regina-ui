@@ -1,0 +1,51 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+<div class="container mt-2">
+  <div class="bar-buttons-top">
+    <div class="title-f6">Configuración de Permisos</div>
+  </div>
+
+  <label class="form-label fw-semibold mb-2">Seleccione Perfil: </label>
+  <select class="form-select" (change)="onProfileChange($any($event.target).value)">
+    <option value="">-- Seleccione --</option>
+    <option *ngFor="let p of profiles" [value]="p.profileId">
+      {{ p.profileLongName }}
+    </option>
+  </select>
+
+  <div class="container mt-2">
+    <div class="bar-buttons-top d-flex justify-content-end w-100">
+      <button type="button" class="general-button btn-primary btn-sm me-1" [disabled]="!selectedProfileId"
+        (click)="savePermissions()">
+        <i class="fas fa-save"></i> Guardar
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container" *ngIf="permissionMatrix.length > 0">
+    <table class="matrix-table table-hover">
+      <thead>
+        <tr>
+          <th style="text-align: left; padding-left: 15px;">Menú / Módulo</th>
+          <th style="text-align: left;">Ver</th>
+          <th style="text-align: left;">Crear</th>
+          <th style="text-align: left;">Editar</th>
+          <th style="text-align: left;">Eliminar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of permissionMatrix" [class.is-parent]="!item.menuParentId">
+          <td [style.padding-left.px]="item.menuParentId ? 30 : 10">
+            <i *ngIf="!item.menuParentId" class="fas fa-folder"></i>
+            {{ item.menuLabel }}
+          </td>
+          <td><input type="checkbox" [(ngModel)]="item.permitView"></td>
+          <td><input type="checkbox" [(ngModel)]="item.permitCreate"></td>
+          <td><input type="checkbox" [(ngModel)]="item.permitEdit"></td>
+          <td><input type="checkbox" [(ngModel)]="item.permitDelete"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
