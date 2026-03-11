@@ -8,19 +8,24 @@ import { ConfirmDialogData } from '../../models/globals/confirm-dialog-data';
     styleUrls: ['./confirm-dialog.component.scss'],
     template: `
     <div class="dialog-header">
-        <i class="fa-solid fa-triangle-exclamation"></i>
+        @if (data.type === 'success') {
+            <i class="fa-solid fa-circle-check"></i>
+        } @else {
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        }
         <h4 class="h4" mat-dialog-title>{{ data.title }}</h4>
     </div>
 
     <mat-dialog-content class="dialog-content">
         {{ data.message }}
     </mat-dialog-content>
+
     <mat-dialog-actions class="d-flex justify-content-end gap-2">
-        @if (data.type === 'alert') {
+        @if (data.type === 'alert' || data.type === 'success') {
             <button style="font-family: var(--app-font-family);font-size: 13px !important" mat-button
-                class="general-button btn-danger"
+                class="general-button btn-primary"
                 (click)="onClose()">
-                Cerrar
+                Aceptar
             </button>
         }
         @if (data.type === 'confirm') {
