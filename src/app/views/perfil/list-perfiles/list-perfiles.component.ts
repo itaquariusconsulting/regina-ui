@@ -45,6 +45,10 @@ export class ListPerfilesComponent implements OnInit {
   }
 
   onNewProfile() {
+    this.router.navigate(['/nuevo-perfil']);
+  }
+
+  onEditProfile() {
     this.router.navigate(['/edit-perfil']);
   }
 }

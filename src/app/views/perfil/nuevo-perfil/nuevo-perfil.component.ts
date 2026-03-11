@@ -11,12 +11,12 @@ import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 
 @Component({
-  selector: 'app-edit-perfil',
+  selector: 'app-nuevo-perfil',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
-  templateUrl: './edit-perfil.component.html',
-  styleUrl: './edit-perfil.component.scss'
+  templateUrl: './nuevo-perfil.component.html',
+  styleUrl: './nuevo-perfil.component.scss'
 })
-export class EditPerfilComponent {
+export class NuevoPerfilComponent {
   codEmpresa: string = '0001';
   codSucursal: string = '001';
   profileShortName: string = '';
