@@ -15,10 +15,18 @@ import { RegSecProfilePermissions } from '../models/reg-sec-profile-permissions-
 })
 export class AuthService {
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    const savedPerms = sessionStorage.getItem('user_permissions');
+    if (savedPerms) {
+      this.permissionsSubject.next(JSON.parse(savedPerms));
+    }
+  }
 
   private secretKey = '4qvr1v520251234z'; // Debe ser de 16, 24 o 32 bytes
   private authStatusListener = new BehaviorSubject<boolean>(this.isLoggedIn());
+
+  private permissionsSubject = new BehaviorSubject<RegSecProfilePermissions[]>([]);
+  public permissions$ = this.permissionsSubject.asObservable();
 
   apiurlAuth = environment.apiUrlAuth;
   token = sessionStorage.getItem('authToken');
@@ -156,5 +164,23 @@ export class AuthService {
       }
     });
     return roots;
+  }
+
+  loadUserPermissions(profileId: number, codEmpresa: string): void {
+    this.obtainProfilePermissions(profileId, codEmpresa).subscribe(perms => {
+      this.permissionsSubject.next(perms);
+      sessionStorage.setItem('user_permissions', JSON.stringify(perms));
+    });
+  }
+
+  hasPermission(menuRoute: string, action: keyof RegSecProfilePermissions): boolean {
+    const currentPerms = this.permissionsSubject.value;
+    if (!currentPerms || currentPerms.length === 0) {
+      return false;
+    }
+
+    const perm = currentPerms.find(p => p.menuRoute === menuRoute);
+    
+    return perm ? !!perm[action] : false;
   }
 }
