@@ -14,12 +14,23 @@ export class MaestrosService {
   token = sessionStorage.getItem('authToken');
   private apiUrlMaestros: string = environment.apiUrlMaestros;
 
-  getListaAuxiliares(codEmpresa: string): Observable<Response> {
+  getListaAuxiliaresPE(codEmpresa: string): Observable<Response> {
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
     });
     return this.http.get<Response>(`${this.apiUrlMaestros}mae-auxiliar/listar/${codEmpresa}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
+  getListaAuxiliaresPR(codEmpresa: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}mae-auxiliar/listarPR/${codEmpresa}`, {
       headers,
       responseType: 'json'
     });

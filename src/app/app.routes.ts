@@ -15,6 +15,7 @@ import { ListValidacionesComponent } from './views/validates/list-validaciones/l
 import { EditRegRenValidateComponent } from './views/validates/edit-validacion/edit-validacion.component';
 import { EditRendirCuentaComponent } from './views/orden-pago/edit-rendir-cuenta/edit-rendir-cuenta.component';
 import { ListPermisosComponent } from './views/permisos/list-permisos/list-permisos.component';
+import { ViewOrdenPagoComponent } from './views/orden-pago/view-orden-pago/view-orden-pago.component';
 
 export const routes: Routes = [
 
@@ -39,6 +40,10 @@ export const routes: Routes = [
       {
         path: 'list-orders',
         component: ListOrdenPagoComponent
+      },
+      {
+        path: 'view-order',
+        component: ViewOrdenPagoComponent
       },
       {
         path: 'edit-rendir-cuenta',

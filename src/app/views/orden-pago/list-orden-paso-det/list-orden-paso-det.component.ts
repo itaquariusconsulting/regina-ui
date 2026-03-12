@@ -21,6 +21,8 @@ import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { OrdenPagoDet } from '../../../models/orden-pago-det';
 import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { WrapperRequestOrdenPagoDet } from '../../../models/wrappers/wrapper-request-orden-pago-det';
+import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
+import { MaestrosService } from '../../../services/maestros.service';
 
 @Component({
   selector: 'app-edit-orden-pago',
@@ -39,10 +41,11 @@ export class ListOrdenPagoDetComponent implements OnInit {
     private location: Location,
     private ordenPagoDetService: OrdenPagoDetService,
     private loadingService: LoadingService,
-
+    private maestrosService: MaestrosService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
+  codEmpresa: string = sessionStorage.getItem("codempresa") ?? '';
   isLoading$: Observable<boolean>;
   filtrarDetalle: string = "";
   orden: OrdenPago = new OrdenPago();
@@ -53,7 +56,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
   detalles: OrdenPagoDet[] = [];
   ordenesGeneral: OrdenPagoDet[] = [];
   pagedDetalles: OrdenPagoDet[] = [];
-
+  listaAuxiliares: MaeAuxiliarDTO[] = [];
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
@@ -104,7 +107,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
         this.detalles = response.resultado;
         this.currentPage = 0;
         this.buildPagination();
-        this.loadingService.hide();
+        this.getListaAuxiliaresPR();
       },
       (error)=>{
         this.loadingService.hide();
@@ -112,5 +115,23 @@ export class ListOrdenPagoDetComponent implements OnInit {
     )
   }
 
+  getListaAuxiliaresPR() {
+    this.maestrosService.getListaAuxiliaresPR(this.codEmpresa).subscribe(
+      (response: Response) => {
+        this.listaAuxiliares = response.resultado;
+        this.loadingService.hide();
+      },
+      (error)=>{
+        console.log("No hay Auxiliares");
+        this.loadingService.hide();
+      }
+    )
+  }
+
+  onDevuelveAuxiliar(codAuxiliar: string): string {
+    const aux : MaeAuxiliarDTO = this.listaAuxiliares.find(aux=>aux.codEmpresa==this.codEmpresa && aux.codAuxiliar==codAuxiliar.trim()) ?? new MaeAuxiliarDTO();
+    console.log("Auxilizar para ", codAuxiliar, " Resultado : ", aux)
+    return aux.desAuxiliar ?? '';
+  }
 
 }

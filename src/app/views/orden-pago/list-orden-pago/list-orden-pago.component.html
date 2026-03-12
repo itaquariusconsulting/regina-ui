@@ -37,13 +37,23 @@
           <td class="text-start">{{reg.cdesTipoGasto}}</td>
           <td class="text-center">{{reg.cdesMoneda}}</td>
           <td class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
-          <td class="text-end">{{(reg.codMoneda=='01' ? reg.impRendidoSoles ?? 0 : 0) + (reg.impRendidoDolares ?? 0) | number: '1.2-2'}}</td>
-          <td class="text-center">{{reg.tipEstado}}</td>
+          <td class="text-end">{{(reg.codMoneda=='01' ? reg.impRendidoSoles ?? 0 : 0) + (reg.impRendidoDolares ?? 0) |
+            number: '1.2-2'}}</td>
+
+          <td class="text-center">
+            <span class="status-circle" [attr.title]="getStatusTitle(reg.tipEstado ?? '')" [ngClass]="{
+      'status-em': reg.tipEstado === 'EM',
+      'status-pe': reg.tipEstado === 'PE',
+      'status-lq': reg.tipEstado === 'LQ'
+    }">{{reg.tipEstado}}
+            </span>
+          </td>
+          
           <td class="text-center">
             <button (click)="openEditRendirCuenta(reg)" type="button" title="Rendir cuenta" type="button"
               class="btn btn-success btn-sm me-1"><i class="fa fa-plus"></i></button>
-            <button (click)="viewOrdenesPagoDet(reg)" style="background-color: #0063A7;" title="Ver Detalle" type="button"
-              class="btn btn-primary btn-sm"><i class="fa fa-eye"></i></button>
+            <button (click)="viewOrdenesPagoDet(reg)" style="background-color: #0063A7;" title="Ver Detalle"
+              type="button" class="btn btn-primary btn-sm"><i class="fa fa-eye"></i></button>
           </td>
         </tr>
       </tbody>

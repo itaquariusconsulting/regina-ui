@@ -67,14 +67,14 @@ export class EditUsuarioComponent implements OnInit {
   }
 
   getListaAuuxiliares() {
-    this.maestrosService.getListaAuxiliares(this.codEmpresa).subscribe(
+    this.maestrosService.getListaAuxiliaresPE(this.codEmpresa).subscribe(
       (response: Response) => {
         this.listaAuxiliares = response.resultado;
         this.listaAuxiliaresFiltrada = [...response.resultado];
-         this.loadingService.hide();
+        this.loadingService.hide();
       },
-      (error)=>{
-         this.loadingService.hide();
+      (error) => {
+        this.loadingService.hide();
       }
     )
   }
@@ -135,8 +135,8 @@ export class EditUsuarioComponent implements OnInit {
         this.profileSeleccionado = this.profiles[0];
         this.getListaAuuxiliares();
       },
-      (error)=>{
-         this.loadingService.hide();
+      (error) => {
+        this.loadingService.hide();
       }
     )
   }

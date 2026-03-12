@@ -278,4 +278,13 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       this.buildPagination();
     }
   }
+
+  getStatusTitle(status: string): string {
+    switch (status) {
+      case 'EM': return 'EMITIDA';
+      case 'PE': return 'PENDIENTE';
+      case 'LQ': return 'LIQUIDADA';
+      default: return '';
+    }
+  }
 }

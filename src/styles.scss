@@ -392,6 +392,35 @@ button.general-button i {
   font-size: 14px;
 }
 
+.status-circle {
+  display: inline-flex;
+  align-items: center;      /* centra vertical */
+  justify-content: center;  /* centra horizontal */
+
+  width: 32px;
+  height: 32px;
+
+  font-family: var(--app-font-family) !important;
+  font-weight: 600 !important;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px white;
+
+  color: white;
+}
+
+/* colores */
+.status-em {
+  background-color: var(--bs-primary);
+}
+
+.status-pe {
+  background-color: var(--bs-success);
+}
+
+.status-lq {
+  background-color: var(--bs-dark);
+}
+
 input,
 select,
 textarea,

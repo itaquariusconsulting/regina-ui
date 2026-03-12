@@ -8,3 +8,25 @@
   backdrop-filter: blur(2px);          
   z-index: 9999;
 }
+
+[data-col="orden"] {
+    width: 8%; // Ancho para la columna Código Ubigeo
+}
+[data-col="item"] {
+    width: 8%; // Ancho para la columna Código Ubigeo
+}
+[data-col="fecha"] {
+    width: 8%; // Ancho para la columna Código Ubigeo
+}
+[data-col="doc"] {
+    width: 10%; // Ancho para la columna Código Ubigeo
+    align-items: center;
+}
+[data-col="mon"] {
+    width: 5%; // Ancho para la columna Código Ubigeo
+    align-items: center;
+}
+[data-col="imp"] {
+    width: 8%; // Ancho para la columna Código Ubigeo
+    align-items: end;
+}

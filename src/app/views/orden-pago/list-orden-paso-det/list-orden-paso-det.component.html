@@ -19,15 +19,23 @@
     <div class="table-container table-responsive">
     <table class="table global-table table-striped table-hover">
       <thead>
-        <th class="text-center">Nro de Orden</th>
+        <th class="text-center">Orden</th>
         <th class="text-center">Item</th>
+        <th class="text-center">Proveedor</th>
         <th class="text-center">Fecha</th>
+        <th class="text-center">Documento</th>
+        <th class="text-center">Moneda</th>
+        <th class="text-center">Importe</th>
       </thead>
       <tbody>
         <tr *ngFor="let reg of pagedDetalles">
-          <td class="text-center">{{reg.numOrden}}</td>
-          <td class="text-start">{{reg.numItemOp}}</td>
-          <td class="text-center">{{reg.fecDet | date: 'yyyy-MM-dd'}}</td>
+          <td data-col="orden" class="text-center">{{reg.numOrden}}</td>
+          <td data-col="item" class="text-center">{{reg.numItemOp}}</td>
+          <td data-col="prov" class="text-start">{{onDevuelveAuxiliar(reg.codAuxiliar || '')}}</td>
+          <td data-col="fecha" class="text-center">{{reg.fecDocumento | date: 'dd-MM-yyyy'}}</td>
+          <td data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
+          <td data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
+          <td data-col="imp" class="text-end">{{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number: '1.2-2'}}</td>
         </tr>
       </tbody>
     </table>
