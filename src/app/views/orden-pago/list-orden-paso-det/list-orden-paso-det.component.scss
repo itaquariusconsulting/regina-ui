@@ -1,32 +1,74 @@
 .loading-overlay {
-  position: fixed;   
-  inset: 0;          
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.8); 
-  backdrop-filter: blur(2px);          
-  z-index: 9999;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
 }
 
 [data-col="orden"] {
-    width: 8%; // Ancho para la columna Código Ubigeo
+    width: 6%; // Ancho para la columna Código Ubigeo
 }
+
 [data-col="item"] {
-    width: 8%; // Ancho para la columna Código Ubigeo
+    width: 3%; // Ancho para la columna Código Ubigeo
 }
+
 [data-col="fecha"] {
     width: 8%; // Ancho para la columna Código Ubigeo
 }
+
 [data-col="doc"] {
     width: 10%; // Ancho para la columna Código Ubigeo
     align-items: center;
 }
+
 [data-col="mon"] {
     width: 5%; // Ancho para la columna Código Ubigeo
     align-items: center;
 }
+
 [data-col="imp"] {
-    width: 8%; // Ancho para la columna Código Ubigeo
+    width: 7%; // Ancho para la columna Código Ubigeo
     align-items: end;
+}
+
+[data-col="ruc"] {
+    width: 8%; // Ancho para la columna Código Ubigeo
+}
+
+[data-col="prov"] {
+    width: 25%; // Ancho para la columna Código Ubigeo
+}
+
+[data-col="expand"] {
+    width: 1%; // Ancho para la columna Código Ubigeo
+}
+
+.table td {
+    font-size: 0.8rem !important;
+}
+
+.row-detail {
+    background: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+}
+
+.contenedor-scroll {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    text-align: center;
+}
+
+.imagen-doc {
+    max-width: 100%;
+    height: auto;
+}
+
+.modal-header {
+    background-color: var(--primary-color);
 }

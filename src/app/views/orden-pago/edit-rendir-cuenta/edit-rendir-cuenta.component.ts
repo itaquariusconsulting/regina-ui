@@ -37,6 +37,7 @@ import { MaeMoneda } from '../../../models/mae-moneda';
 import { MaeImpuesto } from '../../../models/mae-impuesto';
 import { OrdenPagoDetProv } from '../../../models/orden-pago-det-prov';
 import { DeviceService } from '../../../services/core-service/device.service';
+import { DocumentoService } from '../../../services/documento.service';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -90,7 +91,8 @@ export class EditRendirCuentaComponent implements OnInit {
     private regRenKeywordService: RegRenKeywordService,
     private validationEngine: ValidationEngineService,
     private maestrosService: MaestrosService,
-    private deviceService: DeviceService
+    private deviceService: DeviceService,
+    private documentoService: DocumentoService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -576,6 +578,23 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.calcularImpuestos();
 
+  }
+
+  subirArchivo(event: any) {
+    const file: File = event.target.files[0];
+    if (!file) {
+      return;
+    }
+    this.documentoService
+      .uploadImage(file, 'FACTURA', '2026', '03')
+      .subscribe({
+        next: (resp) => {
+          console.log('Archivo subido', resp);
+        },
+        error: (err) => {
+          console.error('Error', err);
+        }
+      });
   }
 
   onSave(): void {

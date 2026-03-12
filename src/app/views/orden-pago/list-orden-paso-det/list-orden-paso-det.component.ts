@@ -23,7 +23,9 @@ import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { WrapperRequestOrdenPagoDet } from '../../../models/wrappers/wrapper-request-orden-pago-det';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { MaestrosService } from '../../../services/maestros.service';
-
+import { MaeDocumento } from '../../../models/mae-documento';
+import * as bootstrap from 'bootstrap';
+import { DocumentoService } from '../../../services/documento.service';
 @Component({
   selector: 'app-edit-orden-pago',
   standalone: true,
@@ -41,15 +43,20 @@ export class ListOrdenPagoDetComponent implements OnInit {
     private location: Location,
     private ordenPagoDetService: OrdenPagoDetService,
     private loadingService: LoadingService,
-    private maestrosService: MaestrosService
+    private maestrosService: MaestrosService,
+    private documentoService: DocumentoService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
+
+  detail: OrdenPagoDet = new OrdenPagoDet();
+  modal: any;
+
   codEmpresa: string = sessionStorage.getItem("codempresa") ?? '';
   isLoading$: Observable<boolean>;
   filtrarDetalle: string = "";
   orden: OrdenPago = new OrdenPago();
-  pageSize = 6;
+  pageSize = 8;
   currentPage = 0;
   totalItems = 0;
   totalPages = 0;
@@ -57,16 +64,28 @@ export class ListOrdenPagoDetComponent implements OnInit {
   ordenesGeneral: OrdenPagoDet[] = [];
   pagedDetalles: OrdenPagoDet[] = [];
   listaAuxiliares: MaeAuxiliarDTO[] = [];
+  listaTiposDocumento: MaeDocumento[] = [];
+  expandedRow: any = null;
+  imagenDocumento: string | null = null;
+
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data;
-      this.getOrdenPagoDet();
     }
+    this.getListaAuxiliaresPR();
   }
 
   onBack(): void {
     this.location.back();
+  }
+
+  toggleRow(row: any) {
+    if (this.expandedRow === row) {
+      this.expandedRow = null;
+    } else {
+      this.expandedRow = row;
+    }
   }
 
   filtrar() {
@@ -74,13 +93,10 @@ export class ListOrdenPagoDetComponent implements OnInit {
   }
 
   private buildPagination(): void {
-
     this.totalItems = this.detalles.length;
     this.totalPages = Math.ceil(this.totalItems / this.pageSize);
-
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
-
     this.pagedDetalles = this.detalles.slice(start, end);
   }
 
@@ -95,43 +111,119 @@ export class ListOrdenPagoDetComponent implements OnInit {
   }
 
   getOrdenPagoDet() {
-    this.loadingService.show();
     var wrapper: WrapperRequestOrdenPagoDet = new WrapperRequestOrdenPagoDet();
     wrapper.codEmpresa = this.orden.codEmpresa;
     wrapper.codSucursal = this.orden.codSucursal;
     wrapper.numOrden = this.orden.numOrden;
     this.ordenPagoDetService.getOrdenesPagoDet(wrapper).subscribe(
       (response: Response) => {
-        console.log(response);
-        this.detalles = response.resultado;
+        this.loadingService.hide();
         this.detalles = response.resultado;
         this.currentPage = 0;
         this.buildPagination();
-        this.getListaAuxiliaresPR();
       },
-      (error)=>{
+      (error) => {
         this.loadingService.hide();
       }
     )
   }
 
   getListaAuxiliaresPR() {
+    this.loadingService.show();
     this.maestrosService.getListaAuxiliaresPR(this.codEmpresa).subscribe(
       (response: Response) => {
         this.listaAuxiliares = response.resultado;
-        this.loadingService.hide();
+        this.listaAuxiliares.sort((a, b) => (a.codAuxiliar ?? '').localeCompare(b.codAuxiliar ?? ''));
+        this.getListaDocumentos();
       },
-      (error)=>{
+      (error) => {
         console.log("No hay Auxiliares");
         this.loadingService.hide();
       }
     )
   }
 
-  onDevuelveAuxiliar(codAuxiliar: string): string {
-    const aux : MaeAuxiliarDTO = this.listaAuxiliares.find(aux=>aux.codEmpresa==this.codEmpresa && aux.codAuxiliar==codAuxiliar.trim()) ?? new MaeAuxiliarDTO();
-    console.log("Auxilizar para ", codAuxiliar, " Resultado : ", aux)
-    return aux.desAuxiliar ?? '';
+  getListaDocumentos() {
+    this.maestrosService.getTiposDocumento(this.codEmpresa).subscribe(
+      (response: Response) => {
+        this.listaTiposDocumento = response.resultado;
+        this.getOrdenPagoDet();
+      }
+    )
   }
 
+  getTipoDocumento(tipoDocumento: string): MaeDocumento {
+    const doc = this.listaTiposDocumento.find(doc => doc.desCorta == tipoDocumento) ?? new MaeDocumento();
+    return doc;
+  }
+
+  onDevuelveAuxiliar(codAuxiliar: string): MaeAuxiliarDTO {
+    const aux: MaeAuxiliarDTO = this.listaAuxiliares.find(cod => cod.codAuxiliar?.trim() == codAuxiliar.trim()) ?? new MaeAuxiliarDTO();
+    return aux;
+  }
+
+  abrirModalDoc(reg: OrdenPagoDet) {
+    this.imagenDocumento = "";
+    this.detail = reg;
+    const name =
+      (this.detail.codEmpresa ?? '0000') +
+      this.detail.codSucursal +
+      this.orden.numOrden +
+      this.detail.numItemOp;
+    console.log("Nombre:", name);
+    this.viewDocumento(name);
+  }
+
+  cerrarModalDoc() {
+    this.imagenDocumento = "";
+    if (this.modal) {
+      this.modal.hide();
+    }
+  }
+
+viewDocumento(nombre: string) {
+
+  this.documentoService
+    .viewDocumento(
+      this.detail.codDocumento ?? '',
+      this.orden.anoPeriodo ?? '',
+      this.orden.codPeriodo ?? '',
+      nombre
+    )
+    .subscribe({
+
+      next: (blob) => {
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+
+          this.imagenDocumento = reader.result as string;
+
+          // abrir modal solo si existe documento
+          const modalElement = document.getElementById('modalDocumento');
+
+          if (modalElement) {
+            this.modal = new bootstrap.Modal(modalElement);
+            this.modal.show();
+          }
+
+        };
+
+        reader.readAsDataURL(blob);
+
+      },
+
+      error: (err) => {
+
+        console.log("Documento no encontrado");
+
+        // aquí puedes mostrar un toast si quieres
+        // this.toastService.warning("El documento no existe");
+
+      }
+
+    });
+
+}
 }

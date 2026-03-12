@@ -3,7 +3,8 @@
 </div>
 <div class="container mt-2">
   <div class="bar-buttons-top">
-    <div class="title-f6">Detalle de Rendición - Orden de Pago: {{orden.numOrden}} del {{orden.fecOrden | date: 'dd/MM/yyyy'}}</div>
+    <div class="title-f6">Detalle de Rendición - Orden de Pago: {{orden.numOrden}} del {{orden.fecOrden | date:
+      'dd/MM/yyyy'}}</div>
   </div>
   <div class="bar-buttons-top d-flex w-100">
     <div class="input-group justify-content-start w-50">
@@ -16,11 +17,13 @@
       Regresar
     </button>
   </div>
-    <div class="table-container table-responsive">
+  <div class="table-container table-responsive">
     <table class="table global-table table-striped table-hover">
       <thead>
+        <th></th>
         <th class="text-center">Orden</th>
         <th class="text-center">Item</th>
+        <th class="text-center">RUC</th>
         <th class="text-center">Proveedor</th>
         <th class="text-center">Fecha</th>
         <th class="text-center">Documento</th>
@@ -28,15 +31,77 @@
         <th class="text-center">Importe</th>
       </thead>
       <tbody>
-        <tr *ngFor="let reg of pagedDetalles">
-          <td data-col="orden" class="text-center">{{reg.numOrden}}</td>
-          <td data-col="item" class="text-center">{{reg.numItemOp}}</td>
-          <td data-col="prov" class="text-start">{{onDevuelveAuxiliar(reg.codAuxiliar || '')}}</td>
-          <td data-col="fecha" class="text-center">{{reg.fecDocumento | date: 'dd-MM-yyyy'}}</td>
-          <td data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
-          <td data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
-          <td data-col="imp" class="text-end">{{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number: '1.2-2'}}</td>
-        </tr>
+        <ng-container *ngFor="let reg of pagedDetalles">
+
+          <!-- fila principal -->
+          <tr (click)="toggleRow(reg)" style="cursor:pointer">
+            <ng-container *ngIf="onDevuelveAuxiliar(reg.codAuxiliar || '') as aux">
+              <td data-col="expand" class="text-center">
+                {{expandedRow === reg ? '▼' : '▶'}}
+              </td>
+              <td data-col="orden" class="text-center">{{reg.numOrden}}</td>
+              <td data-col="item" class="text-center">{{reg.numItemOp}}</td>
+              <td data-col="ruc" class="text-center">{{aux.numRuc}}</td>
+              <td data-col="prov" class="text-start">{{aux.desAuxiliar}}</td>
+              <td data-col="fecha" class="text-center">{{reg.fecDocumento | date:'dd-MM-yyyy'}}</td>
+              <td data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
+              <td data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
+              <td data-col="imp" class="text-end">
+                {{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number:'1.2-2'}}
+              </td>
+
+            </ng-container>
+          </tr>
+
+          <!-- fila expandida -->
+          <tr class="row-detail p-3" *ngIf="expandedRow === reg">
+            <td colspan="9" class="bg-light p-3">
+              <div class="row">
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Orden:</strong></label>
+                  <div>{{reg.numOrden}}</div>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Item:</strong></label>
+                  <div>{{reg.numItemOp}}</div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label"><strong>Tipo Documento:</strong></label>
+                  <div>{{getTipoDocumento(reg.codDocumento ?? '').desDocumento}}</div>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label"><strong>Documento:</strong></label>
+                  <div>{{reg.numSerieDoc}}-{{reg.numDocumento}}</div>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Moneda:</strong></label>
+                  <div>{{reg.codMoneda=='01' ? 'Soles' : 'Dólares'}}</div>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Auxiliar:</strong></label>
+                  <div>{{reg.codAuxiliar}}</div>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Cta.Contable:</strong></label>
+                  <div>{{reg.codCuentaDocumento}}</div>
+                </div>
+                <div class="col-md-1">
+                  <label class="form-label"><strong>Cta.Gasto:</strong></label>
+                  <div>{{reg.codCuentaConcepto}}</div>
+                </div>
+                <div class="col-md-2 text-center">
+                  <label class="form-label"><strong>Acciones:</strong></label>
+                  <div>
+                    <button title="Ver Asiento Contable" type="button" class="general-button btn-primary btn-sm me-2"><i
+                        class="fas fa-book-open"></i></button>
+                    <button (click)="abrirModalDoc(reg)" title="Ver Documento" type="button"
+                      class="general-button btn-success btn-sm"><i class="fa-solid fa-image"></i></button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
 
@@ -67,6 +132,37 @@
           </li>
         </ul>
       </nav>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="modalDocumento" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Visor de Documentos</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDoc()"></button>
+      </div>
+
+      <div class="modal-body p-2">
+
+        <div *ngIf="detail" class="contenedor-scroll">
+
+          <img 
+            *ngIf="imagenDocumento"
+            [src]="imagenDocumento"
+            class="imagen-doc">
+
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="general-button btn-danger" (click)="cerrarModalDoc()">Cerrar</button>
+      </div>
+
     </div>
   </div>
 </div>
