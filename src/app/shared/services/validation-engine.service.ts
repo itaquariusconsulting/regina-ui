@@ -48,6 +48,7 @@ export class ValidationEngineService {
     (rule: any, context: ValidationContext) => string | null
   > = {
       [FieldCode.LOGO_TEXT]: (r, c) => this.validateLogoText(r, c),
+      [FieldCode.RUC_MATCH]: (r, c) => this.validateRucMatch(r, c),
       [FieldCode.RUC_INPUT]: (r, c) => this.validateRucInput(r, c),
       [FieldCode.RUC_STATUS]: (r, c) => this.validateRucState(r, c),
       [FieldCode.RUC_CONDITION]: (r, c) => this.validateRucCondition(r, c),
@@ -74,6 +75,19 @@ export class ValidationEngineService {
     return isValid
       ? null
       : `${rule.errorMessage} - Razón Social obtenida ${razonSocial}`;
+  }
+
+  private validateRucMatch(rule: any, context: ValidationContext): string | null {
+    const inputRuc = context.dataImagen?.issuerRuc?.[0];
+    const officialRuc = context.padronRuc?.ruc;
+
+    if (!inputRuc || !officialRuc) {
+      return null;
+    }
+
+    return inputRuc === officialRuc
+      ? null
+      : rule.errorMessage;
   }
 
   private validateRucInput(rule: any, context: ValidationContext): string | null {
