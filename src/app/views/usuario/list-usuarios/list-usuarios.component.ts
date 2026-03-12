@@ -7,10 +7,11 @@ import { WrapperRequestUsuario } from '../../../models/wrappers/wrapper-request-
 import { Response } from '../../../models/response';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-list-usuarios',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HasPermissionDirective],
   templateUrl: './list-usuarios.component.html',
   styleUrl: './list-usuarios.component.scss'
 })

@@ -7,10 +7,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { Response } from '../../../models/response';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-list-validaciones',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HasPermissionDirective],
   templateUrl: './list-validaciones.component.html',
   styleUrl: './list-validaciones.component.scss'
 })

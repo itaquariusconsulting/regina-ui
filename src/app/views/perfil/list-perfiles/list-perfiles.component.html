@@ -6,7 +6,8 @@
         <div class="title-f6">Lista de Perfiles</div>
     </div>
     <div class="bar-buttons-top d-flex justify-content-end w-100">
-        <button (click)="onNewProfile()" class="general-button btn-primary me-2">
+        <button (click)="onNewProfile()" class="general-button btn-primary me-2"
+            *appHasPermission="{ route: '/list-perfiles', action: 'permitCreate' }">
             <i class="fas fa-plus"></i>
             Nuevo Perfil
         </button>
@@ -34,7 +35,8 @@
                 <td class="text-start">{{profile.profileLongName}}</td>
                 <td class="text-center">{{profile.profileType}}</td>
                 <td class="text-center">
-                    <button (click)="onEditProfile(profile.profileId!)" type="button" title="Editar Perfil" type="button" class="btn btn-warning btn-sm me-1">
+                    <button (click)="onEditProfile(profile.profileId!)" type="button" title="Editar Perfil" type="button" class="btn btn-warning btn-sm me-1"
+                        *appHasPermission="{ route: '/list-perfiles', action: 'permitEdit' }">
                         <i class="fa fa-pen"></i>
                     </button>
                 </td>

@@ -8,10 +8,11 @@ import { RegSecProfileService } from '../../../services/reg-sec-profile.service'
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { LoadingService } from '../../../services/loading.service';
 import { finalize, Observable } from 'rxjs';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 
 @Component({
   selector: 'app-list-perfiles',
-  imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
+  imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent, HasPermissionDirective],
   templateUrl: './list-perfiles.component.html',
   styleUrl: './list-perfiles.component.scss'
 })
