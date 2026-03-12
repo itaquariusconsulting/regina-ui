@@ -34,12 +34,8 @@
                 <td class="text-start">{{profile.profileLongName}}</td>
                 <td class="text-center">{{profile.profileType}}</td>
                 <td class="text-center">
-                    <button type="button" title="Rendir cuenta" type="button" class="btn btn-success btn-sm me-1">
-                        <i class="fa fa-plus"></i>
-                    </button>
-                    <button style="background-color: #0063A7;" title="Ver Detalle" type="button"
-                        class="btn btn-primary btn-sm">
-                        <i class="fa fa-eye"></i>
+                    <button (click)="onEditProfile(profile.profileId!)" type="button" title="Editar Perfil" type="button" class="btn btn-warning btn-sm me-1">
+                        <i class="fa fa-pen"></i>
                     </button>
                 </td>
             </tr>

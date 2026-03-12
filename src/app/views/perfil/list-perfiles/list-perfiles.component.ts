@@ -31,20 +31,24 @@ export class ListPerfilesComponent implements OnInit {
   }
 
   getProfiles() {
-    this.loadingService.show(); 
+    this.loadingService.show();
     this.profileService.getRegSecProfiles()
-    .pipe(finalize(() => this.loadingService.hide()))
-    .subscribe({
-      next: (response: Response) => {
-        this.profiles = response.resultado;
-      },
-      error: (err) => {
-        console.error(err);
-      }
-    });
+      .pipe(finalize(() => this.loadingService.hide()))
+      .subscribe({
+        next: (response: Response) => {
+          this.profiles = response.resultado;
+        },
+        error: (err) => {
+          console.error(err);
+        }
+      });
   }
 
   onNewProfile() {
-    this.router.navigate(['/edit-perfil']);
+    this.router.navigate(['/nuevo-perfil']);
+  }
+
+  onEditProfile(id: number) {
+    this.router.navigate(['/edit-perfil', id]);
   }
 }

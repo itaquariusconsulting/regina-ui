@@ -102,12 +102,18 @@ export class AuthService {
   }
 
   obtainProfilePermissions(profileId: number, codEmpresa: string): Observable<RegSecProfilePermissions[]> {
-  const url = `${this.apiurlAuth}/api/permissions/listar-permisos-por-perfil?profileId=${profileId}&codEmpresa=${codEmpresa}`;
-  
-  return this.http.get<Response>(url).pipe(
-    map((res: Response) => res.resultado as RegSecProfilePermissions[])
-  );
-}
+    const url = `${this.apiurlAuth}/api/permissions/listar-permisos-por-perfil?profileId=${profileId}&codEmpresa=${codEmpresa}`;
+
+    return this.http.get<Response>(url).pipe(
+      map((res: Response) => res.resultado as RegSecProfilePermissions[])
+    );
+  }
+
+  saveProfilePermissions(permisos: RegSecProfilePermissions[]): Observable<Response> {
+    const url = `${this.apiurlAuth}/api/permissions/guardar-permisos-perfil`;
+    
+    return this.http.post<Response>(url, permisos);
+  }
 
   convertPermissionsToMenu(data: RegSecPermissions[]): NavItem[] {
 

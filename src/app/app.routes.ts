@@ -9,6 +9,7 @@ import { EditSolicitudComponent } from './views/solicitud/edit-solicitud/edit-so
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.component';
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';
+import { NuevoPerfilComponent } from './views/perfil/nuevo-perfil/nuevo-perfil.component';
 import { EditPerfilComponent } from './views/perfil/edit-perfil/edit-perfil.component';
 import { HomeComponent } from './views/home/home.component';
 import { ListValidacionesComponent } from './views/validates/list-validaciones/list-validaciones.component';
@@ -74,7 +75,11 @@ export const routes: Routes = [
         component: ListPerfilesComponent
       },
       {
-        path: 'edit-perfil',
+        path: 'nuevo-perfil',
+        component: NuevoPerfilComponent
+      },
+      {
+        path: 'edit-perfil/:id',
         component: EditPerfilComponent
       },
       {

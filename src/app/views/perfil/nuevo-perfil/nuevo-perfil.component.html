@@ -5,20 +5,19 @@
 <form #profileForm="ngForm">
     <div class="container mt-2">
         <div class="bar-buttons-top">
-            <div class="title-f6">Editar Perfil</div>
+            <div class="title-f6">Nuevo Perfil</div>
         </div>
         <div class="bar-buttons-top d-flex justify-content-end w-100">
-            <button (click)="onUpdateProfile()" class="general-button btn-primary me-2" [disabled]="profileForm.invalid">
+            <button (click)="onSaveProfile()" class="general-button btn-primary me-2" [disabled]="profileForm.invalid">
                 <i class="fas fa-save"></i>
-                Actualizar
+                Guardar
             </button>
-            <button (click)="onBack()" type="button" class="general-button btn-secondary">
+            <button (click)="onBack()" class="general-button btn-secondary">
                 <i class="fas fa-arrow-left"></i>
                 Regresar
             </button>
         </div>
     </div>
-
     <div class="row mb-2">
         <div class="col-md-4">
             <label class="form-label fw-semibold mb-2 d-block">Cod Empresa</label>
@@ -37,7 +36,6 @@
             </div>
         </div>
     </div>
-
     <div class="row mb-2">
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Nombre Detallado *</label>

@@ -37,7 +37,7 @@
       <tbody>
         <tr *ngFor="let item of permissionMatrix" [class.is-parent]="!item.menuParentId">
           <td [style.padding-left.px]="item.menuParentId ? 30 : 10">
-            <i *ngIf="!item.menuParentId" class="fas fa-folder"></i>
+            <i [class]="item.menuIcon"></i>
             {{ item.menuLabel }}
           </td>
           <td>
