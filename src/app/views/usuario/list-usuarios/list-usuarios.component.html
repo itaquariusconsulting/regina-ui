@@ -3,7 +3,8 @@
         <div class="title-f6">Lista de Usuarios</div>
     </div>
     <div class="bar-buttons-top d-flex justify-content-end w-100">
-        <button (click)="onNewUsuario()" class="general-button btn-primary me-2">
+        <button (click)="onNewUsuario()" class="general-button btn-primary me-2"
+            *appHasPermission="{ route: '/list-usuarios', action: 'permitCreate' }">
             <i class="fas fa-plus"></i>
             Nuevo
         </button>

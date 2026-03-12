@@ -192,7 +192,7 @@ export class DefaultHeaderComponent implements OnInit {
 
   onLogout() {
     sessionStorage.removeItem("isLoggedIn");
-    //sessionStorage.setItem("windowForm", '0');
+    sessionStorage.removeItem('user_permissions');
     this.router.navigate(['/login']);
   }
 

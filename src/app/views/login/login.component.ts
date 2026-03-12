@@ -160,6 +160,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     sessionStorage.setItem('periodo_year', this.selectedYear.toString().padStart(4, '0'));
     sessionStorage.setItem('codempresa', '0001');
     this.router.navigate(['/home']);
+    this.service.loadUserPermissions(this.dtoUser.profileId!, this.dtoUser.codEmpresa!);
     this.getConfiguracionSistema();
   }
 

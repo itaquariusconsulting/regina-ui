@@ -21,6 +21,7 @@ import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { MessageRenderAccount } from '../../../shared/constants/messages';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 export class Imagen {
   documentType?: string;
   documentNumber?: string;
@@ -38,7 +39,8 @@ export class Imagen {
   imports: [
     CommonModule,
     FormsModule,
-    LoadingDancingSquaresComponent
+    LoadingDancingSquaresComponent,
+    HasPermissionDirective
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
