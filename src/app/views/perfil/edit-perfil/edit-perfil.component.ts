@@ -3,12 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { RegSecProfile } from '../../../../models/reg-sec-profile';
-import { RegSecProfileService } from '../../../../services/reg-sec-profile.service';
-import { LoadingService } from '../../../../services/loading.service';
+import { RegSecProfile } from '../../../models/reg-sec-profile';
+import { RegSecProfileService } from '../../../services/reg-sec-profile.service';
+import { LoadingService } from '../../../services/loading.service';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from '../../../../components/dialogs/confirm-dialog.component';
-import { LoadingDancingSquaresComponent } from '../../../../components/loading-dancing-squares/loading-dancing-squares.component';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 
 @Component({
   selector: 'app-edit-perfil',
@@ -63,7 +63,7 @@ export class EditPerfilComponent implements OnInit {
   onUpdateProfile() {
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
-      data: { title: 'Confirmar', message: '¿Deseas actualizar este perfil?', type: 'confirm' }
+      data: { title: 'Confirmar Actualización', message: '¿Estás seguro de que deseas guardar los cambios?', type: 'confirm' }
     }).afterClosed().subscribe(result => {
       if (!result) return;
 
