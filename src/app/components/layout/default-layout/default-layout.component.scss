@@ -261,3 +261,23 @@
 .regina-input .mic i {
   font-size: 14px;
 }
+
+/* Logo container */
+.logo-container {
+  width: 100%;
+  background: white;
+  padding: 10px;
+  text-align: center;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Logo */
+.logo-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+

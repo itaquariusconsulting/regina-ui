@@ -72,3 +72,29 @@
 .modal-header {
     background-color: var(--primary-color);
 }
+
+.fila-subtitulos {
+    background-color: var(--primary-color) !important;
+    font-weight: 600 !important;
+    color: white !important;
+}
+
+[data-col="codCuenta"] {
+    width: 6%;
+}
+
+[data-col="desCuenta"] {
+    width: 14%;
+}
+[data-col="auxiliar"] {
+    width: 14%;
+}
+
+[data-col="importes"] {
+    width: 6%;
+}
+
+.global-table {
+    font-size: 0.8rem !important;
+}
+

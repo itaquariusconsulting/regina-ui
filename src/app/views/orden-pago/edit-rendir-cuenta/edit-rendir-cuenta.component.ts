@@ -131,6 +131,8 @@ export class EditRendirCuentaComponent implements OnInit {
   saldoSoles: number = 0;
   saldoDolares: number = 0;
   isDesktop: boolean = false;
+  items: any[] = [];
+  itemsText: string = '';
   ngOnInit(): void {
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
@@ -148,6 +150,32 @@ export class EditRendirCuentaComponent implements OnInit {
     this.ordenPagoDetProvs = [];
     this.loadValidationRules();
     this.loadValidationKeywords();
+    this.getRubros();
+  }
+
+  inicializa() {
+    this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
+    this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
+
+    this.isDesktop = this.deviceService.isDesktopDevice();
+    const user = sessionStorage.getItem('user')
+      ? JSON.parse(sessionStorage.getItem('user')!)
+      : null;
+    this.ordenPagoDetProvs = [];
+    this.padronRuc = new PadronRuc();
+    this.ruc = "";
+    this.dataImagen = new DatosImagen();
+    this.imageChangedEvent = null;
+    this.previewImage = null;
+    this.croppedImage = null;
+    this.showImageCropper = true;
+    this.recognizedText = '';
+    this.detalle = '';
+    this.ruc = "";
+    this.validate = false;
+    this.mensaje = "";
+    this.mensajeDetalle = "";
+    this.itemsText = "";
     this.getRubros();
   }
 
@@ -409,7 +437,6 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
     this.dataImagen.amount = detected.amount;
-
     this.dataImagen.documentCurrency = detected.documentCurrency;
     if (detected.documentCurrency) {
       this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
@@ -428,10 +455,16 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.dataImagen.items = detected.items;
     this.dataImagen.rawText = detected.rawText;
-
     const issuerRuc = detected.issuerRuc;
     this.dataImagen.issuerRuc = issuerRuc;
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
+    this.cargarItems(this.dataImagen.items);
+  }
+
+  cargarItems(data: any) {
+    this.itemsText = data
+      .map((item: any) => Object.values(item).join(' '))
+      .join('\n');
   }
 
   onDetalleChange(value: string): void {
@@ -449,7 +482,6 @@ export class EditRendirCuentaComponent implements OnInit {
       padronRuc: this.padronRuc,
       forbiddenKeywords: this.keywords
     };
-
     const error = this.validationEngine.validateRule(rule, context);
     this.mensajeDetalle = error || '';
   }
@@ -602,6 +634,10 @@ export class EditRendirCuentaComponent implements OnInit {
     if (!this.validateRules()) {
       return;
     }
+  }
+
+  onDescartar() {
+    this.inicializa();
   }
 }
 

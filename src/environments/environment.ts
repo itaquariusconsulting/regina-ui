@@ -5,5 +5,5 @@ export const environment = {
   apiUrlUtils: "https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/",
   apiUrlMaestros: 'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlIA: 'http://192.168.50.248:7001',
-  apiUrlOcr: 'http://localhost:6702'
+  apiUrlOcr: 'http://192.168.50.248:7000'
 };

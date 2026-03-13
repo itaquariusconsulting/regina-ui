@@ -1,6 +1,9 @@
-<div class="layout" [class.no-sidebar]="!isDesktop">
 
+<div class="layout" [class.no-sidebar]="!isDesktop">
   <aside *ngIf="isDesktop && isSidebarVisible" class="sidebar">
+      <div class="logo-container">
+    <img src="assets/images/brand/LOGO-REGINA-SMALL.png">
+  </div>
     <app-sidebar></app-sidebar>
   </aside>
 

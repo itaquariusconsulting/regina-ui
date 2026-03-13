@@ -55,6 +55,7 @@ table {
 
 /* Sidebar */
 app-sidebar {
+  position: relative;
   flex: 0 0 220px;
   width: 220px;
   min-width: 220px;
@@ -62,6 +63,7 @@ app-sidebar {
   background-color: var(--primary-color);
   color: var(--text-on-primary);
   align-items: center;
+  /* ajusta tamaño */
 }
 
 /* Contenido */
@@ -202,7 +204,7 @@ button.general-button {
   align-items: center;
   gap: 0.5rem;
 
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   padding: 10px 22px;
   border-radius: 20px;
   border: none;
@@ -211,7 +213,7 @@ button.general-button {
   cursor: pointer;
 
   box-shadow: none;
-  height: 40px !important;
+  height: 32px !important;
   transition:
     transform 0.15s ease,
     filter 0.15s ease,
@@ -321,7 +323,7 @@ button.general-button:disabled {
 ========================== */
 
 button.general-button i {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   display: inline-block;
 }
 
@@ -394,8 +396,10 @@ button.general-button i {
 
 .status-circle {
   display: inline-flex;
-  align-items: center;      /* centra vertical */
-  justify-content: center;  /* centra horizontal */
+  align-items: center;
+  /* centra vertical */
+  justify-content: center;
+  /* centra horizontal */
 
   width: 32px;
   height: 32px;
@@ -447,4 +451,8 @@ body {
 body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.btn-capture-image {
+  height: 32px !important;
 }

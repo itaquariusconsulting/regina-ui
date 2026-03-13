@@ -26,6 +26,9 @@ import { MaestrosService } from '../../../services/maestros.service';
 import { MaeDocumento } from '../../../models/mae-documento';
 import * as bootstrap from 'bootstrap';
 import { DocumentoService } from '../../../services/documento.service';
+import { ConVoucherService } from '../../../services/con-voucher-item.service';
+import { ConVoucherItem } from '../../../models/con-voucher.item';
+import { WrapperRequestVoucherItem } from '../../../models/wrappers/wrapper-request-voucher-item';
 @Component({
   selector: 'app-edit-orden-pago',
   standalone: true,
@@ -44,7 +47,8 @@ export class ListOrdenPagoDetComponent implements OnInit {
     private ordenPagoDetService: OrdenPagoDetService,
     private loadingService: LoadingService,
     private maestrosService: MaestrosService,
-    private documentoService: DocumentoService
+    private documentoService: DocumentoService,
+    private conVoucherItemService: ConVoucherService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -67,7 +71,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
   listaTiposDocumento: MaeDocumento[] = [];
   expandedRow: any = null;
   imagenDocumento: string | null = null;
-
+  
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
@@ -170,7 +174,6 @@ export class ListOrdenPagoDetComponent implements OnInit {
       this.detail.codSucursal +
       this.orden.numOrden +
       this.detail.numItemOp;
-    console.log("Nombre:", name);
     this.viewDocumento(name);
   }
 
@@ -181,49 +184,47 @@ export class ListOrdenPagoDetComponent implements OnInit {
     }
   }
 
-viewDocumento(nombre: string) {
+  viewDocumento(nombre: string) {
 
-  this.documentoService
-    .viewDocumento(
-      this.detail.codDocumento ?? '',
-      this.orden.anoPeriodo ?? '',
-      this.orden.codPeriodo ?? '',
-      nombre
-    )
-    .subscribe({
+    this.documentoService
+      .viewDocumento(
+        this.detail.codDocumento ?? '',
+        this.orden.anoPeriodo ?? '',
+        this.orden.codPeriodo ?? '',
+        nombre
+      )
+      .subscribe({
 
-      next: (blob) => {
+        next: (blob) => {
 
-        const reader = new FileReader();
+          const reader = new FileReader();
 
-        reader.onload = () => {
+          reader.onload = () => {
 
-          this.imagenDocumento = reader.result as string;
+            this.imagenDocumento = reader.result as string;
 
-          // abrir modal solo si existe documento
-          const modalElement = document.getElementById('modalDocumento');
+            // abrir modal solo si existe documento
+            const modalElement = document.getElementById('modalDocumento');
 
-          if (modalElement) {
-            this.modal = new bootstrap.Modal(modalElement);
-            this.modal.show();
-          }
+            if (modalElement) {
+              this.modal = new bootstrap.Modal(modalElement);
+              this.modal.show();
+            }
 
-        };
+          };
 
-        reader.readAsDataURL(blob);
+          reader.readAsDataURL(blob);
 
-      },
+        },
 
-      error: (err) => {
+        error: (err) => {
 
-        console.log("Documento no encontrado");
+          console.log("Documento no encontrado");
 
-        // aquí puedes mostrar un toast si quieres
-        // this.toastService.warning("El documento no existe");
+          // aquí puedes mostrar un toast si quieres
+          // this.toastService.warning("El documento no existe");
 
-      }
-
-    });
-
-}
+        }
+      });
+  }
 }

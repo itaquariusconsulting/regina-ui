@@ -6,6 +6,7 @@
 
 /* Sidebar */
 .sidebar {
+  position: relative;
   width: 100%;
   height: 100%;
   background-color: white;
@@ -15,39 +16,54 @@
   font-weight: 400;
 }
 
-/* Logo */
-.sidebar img {
-  display: block;
-  max-width: 100%;
-  margin-bottom: 16px;
-  align-items: center;
+/* Imagen de fondo */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image: url('/assets/images/sidebar/imagen-sidebar.png');
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: auto 100vh;
+
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
 }
 
+/* Contenido encima del fondo */
+.sidebar > * {
+  position: relative;
+  z-index: 1;
+}
 /* Items */
 .menu-item {
   cursor: pointer;
   user-select: none;
   font-family: var(--app-font-family);
-  font-size: 2rem;
   font-weight: 600;
-  color: color-mix(in srgb, var(--primary-color) 75%, black)
+  color: color-mix(in srgb, var(--primary-color) 75%, black);
 }
 
+/* Header menú */
 .menu-header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: color-mix(in srgb, var(--primary-color) 55%, black)
+  color: color-mix(in srgb, var(--primary-color) 55%, black);
+  transition: background-color 0.2s ease;
 }
 
 .menu-header:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
+/* Flecha */
 .arrow {
   margin-left: auto;
   transition: transform 0.2s ease;
@@ -62,16 +78,19 @@
   padding-left: 20px;
 }
 
+/* Items submenu */
 .submenu-item {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 0.9rem !important;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .submenu-item:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(0, 0, 0, 0.08);
 }

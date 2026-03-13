@@ -22,6 +22,10 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { MessageRenderAccount } from '../../../shared/constants/messages';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { WrapperRequestVoucherItem } from '../../../models/wrappers/wrapper-request-voucher-item';
+import { ConVoucherService } from '../../../services/con-voucher-item.service';
+import { ConVoucherItem } from '../../../models/con-voucher.item';
+import * as bootstrap from 'bootstrap';
 export class Imagen {
   documentType?: string;
   documentNumber?: string;
@@ -56,7 +60,8 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private ocrService: OcrService,
-    private loadingService: LoadingService
+    private loadingService: LoadingService,
+    private conVoucherService: ConVoucherService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -64,6 +69,8 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   wrapperRequestOrdenPago: WrapperRequestOrdenPago = new WrapperRequestOrdenPago();
   isAdminUser: boolean = false;
   isLoading$: Observable<boolean>;
+
+  detailsAsiento: ConVoucherItem[] = [];
 
   ordenes: OrdenPago[] = [];
   ordenesGeneral: OrdenPago[] = [];
@@ -75,6 +82,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   currentPage = 0;
   totalItems = 0;
   totalPages = 0;
+
+  detail: OrdenPago = new OrdenPago();
+  modal: any;
 
   private navigationSub!: Subscription;
 
@@ -258,7 +268,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     const term = this.filtrarOrden.toLowerCase();
 
     if (term) {
-
+      console.log("Term ", term)
       this.ordenes = this.ordenesGeneral.filter(orden => {
         return (
           (orden.codAuxiliar && orden.codAuxiliar.toLowerCase().includes(term)) ||
@@ -266,6 +276,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
           (orden.numOrden && orden.numOrden.toLowerCase().includes(term)) ||
           (orden.anoPeriodo && orden.anoPeriodo.toLowerCase().includes(term)) ||
           (orden.fecOrden?.toString() && orden.fecOrden.toString().toLowerCase().includes(term)) ||
+          (orden.tipEstado && orden.tipEstado.toUpperCase().includes(term.toUpperCase())) ||
           (orden.impOrdPago?.toString() && orden.impOrdPago.toString().toLowerCase().includes(term))
         );
       });
@@ -289,4 +300,45 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       default: return '';
     }
   }
+
+  abrirModalDoc() {
+    const modalElement = document.getElementById('modalDocumento');
+    if (modalElement) {
+      this.modal = new bootstrap.Modal(modalElement);
+      this.modal.show();
+    } else {
+      console.error('modalDocumento element not found');
+    }
+  }
+
+  cerrarModalDoc() {
+    if (this.modal) {
+      this.modal.hide();
+    }
+  }
+
+  getAsiento(aux: OrdenPago) {
+    var wrapper: WrapperRequestVoucherItem = new WrapperRequestVoucherItem();
+    wrapper.anoPeriodo = aux.anoPeriodoVou;
+    wrapper.codPeriodo = aux.codPeriodoVou;
+    wrapper.codEmpresa = aux.codEmpresa;
+    wrapper.codTipoComprobante = '06';
+    wrapper.numFile = '02';
+    wrapper.numVoucher = aux.numVoucher;
+    this.conVoucherService.getAsiento(wrapper).subscribe(
+      (response: Response) => {
+        this.detailsAsiento = response.resultado;
+        console.log(this.detailsAsiento);
+        if(this.detailsAsiento.length > 0) {
+          this.abrirModalDoc();
+        }
+      }
+    )
+  }
+
+  getTotal(indDebeHaber: string, moneda: string): number {
+  return this.detailsAsiento.reduce((total, item) => {
+    return total + (item.indDebeHaber === indDebeHaber ? ((moneda=='01' ? item.impSoles : item.impDolares) || 0) : 0);
+  }, 0);
+}
 }
