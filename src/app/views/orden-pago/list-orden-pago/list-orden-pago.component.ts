@@ -26,6 +26,7 @@ import { WrapperRequestVoucherItem } from '../../../models/wrappers/wrapper-requ
 import { ConVoucherService } from '../../../services/con-voucher-item.service';
 import { ConVoucherItem } from '../../../models/con-voucher.item';
 import * as bootstrap from 'bootstrap';
+
 export class Imagen {
   documentType?: string;
   documentNumber?: string;
@@ -71,7 +72,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   isLoading$: Observable<boolean>;
 
   detailsAsiento: ConVoucherItem[] = [];
-
   ordenes: OrdenPago[] = [];
   ordenesGeneral: OrdenPago[] = [];
   pagedOrdenes: OrdenPago[] = [];
@@ -87,8 +87,14 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   modal: any;
 
   private navigationSub!: Subscription;
-
   imagen: Imagen = new Imagen();
+
+  private readonly stateActions: any = {
+    'EM': { read: false, add: false, info: false },
+    'PE': { read: false, add: true, info: true },
+    'LQ': { read: true, add: false, info: true },
+    'PR': { read: false, add: false, info: false }
+  };
 
   ngOnInit(): void {
 
@@ -301,6 +307,13 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     }
   }
 
+  isActionEnabled(state: string, action: 'read' | 'add' | 'info'): boolean {
+    if (!state)
+      return false;
+
+    return this.stateActions[state]?.[action] || false;
+  }
+
   abrirModalDoc() {
     const modalElement = document.getElementById('modalDocumento');
     if (modalElement) {
@@ -329,7 +342,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       (response: Response) => {
         this.detailsAsiento = response.resultado;
         console.log(this.detailsAsiento);
-        if(this.detailsAsiento.length > 0) {
+        if (this.detailsAsiento.length > 0) {
           this.abrirModalDoc();
         }
       }
@@ -337,8 +350,8 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   getTotal(indDebeHaber: string, moneda: string): number {
-  return this.detailsAsiento.reduce((total, item) => {
-    return total + (item.indDebeHaber === indDebeHaber ? ((moneda=='01' ? item.impSoles : item.impDolares) || 0) : 0);
-  }, 0);
-}
+    return this.detailsAsiento.reduce((total, item) => {
+      return total + (item.indDebeHaber === indDebeHaber ? ((moneda == '01' ? item.impSoles : item.impDolares) || 0) : 0);
+    }, 0);
+  }
 }

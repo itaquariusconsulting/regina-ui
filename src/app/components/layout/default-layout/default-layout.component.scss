@@ -11,6 +11,7 @@
   min-width: 0;
 
   overflow: hidden;
+  transition: grid-template-columns 450ms ease;
 
   &.no-sidebar {
     grid-template-columns: 0 1fr;

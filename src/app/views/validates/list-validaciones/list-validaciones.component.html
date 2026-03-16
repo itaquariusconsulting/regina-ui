@@ -1,5 +1,5 @@
-<div class="container mt-2">
-    <div class="bar-buttons-top">
+<div class="container-fluid mt-2">
+    <div class="bar-buttons-top w-100">
         <div class="title-f6">Lista de Reglas de Validacion</div>
     </div>
     <div class="bar-buttons-top d-flex justify-content-end w-100">
@@ -24,12 +24,13 @@
             <th class="text-center">Acciones</th>
         </thead>
         <tbody>
-            <tr style="vertical-align: middle;" *ngFor="let reg of validaciones" >
+            <tr style="vertical-align: middle;" *ngFor="let reg of validaciones">
                 <td class="text-center">{{reg.idRule}}</td>
                 <td class="text-start">{{reg.ruleName?.toUpperCase() }}</td>
                 <td class="text-center">{{reg.documentSection}}</td>
                 <td class="text-center">
-                    <button style="font-size: 0.7rem; cursor: default !important;" class="general-button btn-sm" [ngClass]="reg.isActive ? 'btn-primary' : 'btn-danger'">
+                    <button style="font-size: 0.7rem; cursor: default !important;" class="general-button btn-sm"
+                        [ngClass]="reg.isActive ? 'btn-primary' : 'btn-danger'">
                         {{ reg.isActive ? 'ACTIVA' : 'INACTIVA' }}
                     </button>
                 </td>
