@@ -30,6 +30,7 @@ export enum RucCondition {
 
 export enum DocumentType {
   FACTURA = 'FACTURA',
+  FACTURA_DE_COMPRA = 'FC',
   BOLETA = 'BOLETA',
   RECIBO_POR_HONORARIOS = 'RECIBO POR HONORARIOS'
 }
