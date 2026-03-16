@@ -30,7 +30,7 @@ import {
 import { MaestrosService } from '../../../services/maestros.service';
 import { Response } from '../../../models/response';
 import { MaeRubro } from '../../../models/mae-rubro';
-import { OrdenPagoDet } from '../../../models/orden-pago-det';
+import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
 import { MaeDocumento } from '../../../models/mae-documento';
 import { MaeMoneda } from '../../../models/mae-moneda';
@@ -38,6 +38,9 @@ import { MaeImpuesto } from '../../../models/mae-impuesto';
 import { OrdenPagoDetProv } from '../../../models/orden-pago-det-prov';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { DocumentoService } from '../../../services/documento.service';
+import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
+import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
+import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -92,12 +95,15 @@ export class EditRendirCuentaComponent implements OnInit {
     private validationEngine: ValidationEngineService,
     private maestrosService: MaestrosService,
     private deviceService: DeviceService,
-    private documentoService: DocumentoService
+    private documentoService: DocumentoService,
+    private ordenPagoDetService: OrdenPagoDetService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
   codEmpresa: string = sessionStorage.getItem('codempresa') || '';
   codAuxiliar: string = '';
+  auxiliarProveedor: MaeAuxiliarDTO = new MaeAuxiliarDTO();
+  listaAuxiliares: MaeAuxiliarDTO[] = [];
   orden: OrdenPago = new OrdenPago();
   dataImagen: DatosImagen = new DatosImagen();
   imageChangedEvent: Event | null = null;
@@ -126,14 +132,19 @@ export class EditRendirCuentaComponent implements OnInit {
   monedas: MaeMoneda[] = [];
   monedasGeneral: MaeMoneda[] = [];
   impuestos: MaeImpuesto[] = [];
-  ordenPagoDet: OrdenPagoDet = new OrdenPagoDet();
+  ordenPagoDet: OrdenPagoDetDTO = new OrdenPagoDetDTO();
   ordenPagoDetProvs: OrdenPagoDetProv[] = [];
   saldoSoles: number = 0;
   saldoDolares: number = 0;
   isDesktop: boolean = false;
   items: any[] = [];
   itemsText: string = '';
+  nroItemOp: string = "";
+
+  selectedFile?: File;
+
   ngOnInit(): void {
+    this.loadingService.show();
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
     if (state && state.data) {
@@ -182,7 +193,6 @@ export class EditRendirCuentaComponent implements OnInit {
   close() {
     this.dialogRef.close();
   }
-
 
   onBack(): void {
     this.location.back();
@@ -295,6 +305,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getImpuestos(this.codEmpresa, this.ordenPagoDet.codDocumento ?? '').subscribe(
       (response: Response) => {
         this.impuestos = response.resultado || [];
+        this.onListaAuxiliares();
       },
       (error) => {
         console.error('Error al cargar impuestos', error);
@@ -318,8 +329,6 @@ export class EditRendirCuentaComponent implements OnInit {
       ordenPagoDetProv.indAfecto = 'S';
       this.ordenPagoDetProvs.push(ordenPagoDetProv);
     }
-    console.log("Orden de Pago Det :  ", this.ordenPagoDet);
-    console.log("Orden Det Provs : ", this.ordenPagoDetProvs);
   }
 
   changeRubro(): void {
@@ -390,6 +399,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
     const file = input.files[0];
     this.imageChangedEvent = event;
+    this.selectedFile = file;
 
     this.loadPreview(file);
     this.processImage(file);
@@ -427,8 +437,12 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): void {
     this.dataImagen.documentType = detected.documentType;
-    if (detected.documentType) {
-      this.documentos = this.documentosGeneral.filter(doc => doc.desDocumento?.includes(detected.documentType));
+    if(this.dataImagen.documentType?.startsWith('F')) {
+      this.dataImagen.documentType='FC';
+    }
+    if (this.dataImagen.documentType) {
+            console.log("Aqui etros : ", this.dataImagen.documentType);
+      this.documentos = this.documentosGeneral.filter(doc => doc.desCorta?.includes(this.dataImagen.documentType ?? ''));
       this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FV';
     }
 
@@ -562,9 +576,60 @@ export class EditRendirCuentaComponent implements OnInit {
     this.router.navigate(['/list-orders']);
   }
 
-  onPrepareSave(): void {
+  subirArchivo(wrapper: WrapperUploadDocumento, event?: any) {
+    if (!event || !event.target || !event.target.files || event.target.files.length === 0) {
+      return;
+    }
+    const file: File = event.target.files[0];
+    if (!file) {
+      return;
+    }
+    this.documentoService
+      .uploadImage(wrapper)
+      .subscribe({
+        next: (resp) => {
+          console.log('Archivo subido', resp);
+        },
+        error: (err) => {
+          console.error('Error', err);
+        }
+      });
+  }
+
+  onSaveAuxiliar(): void {
+    let aux: MaeAuxiliarDTO | undefined = this.listaAuxiliares.find(aux => aux.numRuc == this.ruc);
+    console.log("auxi 1 ", aux);
+    if (!aux) {
+      aux = new MaeAuxiliarDTO();
+      aux.codEmpresa = this.codEmpresa;
+      aux.codTipoAuxi = "PR";
+      aux.desAuxiliar = this.padronRuc.razonSocial;
+      aux.numDocIdentidad = "";
+      aux.numEmail = "";
+      aux.numRuc = this.ruc;
+      aux.tipEstado = "";
+      this.maestrosService.insertarAuxiliar(aux).subscribe(
+        (response: Response) => {
+          console.log("Auxi ", response.resultado);
+          this.codAuxiliar = response.resultado;
+          this.ordenPagoDet.codAuxiliar = response.resultado;
+          this.onSave();
+        }
+      )
+    } else {
+      this.onSave()
+    }
+
+  }
+
+  onSave() {
     const numserie = this.dataImagen.documentNumber?.split('-')[0] ?? '';
     const numdoc = this.dataImagen.documentNumber?.split('-')[1] ?? '';
+
+    this.ordenPagoDet.codEmpresa = this.codEmpresa;
+    this.ordenPagoDet.numOrden = this.orden.numOrden;
+    this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
+    this.ordenPagoDet.codSucursal = this.orden.codSucursal;
 
     this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
     this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
@@ -604,40 +669,73 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
     }
 
-    this.ordenPagoDet.codEmpresa = this.codEmpresa;
-    this.ordenPagoDet.numOrden = this.orden.numOrden;
-    this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
+    const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
 
-    this.calcularImpuestos();
+    this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
+    this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
 
-  }
+    this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
+      (response: Response) => {
+        const error: number = response.error ?? 0;
+        if (error == 1) {
 
-  subirArchivo(event: any) {
-    const file: File = event.target.files[0];
-    if (!file) {
-      return;
-    }
-    this.documentoService
-      .uploadImage(file, 'FACTURA', '2026', '03')
-      .subscribe({
-        next: (resp) => {
-          console.log('Archivo subido', resp);
-        },
-        error: (err) => {
-          console.error('Error', err);
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '280px',
+            data: {
+              title: 'Error',
+              message: "Error al guardar la Rendición de Cuenta",
+              type: 'alert'
+            }
+          });
+        } else {
+
+          this.nroItemOp = response.resultado;
+
+          let wrapper: WrapperUploadDocumento = new WrapperUploadDocumento();
+
+          wrapper.file = this.selectedFile;
+          wrapper.anioPeriodo = this.orden.anoPeriodo;
+          wrapper.mesPeriodo = this.orden.codPeriodo;
+          wrapper.codEmpresa = this.orden.codEmpresa;
+          wrapper.codSucursal = this.orden.codSucursal;
+          wrapper.extension = "PNG";
+          wrapper.numOrden = this.orden.numOrden;
+          wrapper.numItem = this.nroItemOp;
+          wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
+
+          this.documentoService.uploadImage(wrapper).subscribe(
+            (response: any) => {
+              this.dialog.open(ConfirmDialogComponent, {
+                width: '280px',
+                data: {
+                  title: 'Confirmación',
+                  message: "Rendición de Cuenta " + this.nroItemOp + " guardada correctamente",
+                  type: 'confirm'
+                }
+              });
+              this.onBack();
+              this.calcularImpuestos();
+            }
+          )
         }
-      });
-  }
-
-  onSave(): void {
-    this.onPrepareSave();
-    if (!this.validateRules()) {
-      return;
-    }
+      }
+    )
   }
 
   onDescartar() {
     this.inicializa();
+  }
+
+  onListaAuxiliares() {
+    this.maestrosService.getListaAuxiliaresPR(this.codEmpresa).subscribe(
+      (response: Response) => {
+        this.listaAuxiliares = response.resultado;
+        this.loadingService.hide();
+      },
+      (error) => {
+        this.loadingService.hide();
+      }
+    )
   }
 }
 

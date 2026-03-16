@@ -63,7 +63,7 @@
                     {{isDesktop ? 'Copiar' : ''}}
                 </button>
 
-                <button [disabled]="!validate" type="button" class="general-button btn-primary btn-sm">
+                <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button" class="general-button btn-primary btn-sm">
                     <i class="fas fa-save"></i>
                     {{isDesktop ? 'Guardar' : ''}}
                 </button>

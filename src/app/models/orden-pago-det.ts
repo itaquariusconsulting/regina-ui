@@ -1,4 +1,4 @@
-export class OrdenPagoDet {
+export class OrdenPagoDetDTO {
 
   codEmpresa?: string;
   codSucursal?: string;

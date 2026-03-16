@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { WrapperRequestOrdenPago } from '../models/wrappers/wrapper-request-orden-pago';
 import { Response } from '../models/response';
 import { WrapperRequestOrdenPagoDet } from '../models/wrappers/wrapper-request-orden-pago-det';
+import { OrdenPagoDetDTO } from '../models/orden-pago-det';
 @Injectable({
   providedIn: 'root'
 })
@@ -16,7 +17,6 @@ export class OrdenPagoDetService {
   private apiUrlProcess: string = environment.apiUrlProcess;
 
   getOrdenesPagoDet(wrapper: WrapperRequestOrdenPagoDet): Observable<Response> {
-    
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
@@ -26,4 +26,17 @@ export class OrdenPagoDetService {
       responseType: 'json'
     });
   }
+
+  saveOrdenPagoDet(dto: OrdenPagoDetDTO): Observable<Response> {
+    console.log("En el servicio : ", dto);
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-det/insert`, dto, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
 }

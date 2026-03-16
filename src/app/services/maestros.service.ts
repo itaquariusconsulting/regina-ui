@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 import { Response } from '../models/response';
+import { MaeAuxiliarDTO } from '../models/mae-auxiliar-dto';
 
 @Injectable({
   providedIn: 'root'
@@ -97,6 +98,17 @@ export class MaestrosService {
       'Content-Type': 'application/json'
     });
     return this.http.get<Response>(`${this.apiUrlMaestros}impuesto/listar/${codEmpresa}/${codDocumento}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
+  insertarAuxiliar(dto: MaeAuxiliarDTO): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.post<Response>(`${this.apiUrlMaestros}mae-auxiliar/insertar`, dto, {
       headers,
       responseType: 'json'
     });

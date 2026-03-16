@@ -18,7 +18,7 @@ import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
-import { OrdenPagoDet } from '../../../models/orden-pago-det';
+import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { WrapperRequestOrdenPagoDet } from '../../../models/wrappers/wrapper-request-orden-pago-det';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
@@ -53,7 +53,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
     this.isLoading$ = this.loadingService.loading$;
   }
 
-  detail: OrdenPagoDet = new OrdenPagoDet();
+  detail: OrdenPagoDetDTO = new OrdenPagoDetDTO();
   modal: any;
 
   codEmpresa: string = sessionStorage.getItem("codempresa") ?? '';
@@ -64,9 +64,9 @@ export class ListOrdenPagoDetComponent implements OnInit {
   currentPage = 0;
   totalItems = 0;
   totalPages = 0;
-  detalles: OrdenPagoDet[] = [];
-  ordenesGeneral: OrdenPagoDet[] = [];
-  pagedDetalles: OrdenPagoDet[] = [];
+  detalles: OrdenPagoDetDTO[] = [];
+  ordenesGeneral: OrdenPagoDetDTO[] = [];
+  pagedDetalles: OrdenPagoDetDTO[] = [];
   listaAuxiliares: MaeAuxiliarDTO[] = [];
   listaTiposDocumento: MaeDocumento[] = [];
   expandedRow: any = null;
@@ -166,7 +166,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
     return aux;
   }
 
-  abrirModalDoc(reg: OrdenPagoDet) {
+  abrirModalDoc(reg: OrdenPagoDetDTO) {
     this.imagenDocumento = "";
     this.detail = reg;
     const name =
@@ -185,7 +185,6 @@ export class ListOrdenPagoDetComponent implements OnInit {
   }
 
   viewDocumento(nombre: string) {
-
     this.documentoService
       .viewDocumento(
         this.detail.codDocumento ?? '',
