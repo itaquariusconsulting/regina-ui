@@ -50,14 +50,20 @@
           </td>
           <td class="text-center">
             <button (click)="getAsiento(reg)" title="Ver Asiento Contable" type="button"
-              class="general-button btn-warning btn-sm me-2"><i class="fas fa-book-open"></i></button>
+              [disabled]="!isActionEnabled(reg.tipEstado!, 'read')" class="general-button btn-warning btn-sm me-2"
+              *appHasPermission="{ route: '/list-orders', action: 'permitView' }">
+              <i class="fas fa-book-open"></i>
+            </button>
             <button (click)="openEditRendirCuenta(reg)" type="button" title="Rendir cuenta" type="button"
-              class="general-button btn-primary btn-sm me-1"
+              [disabled]="!isActionEnabled(reg.tipEstado!, 'add')" class="general-button btn-primary btn-sm me-1"
               *appHasPermission="{ route: '/list-orders', action: 'permitCreate' }">
               <i class="fa fa-plus"></i>
             </button>
             <button (click)="viewOrdenesPagoDet(reg)" title="Ver Detalle" type="button"
-              class="general-button btn-success btn-sm"><i class="fa-solid fa-circle-info"></i></button>
+              [disabled]="!isActionEnabled(reg.tipEstado!, 'info')" class="general-button btn-success btn-sm"
+              *appHasPermission="{ route: '/list-orders', action: 'permitView' }">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
           </td>
         </tr>
       </tbody>
