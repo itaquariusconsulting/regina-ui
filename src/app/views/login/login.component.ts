@@ -5,10 +5,10 @@ import { Router } from '@angular/router';
 import { AuthService } from "./../../services/auth.service";
 import Swal from 'sweetalert2';
 import { Response } from '../../models/response';
-import { environment } from '../../../environments/environment';
 import { RegSecUser } from '../../models/reg-sec-user';
 import { MaeTipoCambio } from '../../models/mae-tipo-cambio';
 import { MaestrosService } from '../../services/maestros.service';
+import { ExchangeRateService } from '../../shared/services/exchange-rate.service';
 
 @Component({
   selector: 'app-login',
@@ -38,15 +38,13 @@ export class LoginComponent implements OnInit, OnDestroy {
   selectedMonth: string = "";
   tiposCambio: MaeTipoCambio[] = [];
 
-  constructor(private router: Router, private service: AuthService, private maestrosService: MaestrosService) {
-    this.selectedYear = (new Date().getFullYear()).toString();
-    this.selectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    sessionStorage.setItem('periodo_month', this.selectedMonth);
-    sessionStorage.setItem('periodo_year', this.selectedYear);
-    sessionStorage.setItem('codempresa', '0001');
-
+  constructor(
+    private router: Router,
+    private service: AuthService,
+    private maestrosService: MaestrosService,
+    private exchangeRateService: ExchangeRateService
+  ) {
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      // Redirige al Dashboard si la sesión está activa
       this.router.navigate(['/dashboard']);
     } else {
       this.router.navigate(['/login']);
@@ -55,7 +53,6 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.documentElement.style.overflow = 'hidden';
-    this.getTiposCambio();
   }
 
   ngOnDestroy(): void {
@@ -156,12 +153,17 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   onIngresar() {
+    this.selectedYear = (new Date().getFullYear()).toString();
+    this.selectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     sessionStorage.setItem('periodo_month', this.selectedMonth.toString().padStart(2, '0'));
     sessionStorage.setItem('periodo_year', this.selectedYear.toString().padStart(4, '0'));
+
     sessionStorage.setItem('codempresa', '0001');
-    this.router.navigate(['/home']);
-    this.service.loadUserPermissions(this.dtoUser.profileId!, this.dtoUser.codEmpresa!);
+    this.getTiposCambio();
     this.getConfiguracionSistema();
+    this.service.loadUserPermissions(this.dtoUser.profileId!, this.dtoUser.codEmpresa!);
+
+    this.router.navigate(['/home']);
   }
 
   moveToNext(event: Event, index: number): void {
@@ -185,21 +187,20 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   getTiposCambio(): void {
-    this.maestrosService.getTiposCambio().subscribe(
-      (response: Response) => {
+    this.maestrosService.getTiposCambio().subscribe({
+      next: (response: Response) => {
         this.tiposCambio = response.resultado || [];
-        if (this.tiposCambio.length > 0) {
-          sessionStorage.setItem('tipocambio', JSON.stringify(this.tiposCambio[0]));
-        } else {
-          let tipoCambio = new MaeTipoCambio();
-          tipoCambio.impVenta = 0;
-          tipoCambio.impCompra = 0;
-          sessionStorage.setItem('tipocambio', JSON.stringify(tipoCambio));
-        }
+
+        const rate = this.tiposCambio.length > 0
+          ? this.tiposCambio[0]
+          : new MaeTipoCambio();
+
+        this.exchangeRateService.updateExchangeRate(rate);
       },
-      (error) => {
+      error: (error) => {
         console.error('Error al cargar tipos de cambio', error);
+        this.exchangeRateService.updateExchangeRate(new MaeTipoCambio());
       }
-    );
+    });
   }
 }

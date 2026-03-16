@@ -2,10 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, input, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { RegSecUser } from '../../../../models/reg-sec-user';
-
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { DeviceService } from '../../../../services/core-service/device.service';
+import { ExchangeRateService } from '../../../../shared/services/exchange-rate.service';
 
 @Component({
   selector: 'app-default-header',
@@ -56,12 +56,17 @@ export class DefaultHeaderComponent implements OnInit {
     { name: 'auto', text: 'Auto', icon: 'cilContrast' }
   ];
 
-  constructor(private router: Router, public deviceService: DeviceService) {
+  constructor(
+    private router: Router,
+    public deviceService: DeviceService,
+    public exchangeRateService: ExchangeRateService
+  ) {
     const currentYear = new Date().getFullYear();
     this.years = Array.from({ length: 10 }, (_, i) => currentYear - i);
     this.selectedYear = currentYear;
     this.selectedMonth = new Date().getMonth() + 1;
   }
+
   ngOnInit(): void {
     this.muestraBotonToogle = this.deviceService.isDesktopDevice();
     this.nombresCompletos = sessionStorage.getItem('nombresCompletos') || '';
@@ -73,12 +78,15 @@ export class DefaultHeaderComponent implements OnInit {
     this.dtoUser = userString ? JSON.parse(userString) : new RegSecUser();
     this.isDesktop = this.deviceService.isDesktopDevice();
 
-    const data = sessionStorage.getItem('tipocambio');
-
-    if (data) {
-      const tipoCambio = JSON.parse(data);
-      this.tipoCambioVenta = tipoCambio.impVenta;
-    }
+    this.exchangeRateService.exchangeRate$.subscribe({
+      next: (tipoCambio) => {
+        this.tipoCambioVenta = tipoCambio?.impVenta ?? 0;
+      },
+      error: (err) => {
+        console.error('Error receiving exchange rate update', err);
+        this.tipoCambioVenta = 0;
+      }
+    });
   }
 
   toggleDropdown() {
@@ -191,8 +199,7 @@ export class DefaultHeaderComponent implements OnInit {
   ];
 
   onLogout() {
-    sessionStorage.removeItem("isLoggedIn");
-    sessionStorage.removeItem('user_permissions');
+    sessionStorage.clear();
     this.router.navigate(['/login']);
   }
 
