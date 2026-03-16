@@ -1,8 +1,8 @@
 <div class="loading-overlay" *ngIf="isLoading$ | async">
     <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
 </div>
-<div class="container mt-2">
-    <div class="bar-buttons-top">
+<div class="container-fluid mt-2">
+    <div class="bar-buttons-top w-100">
         <div class="title-f6">Nuevo Usuario</div>
     </div>
     <div class="bar-buttons-top d-flex justify-content-end w-100">
@@ -29,18 +29,15 @@
     </div>
     <div class="col-md-3">
         <label class="form-label fw-semibold mb-2 d-block" for="paterno">Apellido Paterno</label>
-        <input class="form-control" id='paterno' name='paterno' type="text"
-            [(ngModel)]="usuario.userLastName" />
+        <input class="form-control" id='paterno' name='paterno' type="text" [(ngModel)]="usuario.userLastName" />
     </div>
     <div class="col-md-3">
         <label class="form-label fw-semibold mb-2 d-block" for="materno">Apellido Materno</label>
-        <input class="form-control" id='materno' name='materno' type="text"
-            [(ngModel)]="usuario.userMiddleName" />
+        <input class="form-control" id='materno' name='materno' type="text" [(ngModel)]="usuario.userMiddleName" />
     </div>
     <div class="col-md-3">
         <label class="form-label fw-semibold mb-2 d-block" for="nombres">Nombres</label>
-        <input class="form-control" id='nombres' name='nombres' type="text"
-            [(ngModel)]="usuario.userName" />
+        <input class="form-control" id='nombres' name='nombres' type="text" [(ngModel)]="usuario.userName" />
     </div>
 </div>
 <div class="row">
@@ -50,7 +47,8 @@
     </div>
     <div class="col-md-2">
         <label class="form-label fw-semibold mb-2 d-block" for="username">Username</label>
-        <input readonly class="form-control" id='username' name='username' type="text" [(ngModel)]="usuario.userUsername" />
+        <input readonly class="form-control" id='username' name='username' type="text"
+            [(ngModel)]="usuario.userUsername" />
     </div>
     <div class="col-md-3">
         <label class="form-label fw-semibold mb-2 d-block" for="password">Perfil</label>

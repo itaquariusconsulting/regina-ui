@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, input, NO_ERRORS_SCHEMA, OnInit } from '@angular/core';
+import { Component, EventEmitter, HostListener, input, NO_ERRORS_SCHEMA, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { RegSecUser } from '../../../../models/reg-sec-user';
 import { Subscription } from 'rxjs';
@@ -93,8 +93,10 @@ export class DefaultHeaderComponent implements OnInit {
     this.showDropdown = !this.showDropdown;
   }
 
-  onToggleSidebar() {
+  @Output() toggleSidebar = new EventEmitter<void>();
 
+  onToggleSidebar() {
+    this.toggleSidebar.emit();
   }
 
   @HostListener('document:click', ['$event'])
