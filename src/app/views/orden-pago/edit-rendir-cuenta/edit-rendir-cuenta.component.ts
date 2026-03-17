@@ -41,6 +41,7 @@ import { DocumentoService } from '../../../services/documento.service';
 import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
+
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -59,11 +60,6 @@ export class DatosImagen {
   rawText?: string;
 }
 
-export class TypeMovement {
-  idMovement?: number;
-  detMovement?: string;
-}
-
 @Component({
   selector: 'app-edit-rendir-cuenta',
   standalone: true,
@@ -78,7 +74,6 @@ export class TypeMovement {
   styleUrl: './edit-rendir-cuenta.component.scss',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-
 export class EditRendirCuentaComponent implements OnInit {
   @ViewChild('orderDialog') orderDialog!: TemplateRef<any>;
   dialogRef!: MatDialogRef<any>;
@@ -100,6 +95,7 @@ export class EditRendirCuentaComponent implements OnInit {
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
+
   codEmpresa: string = sessionStorage.getItem('codempresa') || '';
   codAuxiliar: string = '';
   auxiliarProveedor: MaeAuxiliarDTO = new MaeAuxiliarDTO();
@@ -115,13 +111,13 @@ export class EditRendirCuentaComponent implements OnInit {
   detalle: string = '';
   ruc: string = "";
   validate: boolean = false;
+  hasValidRules: boolean = false;
+  hasValidItems: boolean = true;
   mensaje: string = "";
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   reglas: RegRenValidate[] = [];
   keywords: RegRenKeywordDTO[] = [];
-  typeMovements: TypeMovement[] = [{ idMovement: 1, detMovement: "Alimentación" }, { idMovement: 2, detMovement: "Transpporte" }]
-  TypeMovement: TypeMovement = new TypeMovement();
   rubros: MaeRubro[] = [];
   tiposGasto: MaeTipoGasto[] = [];
   documentos: MaeDocumento[] = [];
@@ -145,7 +141,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadingService.show();
-    this.TypeMovement = this.typeMovements[0];
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data;
@@ -184,6 +179,8 @@ export class EditRendirCuentaComponent implements OnInit {
     this.detalle = '';
     this.ruc = "";
     this.validate = false;
+    this.hasValidRules = false;
+    this.hasValidItems = true;
     this.mensaje = "";
     this.mensajeDetalle = "";
     this.itemsText = "";
@@ -234,9 +231,10 @@ export class EditRendirCuentaComponent implements OnInit {
     });
 
     this.mensaje = result.errors.join('\n');
-    this.validate = result.isValid;
+    this.hasValidRules = result.isValid;
+    this.hasValidState();
 
-    return result.isValid;
+    return this.validate;
   }
 
   onGetDatosRuc(): void {
@@ -346,13 +344,16 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private handleRucResponse(response: Response): void {
     if (!response || response.error !== 0) {
-      this.validate = false;
+      this.hasValidRules = false;
+      this.hasValidState();
+
       return;
     }
 
     this.padronRuc = response.resultado;
     this.mensaje = '';
-    this.validate = true;
+    this.hasValidRules = true;
+    this.hasValidState();
 
     this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
 
@@ -385,7 +386,8 @@ export class EditRendirCuentaComponent implements OnInit {
       }
     });
 
-    this.validate = false;
+    this.hasValidRules = false;
+    this.hasValidState();
     this.mensaje = message;
   }
 
@@ -428,6 +430,7 @@ export class EditRendirCuentaComponent implements OnInit {
       },
       error: (err) => {
         console.error(err);
+        this.loadingService.hide();
       },
       complete: () => {
         this.loadingService.hide();
@@ -498,6 +501,9 @@ export class EditRendirCuentaComponent implements OnInit {
     const rule = this.reglas.find(r => r.fieldCode === FieldCode.DOCUMENT_ITEMS);
     if (!rule || !value || value.trim().length === 0) {
       this.mensajeDetalle = '';
+      this.hasValidItems = true;
+      this.hasValidState();
+
       return;
     }
 
@@ -509,14 +515,20 @@ export class EditRendirCuentaComponent implements OnInit {
       padronRuc: this.padronRuc,
       forbiddenKeywords: this.keywords
     };
+
     const error = this.validationEngine.validateRule(rule, context);
     this.mensajeDetalle = error || '';
+    
+    this.hasValidItems = !error;
+    this.hasValidState();
   }
 
   ruccompleto(): void {
     if (this.ruc.length !== RucInput.LENGTH) {
       this.mensaje = 'El RUC debe contener 11 dígitos.';
-      this.validate = false;
+      this.hasValidRules = false;
+      this.hasValidState();
+      
       return;
     }
 
@@ -749,6 +761,10 @@ export class EditRendirCuentaComponent implements OnInit {
         this.loadingService.hide();
       }
     )
+  }
+
+  private hasValidState(): void {
+    this.validate = this.hasValidRules && this.hasValidItems;
   }
 }
 
