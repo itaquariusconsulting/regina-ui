@@ -4,8 +4,6 @@ import { DefaultLayoutComponent } from './components/layout/default-layout/defau
 import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-orden-pago.component';
 import { SettingsComponent } from './views/settings/settings.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-paso-det/list-orden-paso-det.component';
-import { ListSolicitudComponent } from './views/solicitud/list-solicitud/list-solicitud.component';
-import { EditSolicitudComponent } from './views/solicitud/edit-solicitud/edit-solicitud.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.component';
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';
@@ -53,14 +51,6 @@ export const routes: Routes = [
       {
         path: 'list-orders-detail',
         component: ListOrdenPagoDetComponent
-      },
-      {
-        path: 'list-solicitudes',
-        component: ListSolicitudComponent
-      },
-      {
-        path: 'edit-solicitud',
-        component: EditSolicitudComponent
       },
       {
         path: 'list-usuarios',
