@@ -64,6 +64,11 @@
               *appHasPermission="{ route: '/list-orders', action: 'permitView' }">
               <i class="fa-solid fa-circle-info"></i>
             </button>
+            <button (click)="onPlanillaMovilidad(reg)" title="Planilla de Movilidad" type="button"
+              [disabled]="!isActionEnabled(reg.tipEstado!, 'add')" class="general-button btn-dark btn-sm"
+              *appHasPermission="{ route: '/list-orders', action: 'permitCreate' }">
+              <i class="fa-solid fa-car"></i>
+            </button>
           </td>
         </tr>
       </tbody>

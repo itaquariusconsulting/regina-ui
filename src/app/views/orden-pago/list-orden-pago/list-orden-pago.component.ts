@@ -262,7 +262,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
         this.router.navigate(['/edit-rendir-cuenta'], { state: { data: orden } });
       }
     }
-
   }
 
   viewOrdenesPagoDet(orden: OrdenPago) {
@@ -310,7 +309,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   isActionEnabled(state: string, action: 'read' | 'add' | 'info'): boolean {
     if (!state)
       return false;
-
     return this.stateActions[state]?.[action] || false;
   }
 
@@ -353,5 +351,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     return this.detailsAsiento.reduce((total, item) => {
       return total + (item.indDebeHaber === indDebeHaber ? ((moneda == '01' ? item.impSoles : item.impDolares) || 0) : 0);
     }, 0);
+  }
+
+  onPlanillaMovilidad(orden: OrdenPago) {
+    this.router.navigate(['/planilla-movilidad'], { state: { data: orden } });
   }
 }

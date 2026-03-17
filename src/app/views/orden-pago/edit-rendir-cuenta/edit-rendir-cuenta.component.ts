@@ -437,16 +437,29 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): void {
     this.dataImagen.documentType = detected.documentType;
-    if(this.dataImagen.documentType?.startsWith('F')) {
-      this.dataImagen.documentType='FC';
+    if (this.dataImagen.documentType?.startsWith('F')) {
+      this.dataImagen.documentType = 'FC';
     }
     if (this.dataImagen.documentType) {
-            console.log("Aqui etros : ", this.dataImagen.documentType);
       this.documentos = this.documentosGeneral.filter(doc => doc.desCorta?.includes(this.dataImagen.documentType ?? ''));
-      this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FV';
+      this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FC';
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
+
+    if (this.dataImagen.documentNumber) {
+
+      const partes = this.dataImagen.documentNumber.split('-');
+
+      if (partes.length === 2) {
+
+        const serie = partes[0];
+        const numero = partes[1].padStart(15, '0');
+
+        this.dataImagen.documentNumber = `${serie}-${numero}`;
+      }
+    }
+
     this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;

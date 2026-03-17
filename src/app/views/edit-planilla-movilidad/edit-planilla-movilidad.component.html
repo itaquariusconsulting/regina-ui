@@ -1,0 +1,96 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+    <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="form-container">
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="h6-header">Proyecto: {{centro.codCCostos}} - {{centro.desCCostos}}</h6>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="h6-header">Nueva Planilla de Movilidad para la Orden de Pago - {{orden.numOrden}}</h6>
+        </div>
+    </div>
+
+    <div class="bar-buttons-top d-flex justify-content-between align-items-end flex-wrap">
+
+        <div class="d-flex gap-2">
+
+        </div>
+
+        <div class="d-flex align-items-center gap-1 mt-3">
+
+            <ng-container>
+
+            </ng-container>
+
+            <button (click)="onBack()" class="general-button btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i>
+                {{isDesktop ? 'Regresar' : ''}}
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="row mt-1">
+        <div class="col-md-3">
+            <label class="form-label fw-semibold mb-2 d-block">Banco</label>
+            <select class="form-select" id="bancos" name="bancos" [(ngModel)]="banco">
+                <option *ngFor="let banco of bancos" [value]="banco.codAuxiliar">{{banco.desAuxiliar}}</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold mb-2 d-block">Monto S/</label>
+            <input style="width:200px" type="text" name="saldoSoles" id="saldoSoles" class="form-control text-end"
+                [(ngModel)]="ordenPagoPlanillaMovilidadCab.codAuxiliarBanco" currencyMask
+                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+        </div>
+    </div>
+
+
+
+
+
+
+
+    <div class="row mt-1">
+        <h6 class="h6-header">DATOS REALES DEL PROVEEDOR</h6>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
+            <input maxlength="11" (input)="ruccompleto()" class="form-control" name="ruc" id="ruc" [(ngModel)]="ruc" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
+            <input readonly class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Estado</label>
+            <input readonly class="form-control" name="estado" id="estado" [(ngModel)]="padronRuc.estado" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Condición</label>
+            <input readonly class="form-control" name="condicion" id="condicion" [(ngModel)]="padronRuc.condicion" />
+        </div>
+    </div>
+
+    <div class="row mt-2">
+        <div class="col-md-12">
+            <label class="form-label fw-semibold mb-2 d-block">Dirección</label>
+            <input class="form-control" name="direccion" id="direccion" [(ngModel)]="padronRuc.nombreVia" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div *ngIf="mensaje" class="col-md-12">
+            <span class="mensaje-alerta">{{mensaje}}</span>
+        </div>
+    </div>
+
+</div>

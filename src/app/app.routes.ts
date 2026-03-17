@@ -17,6 +17,8 @@ import { EditRegRenValidateComponent } from './views/validates/edit-validacion/e
 import { EditRendirCuentaComponent } from './views/orden-pago/edit-rendir-cuenta/edit-rendir-cuenta.component';
 import { ListPermisosComponent } from './views/permisos/list-permisos/list-permisos.component';
 import { ViewOrdenPagoComponent } from './views/orden-pago/view-orden-pago/view-orden-pago.component';
+import { PlanillaMovilidadComponent } from './views/planilla-movilidad/planilla-movilidad.component';
+import { EditPlanillaMovilidadComponent } from './views/edit-planilla-movilidad/edit-planilla-movilidad.component';
 
 export const routes: Routes = [
 
@@ -53,6 +55,14 @@ export const routes: Routes = [
       {
         path: 'list-orders-detail',
         component: ListOrdenPagoDetComponent
+      },
+      {
+        path: 'planilla-movilidad',
+        component: PlanillaMovilidadComponent
+      },
+      {
+        path: 'edit-planilla-movilidad',
+        component: EditPlanillaMovilidadComponent
       },
       {
         path: 'list-solicitudes',

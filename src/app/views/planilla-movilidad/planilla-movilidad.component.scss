@@ -1,0 +1,7 @@
+.pdf-hidden {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+    width: 800px;
+    /* importante para que renderice bien */
+}

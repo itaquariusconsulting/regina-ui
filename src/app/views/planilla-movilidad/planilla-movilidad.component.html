@@ -1,0 +1,99 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+    <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+<div class="container-fluid mt-2">
+    <div class="bar-buttons-top w-100">
+        <div class="title-f6">Planilla de Movilidad: Orden: {{orden.numOrden}}</div>
+    </div>
+
+    <div class="bar-buttons-top d-flex justify-content-between align-items-end flex-wrap">
+        <div class="d-flex gap-2">
+            <div class="input-group justify-content-start w-100">
+                <span class="input-group-text"><i class="fa fa-search me-2"></i></span>
+                <input style="width: 500px !important;" type="text" class="form-control"
+                    placeholder="Buscar registro..." />
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-1 mt-3">
+            <button title="Nueva Planilla de Movilidad" (click)="onEditPlanillaMovilidad()"
+                class="general-button btn-primary">
+                <i class="fas fa-plus"></i>
+                Nueva
+            </button>
+            <button (click)="onBack()" class="general-button btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Regresar
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container table-responsive">
+        <table class="table global-table table-striped table-hover">
+            <thead>
+                <th class="text-center">Orden</th>
+                <th class="text-center">Auxiliar</th>
+                <th class="text-center">Fecha de Orden</th>
+                <th class="text-center">Tipo de Gasto</th>
+                <th class="text-center">Moneda</th>
+                <th class="text-center">Importe</th>
+                <th class="text-center">Rendido</th>
+                <th class="text-center">Estado</th>
+                <th class="text-center">Acciones</th>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+
+        <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small" style="font-family: var(--app-font-family) !important;">
+                Mostrando Página <strong>{{ currentPage + 1 }}</strong> de
+                <strong>{{ totalPages }}</strong> (Total: {{ totalItems }})
+            </span>
+
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" [class.disabled]="currentPage === 0">
+                        <button class="page-link" (click)="changePage(currentPage - 1)" aria-label="Previous">
+                            <span aria-hidden="true">&laquo; Anterior</span>
+                        </button>
+                    </li>
+
+                    <li class="page-item disabled">
+                        <span class="page-link border-0 text-dark fw-bold">{{
+                            currentPage + 1
+                            }}</span>
+                    </li>
+
+                    <li class="page-item" [class.disabled]="currentPage >= totalPages - 1">
+                        <button class="page-link" (click)="changePage(currentPage + 1)" aria-label="Next">
+                            <span aria-hidden="true">Siguente &raquo;</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+<div id="reporte" class="pdf-hidden" style="font-family: var(--app-font-family);">
+    <div class="row">
+        <div class="col-md-3">
+            <img src="assets\images\brand\logo.png" width="160px" />
+        </div>
+        <div class="col-md-9">
+            <div class="row">
+                <div class="col-md-12">
+                    <h6>LIQUIDACIÓN Y/O REEMBOLSO DE FONDOS</h6>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <span style="font-size: 0.9rem !important;">FIN-PR-04-FO-02 / Ver.02</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -113,4 +113,26 @@ export class MaestrosService {
       responseType: 'json'
     });
   }
+
+  getCentroCostos(codEmpresa: string, numVerCCostos: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}centro-costos/listar/${codEmpresa}/${numVerCCostos}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
+  getBancos(codEmpresa: string): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.get<Response>(`${this.apiUrlMaestros}bancos/listar/${codEmpresa}`, {
+      headers,
+      responseType: 'json'
+    });
+  }
 }
