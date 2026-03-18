@@ -91,10 +91,10 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   imagen: Imagen = new Imagen();
 
   private readonly stateActions: any = {
-    'EM': { read: false, add: false, info: false },
-    'PE': { read: false, add: true, info: true },
-    'LQ': { read: true, add: false, info: true },
-    'PR': { read: false, add: false, info: false }
+    'EM': { asiento_contable: false, rendir_cuenta: false, detalle: false, planilla_movillidad: true },
+    'PE': { asiento_contable: false, rendir_cuenta: true, detalle: true, planilla_movillidad: true },
+    'LQ': { asiento_contable: true, rendir_cuenta: false, detalle: true, planilla_movillidad: true },
+    'PR': { asiento_contable: false, rendir_cuenta: false, detalle: false, planilla_movillidad: false }
   };
 
   ngOnInit(): void {
@@ -282,9 +282,10 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     }
   }
 
-  isActionEnabled(state: string, action: 'read' | 'add' | 'info'): boolean {
-    if (!state)
+  isActionEnabled(state: string, action: string): boolean {
+    if (!state) {
       return false;
+    }
     return this.stateActions[state]?.[action] || false;
   }
 
