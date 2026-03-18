@@ -58,6 +58,7 @@ export class DatosImagen {
   items: ItemDetalle[] = [];
   currency?: string;
   rawText?: string;
+  igv?: string;
 }
 
 @Component({
@@ -449,13 +450,9 @@ export class EditRendirCuentaComponent implements OnInit {
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
-
     if (this.dataImagen.documentNumber) {
-
       const partes = this.dataImagen.documentNumber.split('-');
-
       if (partes.length === 2) {
-
         const serie = partes[0];
         const numero = partes[1].padStart(15, '0');
 
@@ -467,6 +464,8 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
     this.dataImagen.amount = detected.amount;
+    this.dataImagen.igv = detected.igv;
+
     this.dataImagen.documentCurrency = detected.documentCurrency;
     if (detected.documentCurrency) {
       this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
@@ -483,11 +482,14 @@ export class EditRendirCuentaComponent implements OnInit {
         this.ordenPagoDet.codMoneda = '01';
       }
     }
+
     this.dataImagen.items = detected.items;
     this.dataImagen.rawText = detected.rawText;
+
     const issuerRuc = detected.issuerRuc;
     this.dataImagen.issuerRuc = issuerRuc;
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
+    
     this.cargarItems(this.dataImagen.items);
   }
 
