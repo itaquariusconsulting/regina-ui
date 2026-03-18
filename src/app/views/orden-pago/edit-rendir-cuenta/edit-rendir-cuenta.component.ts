@@ -41,6 +41,7 @@ import { DocumentoService } from '../../../services/documento.service';
 import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
+import { ConfigService } from '../../../services/config.service';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -96,7 +97,8 @@ export class EditRendirCuentaComponent implements OnInit {
     private maestrosService: MaestrosService,
     private deviceService: DeviceService,
     private documentoService: DocumentoService,
-    private ordenPagoDetService: OrdenPagoDetService
+    private ordenPagoDetService: OrdenPagoDetService,
+    private configService: ConfigService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -142,13 +144,22 @@ export class EditRendirCuentaComponent implements OnInit {
   nroItemOp: string = "";
 
   selectedFile?: File;
+  codRubroDefault?: string = "";
+  codTipoGastoDefault?: string = "";
+  indMovilidad?: string = "N";
 
-  ngOnInit(): void {
+  async ngOnInit() {
     this.loadingService.show();
     this.TypeMovement = this.typeMovements[0];
     const state = history.state;
     if (state && state.data) {
-      this.orden = state.data;
+      this.orden = state.data.orden;
+      this.indMovilidad = state.data.movilidad;
+      if (this.indMovilidad == 'S') {
+        await this.configService.loadConfig();
+        this.codRubroDefault = this.configService.get('COD_RUBRO_MOVILIDAD');
+        this.codTipoGastoDefault = this.configService.get('COD_TIPO_GASTO_MOVILIDAD');
+      }
       this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
       this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
     }
@@ -250,7 +261,11 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
       (response: Response) => {
         this.rubros = response.resultado || [];
-        this.ordenPagoDet.codRubro = this.rubros.length > 0 ? this.rubros[0].codRubro : '';
+        if (this.indMovilidad !== 'S') {
+          this.ordenPagoDet.codRubro = this.rubros.length > 0 ? this.rubros[0].codRubro : '';
+        } else {
+          this.ordenPagoDet.codRubro = this.codRubroDefault;
+        }
         this.getTiposGasto(this.ordenPagoDet.codRubro ?? '');
       },
       (error) => {
@@ -263,9 +278,12 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
       (response: Response) => {
         this.tiposGasto = response.resultado || [];
-        this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+        if (this.indMovilidad !== 'S') {
+          this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+        } else {
+          this.ordenPagoDet.codTipoGasto = this.codTipoGastoDefault;
+        }
         this.getMonedas();
-
       },
       (error) => {
         console.error('Error al cargar tipos de gasto', error);

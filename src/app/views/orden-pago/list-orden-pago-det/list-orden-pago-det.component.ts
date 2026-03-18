@@ -29,16 +29,18 @@ import { DocumentoService } from '../../../services/documento.service';
 import { ConVoucherService } from '../../../services/con-voucher-item.service';
 import { ConVoucherItem } from '../../../models/con-voucher.item';
 import { WrapperRequestVoucherItem } from '../../../models/wrappers/wrapper-request-voucher-item';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 @Component({
   selector: 'app-edit-orden-pago',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    LoadingDancingSquaresComponent
+    LoadingDancingSquaresComponent,
+    HasPermissionDirective
   ],
-  templateUrl: './list-orden-paso-det.component.html',
-  styleUrls: ['./list-orden-paso-det.component.scss']
+  templateUrl: './list-orden-pago-det.component.html',
+  styleUrls: ['./list-orden-pago-det.component.scss']
 })
 export class ListOrdenPagoDetComponent implements OnInit {
 
@@ -71,7 +73,6 @@ export class ListOrdenPagoDetComponent implements OnInit {
   listaTiposDocumento: MaeDocumento[] = [];
   expandedRow: any = null;
   imagenDocumento: string | null = null;
-  
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
@@ -226,4 +227,5 @@ export class ListOrdenPagoDetComponent implements OnInit {
         }
       });
   }
+
 }

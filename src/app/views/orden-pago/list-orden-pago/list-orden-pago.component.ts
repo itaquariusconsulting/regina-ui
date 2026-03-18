@@ -26,6 +26,7 @@ import { WrapperRequestVoucherItem } from '../../../models/wrappers/wrapper-requ
 import { ConVoucherService } from '../../../services/con-voucher-item.service';
 import { ConVoucherItem } from '../../../models/con-voucher.item';
 import * as bootstrap from 'bootstrap';
+import { ConfigService } from '../../../services/config.service';
 
 export class Imagen {
   documentType?: string;
@@ -239,31 +240,6 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     );
   }
 
-  openEditRendirCuenta(orden: OrdenPago) {
-    const hoy = new Date();
-    if (orden.fecRendicion) {
-
-      const fechaRendicion = new Date(orden.fecRendicion);
-
-      if (fechaRendicion.getTime() < hoy.getTime()) {
-        console.log("Fecha de Rendición vencida");
-        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-          width: '280px',
-          disableClose: true,
-          data: {
-            title: 'Alerta',
-            message: MessageRenderAccount.FECHA_VENCIMIENTO,
-            type: 'alert',
-            autoClose: true,
-            duration: 2000
-          }
-        });
-      } else {
-        this.router.navigate(['/edit-rendir-cuenta'], { state: { data: orden } });
-      }
-    }
-  }
-
   viewOrdenesPagoDet(orden: OrdenPago) {
     this.router.navigate(['/list-orders-detail'], { state: { data: orden } });
   }
@@ -354,6 +330,30 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   onPlanillaMovilidad(orden: OrdenPago) {
-    this.router.navigate(['/planilla-movilidad'], { state: { data: orden } });
+    this.router.navigate(['/edit-rendir-cuenta'], { state: { data: {orden: orden, movilidad: 'S' } }});
+  }
+
+    openEditRendirCuenta(orden: OrdenPago) {
+    const hoy = new Date();
+    if (orden.fecRendicion) {
+
+      const fechaRendicion = new Date(orden.fecRendicion);
+
+      if (fechaRendicion.getTime() < hoy.getTime()) {
+        console.log("Fecha de Rendición vencida");
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+          width: '280px',
+          disableClose: true,
+          data: {
+            title: 'Alerta',
+            message: MessageRenderAccount.FECHA_VENCIMIENTO,
+            type: 'alert',
+            autoClose: true,
+            duration: 2000
+          }
+        });
+      }
+      this.router.navigate(['/edit-rendir-cuenta'], { state: { data: {orden: orden, movilidad: 'N' }} });
+    }
   }
 }

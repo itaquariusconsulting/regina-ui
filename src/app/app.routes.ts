@@ -3,7 +3,7 @@ import { LoginComponent } from './views/login/login.component';
 import { DefaultLayoutComponent } from './components/layout/default-layout/default-layout.component';
 import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-orden-pago.component';
 import { SettingsComponent } from './views/settings/settings.component';
-import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-paso-det/list-orden-paso-det.component';
+import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.component';
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';

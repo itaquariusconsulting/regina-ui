@@ -6,7 +6,7 @@
 
     <div class="row">
         <div class="col-md-6">
-            <h6 class="h6-header">Rendir Cuenta Orden - {{orden.numOrden}}</h6>
+            <h6 class="h6-header">{{indMovilidad=='S' ? 'Planilla de Movilidad' : 'Rendir Cuenta '}} de Orden - {{orden.numOrden}}</h6>
         </div>
     </div>
 
@@ -130,7 +130,7 @@
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Rubro</label>
-            <select (change)="changeRubro()" name="rubro" id="rubro" class="form-select"
+            <select [disabled] = "indMovilidad=='S'" (change)="changeRubro()" name="rubro" id="rubro" class="form-select"
                 [(ngModel)]="ordenPagoDet.codRubro">
 
                 <option *ngFor="let rubro of rubros" [value]="rubro.codRubro">
@@ -160,8 +160,8 @@
 
         <div class="row">
 
-            <div class="col-md-2">
-                <label class="form-label fw-semibold mb-2 d-block">Fecha de Documento</label>
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">Fecha Doc.</label>
                 <input class="form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
             </div>
 
@@ -178,12 +178,12 @@
                 </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
                 <input class="form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
             </div>
 
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
 
                 <select (change)="onMonedaChange()" name="moneda" id="moneda" class="form-select"
@@ -196,7 +196,17 @@
                 </select>
             </div>
 
-            <div class="col-md-2">
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">
+                    Impuestos {{dataImagen.currency}}
+                </label>
+
+                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                    [(ngModel)]="dataImagen.amount" currencyMask
+                    [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            </div>
+
+            <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">
                     Importe {{dataImagen.currency}}
                 </label>
