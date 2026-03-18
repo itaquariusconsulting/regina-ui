@@ -3,7 +3,7 @@
     <div class="title-f6">Lista de Usuarios</div>
   </div>
   <div class="bar-buttons-top d-flex justify-content-end w-100">
-    <button (click)="onNewUsuario()" class="general-button btn-primary me-2"
+    <button (click)="onNewUser()" class="general-button btn-primary me-2"
       *hasPermission="{ route: '/list-usuarios', action: 'permitCreate' }">
       <i class="fas fa-plus"></i>
       Nuevo Usuario
@@ -17,7 +17,7 @@
 <div class="table-container table-responsive">
   <table class="table global-table table-striped table-hover">
     <thead>
-      <th class="text-center">UserName</th>
+      <th class="text-center">Username</th>
       <th class="text-center">Apellido Paterno</th>
       <th class="text-center">Apellido Materno</th>
       <th class="text-center">Nombres</th>
@@ -34,7 +34,7 @@
         <td class="text-center">{{reg.userStatus}}</td>
         <td class="text-center">{{reg.profileShortName}}</td>
         <td class="text-center">
-          <button type="button" title="Editar Usuario" 
+          <button (click)="onEditUser(reg.userId!)" type="button" title="Editar Usuario" 
             type="button" class="btn btn-warning btn-sm me-1" 
             *hasPermission="{ route: '/list-usuarios', action: 'permitEdit' }">
             <i class="fa fa-edit"></i>

@@ -39,4 +39,15 @@ export class RegSecUserService {
       responseType: 'json'
     });
   }
+
+  getUserById(id: number): Observable<Response> {
+    return this.http.get<Response>(`${this.apiUrlAuth}/api/usuario/${id}`, { headers: this.getHeaders() });
+  }
+
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+  }
 }
