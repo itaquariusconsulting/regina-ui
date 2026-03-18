@@ -238,7 +238,7 @@ export class DefaultLayoutComponent implements OnInit {
                 break;
 
               case 'usuario_true':
-                this.router.navigate(['/edit-usuario']);
+                this.router.navigate(['/nuevo-usuario']);
                 break;
             }
 

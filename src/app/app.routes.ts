@@ -5,7 +5,7 @@ import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-
 import { SettingsComponent } from './views/settings/settings.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
-import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.component';
+import { NuevoUsuarioComponent } from './views/usuario/nuevo-usuario/nuevo-usuario.component';
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';
 import { NuevoPerfilComponent } from './views/perfil/nuevo-perfil/nuevo-perfil.component';
 import { EditPerfilComponent } from './views/perfil/edit-perfil/edit-perfil.component';
@@ -68,8 +68,8 @@ export const routes: Routes = [
         component: ListUsuariosComponent
       },
       {
-        path: 'edit-usuario',
-        component: EditUsuarioComponent
+        path: 'nuevo-usuario',
+        component: NuevoUsuarioComponent
       },
       {
         path: 'list-perfiles',

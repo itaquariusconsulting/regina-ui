@@ -16,12 +16,12 @@ import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { RegSecUserService } from '../../../services/reg-sec-user.service';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 @Component({
-  selector: 'app-edit-usuario',
+  selector: 'app-nuevo-usuario',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
-  templateUrl: './edit-usuario.component.html',
-  styleUrl: './edit-usuario.component.scss'
+  templateUrl: './nuevo-usuario.component.html',
+  styleUrl: './nuevo-usuario.component.scss'
 })
-export class EditUsuarioComponent implements OnInit {
+export class NuevoUsuarioComponent implements OnInit {
 
   @ViewChild('auxiliarTemplate')
   auxiliarTemplate!: TemplateRef<any>;

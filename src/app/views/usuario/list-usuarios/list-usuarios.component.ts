@@ -59,6 +59,6 @@ export class ListUsuariosComponent {
   }
 
   onNewUsuario() {
-    this.router.navigate(['/edit-usuario']);
+    this.router.navigate(['/nuevo-usuario']);
   }
 }
