@@ -51,22 +51,22 @@
           <td class="text-center">
             <button (click)="getAsiento(reg)" title="Ver Asiento Contable" type="button"
               [disabled]="!isActionEnabled(reg.tipEstado!, 'asiento_contable')" class="general-button btn-warning btn-sm me-2"
-              *appHasPermission="{ route: '/list-orders', action: 'permitView' }">
+              *hasPermission="{ route: '/list-orders', action: 'permitView' }">
               <i class="fas fa-book-open"></i>
             </button>
             <button (click)="openEditRendirCuenta(reg)" type="button" title="Rendir cuenta" type="button"
               [disabled]="!isActionEnabled(reg.tipEstado!, 'rendir_cuenta')" class="general-button btn-primary btn-sm me-1"
-              *appHasPermission="{ route: '/list-orders', action: 'permitCreate' }">
+              *hasPermission="{ route: '/list-orders', action: 'permitCreate' }">
               <i class="fa fa-plus"></i>
             </button>
             <button (click)="viewOrdenesPagoDet(reg)" title="Ver Detalle" type="button"
               [disabled]="!isActionEnabled(reg.tipEstado!, 'detalle')" class="general-button btn-success btn-sm"
-              *appHasPermission="{ route: '/list-orders', action: 'permitView' }">
+              *hasPermission="{ route: '/list-orders', action: 'permitView' }">
               <i class="fa-solid fa-circle-info"></i>
             </button>
             <button (click)="onPlanillaMovilidad(reg)" title="Planilla de Movilidad" type="button"
               [disabled]="!isActionEnabled(reg.tipEstado!, 'planilla_movillidad')" class="general-button btn-dark btn-sm"
-              *appHasPermission="{ route: '/list-orders', action: 'permitCreate' }">
+              *hasPermission="{ route: '/list-orders', action: 'permitCreate' }">
               <i class="fa-solid fa-car"></i>
             </button>
           </td>

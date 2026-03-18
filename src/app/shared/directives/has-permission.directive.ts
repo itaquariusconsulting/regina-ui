@@ -3,10 +3,10 @@ import { AuthService } from '../../services/auth.service';
 import { RegSecProfilePermissions } from '../../models/reg-sec-profile-permissions-dto';
 
 @Directive({
-  selector: '[appHasPermission]'
+  selector: '[hasPermission]'
 })
 export class HasPermissionDirective implements OnInit {
-  @Input() appHasPermission!: { route: string, action: keyof RegSecProfilePermissions };
+  @Input() hasPermission!: { route: string, action: keyof RegSecProfilePermissions };
 
   constructor(
     private templateRef: TemplateRef<any>,
@@ -24,8 +24,8 @@ export class HasPermissionDirective implements OnInit {
     this.viewContainer.clear();
 
     const hasAccess = this.authService.hasPermission(
-      this.appHasPermission.route,
-      this.appHasPermission.action
+      this.hasPermission.route,
+      this.hasPermission.action
     );
 
     if (hasAccess) {

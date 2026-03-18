@@ -4,7 +4,7 @@
   </div>
   <div class="bar-buttons-top d-flex justify-content-end w-100">
     <button (click)="onNewUsuario()" class="general-button btn-primary me-2"
-      *appHasPermission="{ route: '/list-usuarios', action: 'permitCreate' }">
+      *hasPermission="{ route: '/list-usuarios', action: 'permitCreate' }">
       <i class="fas fa-plus"></i>
       Nuevo Usuario
     </button>
@@ -34,8 +34,11 @@
         <td class="text-center">{{reg.userStatus}}</td>
         <td class="text-center">{{reg.profileShortName}}</td>
         <td class="text-center">
-          <button style="background-color: #0063A7;" title="Ver Detalle" type="button" class="btn btn-primary btn-sm"><i
-              class="fa fa-eye"></i></button>
+          <button type="button" title="Editar Usuario" 
+            type="button" class="btn btn-warning btn-sm me-1" 
+            *hasPermission="{ route: '/list-usuarios', action: 'permitEdit' }">
+            <i class="fa fa-edit"></i>
+          </button>
         </td>
       </tr>
     </tbody>

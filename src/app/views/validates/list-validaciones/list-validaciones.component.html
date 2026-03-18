@@ -4,7 +4,7 @@
     </div>
     <div class="bar-buttons-top d-flex justify-content-end w-100">
         <button (click)="onNewValidacion()" class="general-button btn-primary me-2"
-            *appHasPermission="{ route: '/list-validaciones', action: 'permitCreate' }">
+            *hasPermission="{ route: '/list-validaciones', action: 'permitCreate' }">
             <i class="fas fa-plus"></i>
             Nueva Regla
         </button>
