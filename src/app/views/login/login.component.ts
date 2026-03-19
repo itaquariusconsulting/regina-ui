@@ -9,6 +9,7 @@ import { RegSecUser } from '../../models/reg-sec-user';
 import { MaeTipoCambio } from '../../models/mae-tipo-cambio';
 import { MaestrosService } from '../../services/maestros.service';
 import { ExchangeRateService } from '../../shared/services/exchange-rate.service';
+import { AccountStatus } from '../../shared/constants/accounts';
 
 @Component({
   selector: 'app-login',
@@ -83,6 +84,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.pendingOk = !this.pendingOk;
       this.dtoUser.codEmpresa = '0001';
       this.dtoUser.codSucursal = '001';
+
       this.service.login(this.dtoUser).subscribe(
         (response: Response) => {
           if (response.error == 0) {
@@ -92,6 +94,16 @@ export class LoginComponent implements OnInit, OnDestroy {
             } else {
               this.dtoUser = response.resultado;
               this.authToken = this.dtoUser.authToken;
+              if (response.resultado.userStatus === AccountStatus.INACTIVE) {
+                Swal.fire({
+                  title: 'Cuenta Inactiva',
+                  text: "Su usuario se encuentra en estado Inactivo. Contacte al administrador.",
+                  icon: 'warning',
+                  confirmButtonText: 'Ok'
+                });
+                this.pendingOk = false;
+                return;
+              }
               sessionStorage.setItem('isLoggedIn', 'true');
               sessionStorage.setItem('authToken', this.authToken);
               sessionStorage.setItem('user', JSON.stringify(response.resultado));

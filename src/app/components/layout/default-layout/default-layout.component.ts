@@ -13,6 +13,7 @@ import { ChatResponse, ReginaIaService } from '../../../services/regina-ia.servi
 import { finalize } from 'rxjs/operators';
 import { WrapperRequestIA } from '../../../models/wrappers/wrapper-request-ia';
 import { environment } from '../../../../environments/environment';
+import { AccountType } from '../../../shared/constants/accounts';
 
 interface ChatMessage {
   from: 'user' | 'bot';
@@ -217,7 +218,7 @@ url: string = environment.apiUrlIA + "/chat";
       this.wrapperRequestIA.anoPeriodo = sessionStorage.getItem('periodo_year') || '';
       this.wrapperRequestIA.codPeriodo = sessionStorage.getItem('periodo_month') || '';
       this.wrapperRequestIA.codAuxiliar = this.user?.codAuxiliar || '';
-      this.wrapperRequestIA.isAdmin = this.user?.userAdmin ? 'A' : 'U';
+      this.wrapperRequestIA.isAdmin = this.user?.userAdmin ? AccountType.ADMIN : AccountType.USER;
 
       this.reginaService.enviarPregunta(this.wrapperRequestIA)
         .pipe(finalize(() => { }))

@@ -15,6 +15,8 @@ import { RegSecProfileService } from '../../../services/reg-sec-profile.service'
 import { RegSecProfile } from '../../../models/reg-sec-profile';
 import { RegSecUserService } from '../../../services/reg-sec-user.service';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { AccountStatus } from '../../../shared/constants/accounts';
+
 @Component({
   selector: 'app-nuevo-usuario',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
@@ -161,7 +163,7 @@ export class NuevoUsuarioComponent implements OnInit {
         this.usuario.profileShortName = this.profileSeleccionado.profileShortName;
         this.usuario.profileType = this.profileSeleccionado.profileType;
         this.usuario.userEnabled = true;
-        this.usuario.userStatus = this.usuario.userEnabled ? 'A' : 'I';
+        this.usuario.userStatus = this.usuario.userEnabled ? AccountStatus.ACTIVE : AccountStatus.INACTIVE;
         this.regSecUserService.saveRegSecUser(this.usuario).subscribe(
           (response: Response) => {
             this.router.navigate(['/list-usuarios']);
