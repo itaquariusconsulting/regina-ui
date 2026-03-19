@@ -6,6 +6,7 @@ import { SettingsComponent } from './views/settings/settings.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { NuevoUsuarioComponent } from './views/usuario/nuevo-usuario/nuevo-usuario.component';
+import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.component';
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';
 import { NuevoPerfilComponent } from './views/perfil/nuevo-perfil/nuevo-perfil.component';
 import { EditPerfilComponent } from './views/perfil/edit-perfil/edit-perfil.component';
@@ -63,13 +64,16 @@ export const routes: Routes = [
         component: EditPlanillaMovilidadComponent
       },
       {
-
         path: 'list-usuarios',
         component: ListUsuariosComponent
       },
       {
         path: 'nuevo-usuario',
         component: NuevoUsuarioComponent
+      },
+      {
+        path: 'edit-usuario/:id',
+        component: EditUsuarioComponent
       },
       {
         path: 'list-perfiles',

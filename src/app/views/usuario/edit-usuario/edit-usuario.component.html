@@ -1,1 +1,57 @@
-<p>edit-usuario works!</p>
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Editar Usuario</div>
+  </div>
+  <div class="bar-buttons-top d-flex justify-content-end w-100">
+    <button type="submit" class="general-button btn-primary me-2">
+      <i class="fas fa-save"></i>
+      Actualizar
+    </button>
+    <button (click)="onBack()" type="button" class="general-button btn-secondary">
+      <i class="fas fa-arrow-left"></i>
+      Regresar
+    </button>
+  </div>
+</div>
+
+<div class="row mb-2">
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Username</label>
+    <input class="form-control" type="text" name="username" [(ngModel)]="username">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Apellido Paterno</label>
+    <input class="form-control" type="text" name="userLastName" [(ngModel)]="userLastName">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Apellido Materno</label>
+    <input class="form-control" type="text" name="userMiddleName" [(ngModel)]="userMiddleName">
+  </div>
+</div>
+
+<div class="row mb-2">
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Nombres</label>
+    <input class="form-control" type="text" name="userFistName" [(ngModel)]="userFirstName">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Estado</label>
+    <select class="form-select" name="userStatus" [(ngModel)]="userStatus">
+      <option value="">Seleccione...</option>
+      <option value="A">Activo</option>
+      <option value="I">Inactivo</option>
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label fw-semibold mb-2 d-block">Perfil</label>
+    <select class="form-select" [(ngModel)]="userProfileName">
+      <option value="">Seleccione...</option>
+      <option value="ADMIN">ADMIN</option>
+      <option value="USER">USER</option>
+    </select>
+  </div>
+</div>
