@@ -12,6 +12,7 @@ import { DefaultFooterComponent } from './default-footer/default-footer.componen
 import { ChatResponse, ReginaIaService } from '../../../services/regina-ia.service';
 import { finalize } from 'rxjs/operators';
 import { WrapperRequestIA } from '../../../models/wrappers/wrapper-request-ia';
+import { environment } from '../../../../environments/environment';
 
 interface ChatMessage {
   from: 'user' | 'bot';
@@ -64,6 +65,9 @@ export class DefaultLayoutComponent implements OnInit {
   showReginaIcon: boolean = true;
 
   isListening = false;
+  mensajeRegina: string = "";
+
+url: string = environment.apiUrlIA + "/chat";
 
   ngOnInit(): void {
     this.isDesktop = this.deviceService.isDesktopDevice();
@@ -208,13 +212,13 @@ export class DefaultLayoutComponent implements OnInit {
       this.saludoInicialMostrado = true;
 
     } else {
-      console.log("Texto ", texto)
       this.wrapperRequestIA.mensaje = texto;
       this.wrapperRequestIA.userUserName = 'mangulom';
       this.wrapperRequestIA.anoPeriodo = sessionStorage.getItem('periodo_year') || '';
       this.wrapperRequestIA.codPeriodo = sessionStorage.getItem('periodo_month') || '';
       this.wrapperRequestIA.codAuxiliar = this.user?.codAuxiliar || '';
       this.wrapperRequestIA.isAdmin = this.user?.userAdmin ? 'A' : 'U';
+
       this.reginaService.enviarPregunta(this.wrapperRequestIA)
         .pipe(finalize(() => { }))
         .subscribe({
@@ -245,10 +249,13 @@ export class DefaultLayoutComponent implements OnInit {
             const respuesta = res.respuesta || 'No entendí eso, ¿podrías repetirlo?';
 
             this.messages.push({ from: 'bot', text: respuesta });
+            this.mensajeRegina="SI ERROR";
             this.hablarTexto(respuesta);
           },
           error: (err) => {
             console.error(err);
+            this.mensajeRegina = err;
+            
             const errorTexto = 'Hubo un problema al conectar con Regina, lo siento.';
             this.messages.push({ from: 'bot', text: errorTexto });
             this.hablarTexto(errorTexto);
