@@ -42,6 +42,8 @@ import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
 import { ConfigService } from '../../../services/config.service';
+import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
+import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -54,11 +56,11 @@ export class DatosImagen {
   issuerName?: string;
   issuerAddress?: string;
   documentDate?: string;
-  amount?: string;
+  amount?: string = '0.00';
   items: ItemDetalle[] = [];
   currency?: string;
   rawText?: string;
-  igv?: string;
+  igv?: string = '0.00';
 }
 
 @Component({
@@ -138,12 +140,12 @@ export class EditRendirCuentaComponent implements OnInit {
   items: any[] = [];
   itemsText: string = '';
   nroItemOp: string = "";
-
+  subTotal: number = 0;
   selectedFile?: File;
   codRubroDefault?: string = "";
   codTipoGastoDefault?: string = "";
   indMovilidad?: string = "N";
-
+  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
   async ngOnInit() {
     this.loadingService.show();
     const state = history.state;
@@ -195,6 +197,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensaje = "";
     this.mensajeDetalle = "";
     this.itemsText = "";
+    this.subTotal = 0;
     this.getRubros();
   }
 
@@ -480,8 +483,9 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
-    this.dataImagen.amount = detected.amount;
-    this.dataImagen.igv = detected.igv;
+    this.dataImagen.amount = detected.amount || '0';
+    this.dataImagen.igv = detected.igv || '0';
+    this.subTotal = Number(this.dataImagen.amount) - Number(this.dataImagen.igv);
 
     this.dataImagen.documentCurrency = detected.documentCurrency;
     if (detected.documentCurrency) {
@@ -506,7 +510,7 @@ export class EditRendirCuentaComponent implements OnInit {
     const issuerRuc = detected.issuerRuc;
     this.dataImagen.issuerRuc = issuerRuc;
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
-    
+
     this.cargarItems(this.dataImagen.items);
   }
 
@@ -537,7 +541,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
     const error = this.validationEngine.validateRule(rule, context);
     this.mensajeDetalle = error || '';
-    
+
     this.hasValidItems = !error;
     this.hasValidState();
   }
@@ -547,7 +551,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.mensaje = 'El RUC debe contener 11 dígitos.';
       this.hasValidRules = false;
       this.hasValidState();
-      
+
       return;
     }
 
@@ -784,6 +788,12 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private hasValidState(): void {
     this.validate = this.hasValidRules && this.hasValidItems;
+  }
+
+  devolverDocumento(tipoDoc: string): string {
+    return this.documentosGeneral
+      .find(doc => doc.desCorta == tipoDoc)
+      ?.desDocumento ?? '';
   }
 }
 

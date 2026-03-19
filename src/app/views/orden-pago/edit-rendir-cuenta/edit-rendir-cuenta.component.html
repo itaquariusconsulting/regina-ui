@@ -6,7 +6,8 @@
 
     <div class="row">
         <div class="col-md-6">
-            <h6 class="h6-header">{{indMovilidad=='S' ? 'Planilla de Movilidad' : 'Rendir Cuenta '}} de Orden - {{orden.numOrden}}</h6>
+            <h6 class="h6-header">{{indMovilidad=='S' ? 'Planilla de Movilidad' : 'Rendir Cuenta '}} de Orden -
+                {{orden.numOrden}}</h6>
         </div>
     </div>
 
@@ -39,7 +40,8 @@
                 <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
             </label>
 
-            <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="imageChangedEvent" class="general-button btn-danger">
+            <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="imageChangedEvent"
+                class="general-button btn-danger">
                 <i class="fa-solid fa-xmark"></i>
                 {{isDesktop ? 'Eliminar' : ''}}
             </button>
@@ -63,7 +65,8 @@
                     {{isDesktop ? 'Copiar' : ''}}
                 </button>
 
-                <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button" class="general-button btn-primary btn-sm">
+                <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button"
+                    class="general-button btn-primary btn-sm">
                     <i class="fas fa-save"></i>
                     {{isDesktop ? 'Guardar' : ''}}
                 </button>
@@ -130,7 +133,7 @@
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Rubro</label>
-            <select [disabled] = "indMovilidad=='S'" (change)="changeRubro()" name="rubro" id="rubro" class="form-select"
+            <select [disabled]="indMovilidad=='S'" (change)="changeRubro()" name="rubro" id="rubro" class="form-select"
                 [(ngModel)]="ordenPagoDet.codRubro">
 
                 <option *ngFor="let rubro of rubros" [value]="rubro.codRubro">
@@ -155,87 +158,114 @@
     </div>
 
     <h6 class="h6-header">DATOS DEL DOCUMENTO</h6>
-
     <div class="row mt-2">
-
         <div class="row">
-
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Fecha Doc.</label>
                 <input class="form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
             </div>
-
             <div class="col-md-3">
                 <label class="form-label fw-semibold mb-2 d-block">Tipo de Documento</label>
-
                 <select name="documento" id="documento" class="form-select" [(ngModel)]="ordenPagoDet.codDocumento"
                     (change)="changeDocumento()">
-
                     <option *ngFor="let doc of documentos" [value]="doc.desCorta">
                         {{ doc.desDocumento }}
                     </option>
-
                 </select>
             </div>
-
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
                 <input class="form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
             </div>
-
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
-
                 <select (change)="onMonedaChange()" name="moneda" id="moneda" class="form-select"
                     [(ngModel)]="ordenPagoDet.codMoneda">
-
                     <option *ngFor="let moneda of monedas" [value]="moneda.codMoneda">
                         {{ moneda.desMoneda }}
                     </option>
-
                 </select>
             </div>
-
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">
+                    Subtotal {{dataImagen.currency}}
+                </label>
+                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                    [(ngModel)]="subTotal" currencyMask
+                    [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+            </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">
                     Impuestos {{dataImagen.currency}}
                 </label>
-
                 <input readonly type="text" name="importe" id="importe" class="form-control text-end"
-                    [(ngModel)]="dataImagen.amount" currencyMask
+                    [(ngModel)]="dataImagen.igv" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
-
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">
                     Importe {{dataImagen.currency}}
                 </label>
-
                 <input readonly type="text" name="importe" id="importe" class="form-control text-end"
                     [(ngModel)]="dataImagen.amount" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
-
         </div>
-
         <div class="row">
-
             <div class="col-md-12">
                 <label class="form-label fw-semibold mb-2 d-block">Detalle</label>
-
-                <textarea class="form-control" rows="2" [(ngModel)]="itemsText" (ngModelChange)="onDetalleChange($event)">
+                <textarea class="form-control" rows="2" [(ngModel)]="itemsText"
+                    (ngModelChange)="onDetalleChange($event)">
                 </textarea>
-
             </div>
-
         </div>
-
         <div class="row">
             <div *ngIf="mensajeDetalle" class="col-md-12">
                 <span class="mensaje-alerta">{{mensajeDetalle}}</span>
             </div>
         </div>
+    </div>
 
+    <div *ngIf="indMovilidad=='S'">
+
+        <div class="bar-buttons-top d-flex justify-content-between align-items-end flex-wrap">
+            <h6 class="h6-header">DETALLE DE TRASLADOS ASOCIADOS A LA PLANILLA</h6>
+            <div class="d-flex gap-2">
+                <button title="Nuevo Traslado" class="general-button btn-primary btn-sm" type="button"><i
+                        class="fas fa-plus"></i> {{isDesktop ? 'Nuevo' : ''}}</button>
+            </div>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead>
+                <th>Fecha</th>
+                <th>Tipo Documento</th>
+                <th>Nro Documento</th>
+                <th>Razón Social</th>
+                <th>Origen</th>
+                <th>Destino</th>
+                <th>Observaciones</th>
+                <th>Importe </th>
+                <th>Nro Ocupantes</th>
+            </thead>
+            <tbody>
+                <tr *ngFor="let traslado of listaMovilidad">
+                    <td class="text-center">{{traslado.fechaTraslado | date: 'dd-MM-yyyy'}}</td>
+                    <td class="text-start">{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
+                    <td class="text-start">{{traslado.numDocumento}}</td>
+                    <td class="text-start">{{traslado.codAuxiliarProveedor}}</td>
+                    <td class="text-start">{{traslado.codOrigen}}</td>
+                    <td class="text-start">{{traslado.codDestino}}</td>
+                    <td class="text-start">{{traslado.observaciones}}</td>
+                    <td class="text-end">{{traslado.impSoles | number: '1.2-2'}}</td>
+                    <td class="text-center">
+                        <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
+                            <span
+                                style="font-weight: 600 !important; color: white !important">{{traslado.nroOcupantes}}</span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
 </div>
