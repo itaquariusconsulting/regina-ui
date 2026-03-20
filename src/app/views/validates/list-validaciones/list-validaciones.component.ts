@@ -75,6 +75,6 @@ export class ListValidacionesComponent implements OnInit {
   }
 
   onNewValidacion() {
-    this.router.navigate(['/edit-validacion']);
+    this.router.navigate(['/nuevo-validacion']);
   }
 }

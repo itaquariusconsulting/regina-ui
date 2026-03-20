@@ -160,6 +160,7 @@ export class NuevoUsuarioComponent implements OnInit {
         this.usuario.codEmpresa = this.codEmpresa;
         this.usuario.codSucursal = "001";
         this.usuario.profileId = this.profileSeleccionado.profileId;
+        this.usuario.profileId === 1 ? this.usuario.userAdmin = true : this.usuario.userAdmin = false;
         this.usuario.profileShortName = this.profileSeleccionado.profileShortName;
         this.usuario.profileType = this.profileSeleccionado.profileType;
         this.usuario.userEnabled = true;
