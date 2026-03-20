@@ -12,16 +12,16 @@ import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { Response } from '../../../models/response';
 
 @Component({
-  selector: 'app-edit-reg-ren-validate',
+  selector: 'app-nuevo-validacion',
   imports: [
     CommonModule,
     FormsModule,
     LoadingDancingSquaresComponent
   ],
-  templateUrl: './edit-validacion.component.html',
-  styleUrl: './edit-validacion.component.scss'
+  templateUrl: './nuevo-validacion.component.html',
+  styleUrl: './nuevo-validacion.component.scss'
 })
-export class EditRegRenValidateComponent implements OnInit {
+export class NuevoValidacionComponent implements OnInit {
 
   isLoading$: Observable<boolean>;
 

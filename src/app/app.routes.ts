@@ -12,7 +12,7 @@ import { NuevoPerfilComponent } from './views/perfil/nuevo-perfil/nuevo-perfil.c
 import { EditPerfilComponent } from './views/perfil/edit-perfil/edit-perfil.component';
 import { HomeComponent } from './views/home/home.component';
 import { ListValidacionesComponent } from './views/validates/list-validaciones/list-validaciones.component';
-import { EditRegRenValidateComponent } from './views/validates/edit-validacion/edit-validacion.component';
+import { NuevoValidacionComponent } from './views/validates/nuevo-validacion/nuevo-validacion.component';
 import { EditRendirCuentaComponent } from './views/orden-pago/edit-rendir-cuenta/edit-rendir-cuenta.component';
 import { ListPermisosComponent } from './views/permisos/list-permisos/list-permisos.component';
 import { ViewOrdenPagoComponent } from './views/orden-pago/view-orden-pago/view-orden-pago.component';
@@ -96,8 +96,8 @@ export const routes: Routes = [
         component: ListValidacionesComponent
       },
       {
-        path: 'edit-validacion',
-        component: EditRegRenValidateComponent
+        path: 'nuevo-validacion',
+        component: NuevoValidacionComponent
       },
       {
         path: 'settings',

@@ -4,6 +4,8 @@ import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
 import { WrapperRequestOrdenPago } from '../models/wrappers/wrapper-request-orden-pago';
 import { Response } from '../models/response';
+import { AccountType } from '../shared/constants/accounts';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -20,7 +22,7 @@ export class OrdenPagoService {
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
     });
-    return this.http.get<Response>(`${this.apiUrlProcess}orden-pago/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.codAuxiliar}/${wrapper.isAdmin ? "A" : "U"}`, {
+    return this.http.get<Response>(`${this.apiUrlProcess}orden-pago/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.codAuxiliar}/${wrapper.isAdmin ? AccountType.ADMIN : AccountType.USER}`, {
       headers,
       responseType: 'json'
     });

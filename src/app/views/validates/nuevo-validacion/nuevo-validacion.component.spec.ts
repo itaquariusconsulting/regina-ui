@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EditValidacionComponent } from './edit-validacion.component';
+import { NuevoValidacionComponent } from './nuevo-validacion.component';
 
 describe('EditValidacionComponent', () => {
-  let component: EditValidacionComponent;
-  let fixture: ComponentFixture<EditValidacionComponent>;
+  let component: NuevoValidacionComponent;
+  let fixture: ComponentFixture<NuevoValidacionComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditValidacionComponent]
+      imports: [NuevoValidacionComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(EditValidacionComponent);
+    fixture = TestBed.createComponent(NuevoValidacionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
