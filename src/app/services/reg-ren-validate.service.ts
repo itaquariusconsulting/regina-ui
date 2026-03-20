@@ -14,29 +14,29 @@ export class RegRenValidateService {
 
   constructor(private http: HttpClient) { }
 
-
   token = sessionStorage.getItem('authToken');
   apiUrlProcess: string = environment.apiUrlAuth;
 
   getRegRenValidateRules(): Observable<Response> {
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.token}`,
-      'Content-Type': 'application/json'
-    });
     return this.http.get<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/listar-reglas`, {
-      headers,
-      responseType: 'json'
+      headers: this.getHeaders()
     });
   }
 
   saveRegRenValidateRule(regla: RegRenValidate): Observable<Response> {
-    const headers = new HttpHeaders({
+    return this.http.post<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/insertar`, regla, {
+      headers: this.getHeaders()
+    });
+  }
+
+  getRuleById(id: number): Observable<Response> {
+    return this.http.get<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/${id}`, { headers: this.getHeaders() });
+  }
+
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
-    });
-    return this.http.post<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/insertar`, regla, {
-      headers,
-      responseType: 'json'
     });
   }
 }
