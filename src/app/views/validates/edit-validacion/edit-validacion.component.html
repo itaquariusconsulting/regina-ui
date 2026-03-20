@@ -1,0 +1,68 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+    <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+    <div class="bar-buttons-top w-100">
+        <div class="title-f6">Editar Regla: {{ validationRule.ruleName }}</div>
+    </div>
+    <div class="bar-buttons-top d-flex justify-content-end w-100">
+        <button (click)="onUpdateRule()" class="general-button btn-primary me-2">
+            <i class="fas fa-save"></i>
+            Actualizar
+        </button>
+        <button (click)="onBack()" type="button" class="general-button btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Regresar
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Nombre de la Regla</label>
+            <input type="text" [(ngModel)]="validationRule.ruleName" name="ruleName" class="form-control">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Tipo de Dato</label>
+            <input type="text" [value]="validationRule.dataType" class="form-control" readonly>
+        </div>
+        <div class="col-md-3 mb-3 d-flex align-items-end">
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="validationRule.isActive" name="isActive">
+                <label class="form-check-label fw-semibold mb-2 d-block">Activa</label>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Field Code</label>
+            <input type="text" [(ngModel)]="validationRule.fieldCode" name="fieldCode" class="form-control">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Expresión Regular (Regex)</label>
+            <input type="text" [(ngModel)]="validationRule.regexPattern" name="regexPattern" class="form-control">
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Mín. Valor</label>
+            <input type="number" [(ngModel)]="validationRule.minValue" name="minValue" class="form-control">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Máx. Valor</label>
+            <input type="number" [(ngModel)]="validationRule.maxValue" name="maxValue" class="form-control">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Mín. Longitud</label>
+            <input type="number" [(ngModel)]="validationRule.minLength" name="minLength" class="form-control">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block">Máx. Longitud</label>
+            <input type="number" [(ngModel)]="validationRule.maxLength" name="maxLength" class="form-control">
+        </div>
+
+        <div class="col-12 mb-3">
+            <label class="form-label fw-semibold mb-2 d-block ">Mensaje de Error</label>
+            <textarea [(ngModel)]="validationRule.errorMessage" name="errorMessage" class="form-control"
+                rows="2"></textarea>
+        </div>
+    </div>
+</div>

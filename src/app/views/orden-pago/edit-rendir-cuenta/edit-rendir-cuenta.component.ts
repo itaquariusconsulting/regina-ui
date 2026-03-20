@@ -213,9 +213,9 @@ export class EditRendirCuentaComponent implements OnInit {
     this.regRenValidateService.getRegRenValidateRules().subscribe({
       next: (response: Response) => {
         this.reglas = (response?.resultado ?? []).filter(
-          ({ documentType, documentSection }: RegRenValidate) =>
-            documentType === DocumentType.FACTURA ||
-            documentSection === DocumentSection.ENCABEZADO
+          ({ documentType, documentSection, isActive }: RegRenValidate) =>
+            (documentType === DocumentType.FACTURA || documentSection === DocumentSection.ENCABEZADO)
+            && isActive === true
         );
       },
       error: (error) => {
