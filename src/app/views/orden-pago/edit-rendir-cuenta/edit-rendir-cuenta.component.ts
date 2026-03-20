@@ -165,7 +165,7 @@ export class EditRendirCuentaComponent implements OnInit {
       ? JSON.parse(sessionStorage.getItem('user')!)
       : null;
     this.codEmpresa = user?.codEmpresa || '';
-    this.codAuxiliar = user?.codAuxiliar || '';
+    
     this.ordenPagoDetProvs = [];
     this.loadValidationRules();
     this.loadValidationKeywords();
@@ -253,7 +253,10 @@ export class EditRendirCuentaComponent implements OnInit {
 
   onGetDatosRuc(): void {
     this.sunatService.getDataRUC(this.ruc).subscribe({
-      next: (response: Response) => this.handleRucResponse(response),
+      next: (response: Response) => {
+        this.handleRucResponse(response);
+        this.codAuxiliar = this.listaAuxiliares.find(aux=>aux.numRuc == this.ruc)?.codAuxiliar ?? '';
+      },
       error: (err) => this.handleRucError(err)
     });
   }

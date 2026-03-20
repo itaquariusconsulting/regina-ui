@@ -16,16 +16,16 @@
         <div class="d-flex gap-2">
 
             <div>
-                <label class="form-label fw-semibold mb-1">Saldo Soles</label>
-                <input style="width:200px" type="text" name="saldoSoles" id="saldoSoles" class="form-control text-end"
+                <label class="form-label fw-semibold mb-2 d-block">Saldo Soles</label>
+                <input style="width:180px" type="text" name="saldoSoles" id="saldoSoles" class="general-input form-control text-end"
                     [(ngModel)]="saldoSoles" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
 
             <div>
-                <label class="form-label fw-semibold mb-1">Saldo Dólares</label>
-                <input style="width:200px" readonly type="text" name="saldoDolares" id="saldoDolares"
-                    class="form-control text-end" [(ngModel)]="saldoDolares" currencyMask
+                <label class="form-label fw-semibold mb-2 d-block">Saldo Dólares</label>
+                <input style="width:180px" readonly type="text" name="saldoDolares" id="saldoDolares"
+                    class="general-input form-control text-end" [(ngModel)]="saldoDolares" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
 
@@ -97,29 +97,29 @@
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
-            <input maxlength="11" (input)="ruccompleto()" class="form-control" name="ruc" id="ruc" [(ngModel)]="ruc" />
+            <input maxlength="11" (input)="ruccompleto()" class="form-control general-input" name="ruc" id="ruc" [(ngModel)]="ruc" />
         </div>
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
-            <input readonly class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
+            <input readonly class="form-control general-input" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
         </div>
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Estado</label>
-            <input readonly class="form-control" name="estado" id="estado" [(ngModel)]="padronRuc.estado" />
+            <input readonly class="form-control general-input" name="estado" id="estado" [(ngModel)]="padronRuc.estado" />
         </div>
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Condición</label>
-            <input readonly class="form-control" name="condicion" id="condicion" [(ngModel)]="padronRuc.condicion" />
+            <input readonly class="form-control general-input" name="condicion" id="condicion" [(ngModel)]="padronRuc.condicion" />
         </div>
     </div>
 
     <div class="row mt-2">
         <div class="col-md-12">
             <label class="form-label fw-semibold mb-2 d-block">Dirección</label>
-            <input class="form-control" name="direccion" id="direccion" [(ngModel)]="dataImagen.issuerAddress" />
+            <input class="form-control general-input" name="direccion" id="direccion" [(ngModel)]="dataImagen.issuerAddress" />
         </div>
     </div>
 
@@ -133,7 +133,7 @@
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Rubro</label>
-            <select [disabled]="indMovilidad=='S'" (change)="changeRubro()" name="rubro" id="rubro" class="form-select"
+            <select [disabled]="indMovilidad=='S'" (change)="changeRubro()" name="rubro" id="rubro" class="general-select form-select"
                 [(ngModel)]="ordenPagoDet.codRubro">
 
                 <option *ngFor="let rubro of rubros" [value]="rubro.codRubro">
@@ -143,16 +143,22 @@
             </select>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <label class="form-label fw-semibold mb-2 d-block">Concepto</label>
 
-            <select name="concepto" id="concepto" class="form-select" [(ngModel)]="ordenPagoDet.codTipoGasto">
+            <select name="concepto" id="concepto" class="general-select form-select" [(ngModel)]="ordenPagoDet.codTipoGasto">
 
                 <option *ngFor="let tipoGasto of tiposGasto" [value]="tipoGasto.codTipoGasto">
-                    {{tipoGasto.desTipoGasto}}
+                    {{tipoGasto.desTipoGasto}} - {{tipoGasto.codCuentaSoles}}>
                 </option>
 
             </select>
+        </div>
+                <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Cuenta Gasto</label>
+
+            
+
         </div>
 
     </div>
@@ -162,24 +168,24 @@
         <div class="row">
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Fecha Doc.</label>
-                <input class="form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
+                <input class="general-input form-control" name="fechadoc" id="fechadoc" [(ngModel)]="dataImagen.documentDate" />
             </div>
             <div class="col-md-3">
                 <label class="form-label fw-semibold mb-2 d-block">Tipo de Documento</label>
-                <select name="documento" id="documento" class="form-select" [(ngModel)]="ordenPagoDet.codDocumento"
+                <select name="documento" id="documento" class="general-select form-select" [(ngModel)]="ordenPagoDet.codDocumento"
                     (change)="changeDocumento()">
-                    <option *ngFor="let doc of documentos" [value]="doc.desCorta">
+                    <option class="option" *ngFor="let doc of documentos" [value]="doc.desCorta">
                         {{ doc.desDocumento }}
                     </option>
                 </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
-                <input class="form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
+                <input class="general-input form-control" name="nrodoc" id="nrodoc" [(ngModel)]="dataImagen.documentNumber" />
             </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
-                <select (change)="onMonedaChange()" name="moneda" id="moneda" class="form-select"
+                <select (change)="onMonedaChange()" name="moneda" id="moneda" class="form-select general-select"
                     [(ngModel)]="ordenPagoDet.codMoneda">
                     <option *ngFor="let moneda of monedas" [value]="moneda.codMoneda">
                         {{ moneda.desMoneda }}
@@ -190,7 +196,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Subtotal {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="subTotal" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
@@ -198,7 +204,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Impuestos {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="dataImagen.igv" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
@@ -206,7 +212,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Importe {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="form-control text-end"
+                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="dataImagen.amount" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
@@ -214,7 +220,7 @@
         <div class="row">
             <div class="col-md-12">
                 <label class="form-label fw-semibold mb-2 d-block">Detalle</label>
-                <textarea class="form-control" rows="2" [(ngModel)]="itemsText"
+                <textarea class="general-textarea form-control" rows="2" [(ngModel)]="itemsText"
                     (ngModelChange)="onDetalleChange($event)">
                 </textarea>
             </div>
