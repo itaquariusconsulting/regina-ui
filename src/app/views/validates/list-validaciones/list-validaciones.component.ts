@@ -8,10 +8,13 @@ import { Response } from '../../../models/response';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { Observable } from 'rxjs';
+import { LoadingService } from '../../../services/loading.service';
+import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 
 @Component({
   selector: 'app-list-validaciones',
-  imports: [CommonModule, FormsModule, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, HasPermissionDirective, LoadingDancingSquaresComponent],
   templateUrl: './list-validaciones.component.html',
   styleUrl: './list-validaciones.component.scss'
 })
@@ -19,14 +22,18 @@ export class ListValidacionesComponent implements OnInit {
   constructor(private regRenValidateService: RegRenValidateService,
     private location: Location,
     private router: Router,
-    private dialog: MatDialog
-  ) { }
+    private dialog: MatDialog,
+    private loadingService: LoadingService
+  ) { 
+    this.isLoading$ = this.loadingService.loading$;
+  }
 
   @ViewChild('myTable', { static: true }) tableRef!: ElementRef;
 
   validaciones: RegRenValidate[] = [];
   codEmpresa: string = "";
   codSucursal: string = "";
+  isLoading$: Observable<boolean>;
 
   ngOnInit(): void {
     this.loadUserFromSession();
@@ -58,14 +65,17 @@ export class ListValidacionesComponent implements OnInit {
   }
 
   private getValidaciones(): void {
+    this.loadingService.show();
     this.regRenValidateService.getRegRenValidateRules()
       .subscribe({
         next: (response: Response) => {
           this.validaciones = response?.resultado ?? [];
+          this.loadingService.hide();
         },
         error: (error) => {
           console.error('Error fetching validaciones', error);
           this.validaciones = [];
+          this.loadingService.hide();
         }
       });
   }

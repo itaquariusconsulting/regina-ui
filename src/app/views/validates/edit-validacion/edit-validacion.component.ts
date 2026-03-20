@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { LoadingService } from '../../../services/loading.service';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 
 @Component({
@@ -54,7 +55,30 @@ export class EditValidacionComponent implements OnInit {
     });
   }
 
-  onUpdateRule(): void { }
+  onUpdateRule(): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Confirmar Actualización',
+        message: '¿Estás seguro de que deseas guardar los cambios?',
+        type: 'confirm'
+      }
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.loadingService.show();
+
+      const rule: RegRenValidate = { ...this.validationRule };
+
+      this.validationService.patchRule(rule).subscribe({
+        next: () => {
+          this.loadingService.hide();
+          this.router.navigate(['/list-validaciones']);
+        },
+        error: () => this.loadingService.hide()
+      });
+    });
+  }
 
   onBack(): void {
     this.location.back();
