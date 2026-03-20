@@ -44,6 +44,8 @@ import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-
 import { ConfigService } from '../../../services/config.service';
 import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
 import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
+import { OrdenPagoDetProvService } from '../../../services/orden-pago-det-prov.service';
+import { WrapperRequestDocumebtoExistente } from '../../../models/wrappers/wrapper-request-documento-existente';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -95,6 +97,7 @@ export class EditRendirCuentaComponent implements OnInit {
     private deviceService: DeviceService,
     private documentoService: DocumentoService,
     private ordenPagoDetService: OrdenPagoDetService,
+    private ordenPagoDetProvService: OrdenPagoDetProvService,
     private configService: ConfigService
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -165,7 +168,7 @@ export class EditRendirCuentaComponent implements OnInit {
       ? JSON.parse(sessionStorage.getItem('user')!)
       : null;
     this.codEmpresa = user?.codEmpresa || '';
-    
+
     this.ordenPagoDetProvs = [];
     this.loadValidationRules();
     this.loadValidationKeywords();
@@ -255,11 +258,75 @@ export class EditRendirCuentaComponent implements OnInit {
     this.sunatService.getDataRUC(this.ruc).subscribe({
       next: (response: Response) => {
         this.handleRucResponse(response);
-        this.codAuxiliar = this.listaAuxiliares.find(aux=>aux.numRuc == this.ruc)?.codAuxiliar ?? '';
+        this.codAuxiliar = this.listaAuxiliares.find(aux => aux.numRuc == this.ruc)?.codAuxiliar ?? '';
       },
       error: (err) => this.handleRucError(err)
     });
   }
+
+  async onBuscarDocumento(): Promise<number> {
+    let wrapper: WrapperRequestDocumebtoExistente = new WrapperRequestDocumebtoExistente();
+    wrapper.codAuxiliar = this.ordenPagoDet.codAuxiliar;
+    wrapper.codDocumento = this.ordenPagoDet.codDocumento;
+    wrapper.codEmpresa = this.orden.codEmpresa;
+    wrapper.codSucursal = this.orden.codSucursal;
+
+    let serie = '';
+    let numero = '';
+
+    if (this.dataImagen.documentNumber) {
+      const partes = this.dataImagen.documentNumber.split('-');
+      if (partes.length === 2) {
+        serie = partes[0];
+        numero = partes[1].padStart(15, '0');
+      }
+    }
+    wrapper.numDocumento = numero;
+    wrapper.numSerieDoc = serie;
+    console.log("El Wrapper : ", wrapper);
+
+    return new Promise<number>((resolve) => {
+      this.ordenPagoDetService.onBuscarDocumento(wrapper).subscribe(
+        (response: Response) => {
+          if (response.error == 1) {
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '280px',
+              data: {
+                title: 'Error',
+                message: 'El documento ya existe',
+                type: 'alert'
+              }
+            });
+            resolve(0);
+          } else if (response.error == 2) {
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '280px',
+              data: {
+                title: 'Error',
+                message: 'Error al Ingresar Documento',
+                type: 'alert'
+              }
+            });
+            resolve(0);
+          } else {
+            resolve(1);
+          }
+        },
+        (error) => {
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '280px',
+            data: {
+              title: 'Error',
+              message: 'Error de conexión',
+              type: 'alert'
+            }
+          });
+          resolve(0);
+        }
+      );
+    });
+  }
+  // ..
 
   getRubros(): void {
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
@@ -333,24 +400,6 @@ export class EditRendirCuentaComponent implements OnInit {
         console.error('Error al cargar impuestos', error);
       }
     );
-  }
-
-  calcularImpuestos() {
-    this.ordenPagoDetProvs = [];
-    for (let e = 0; e < this.impuestos.length; e++) {
-      const ordenPagoDetProv = new OrdenPagoDetProv();
-      ordenPagoDetProv.impImpuestoBase = (this.ordenPagoDet.impSoles ?? 0) - ((this.ordenPagoDet.impSoles ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
-      ordenPagoDetProv.impImpuestoSecun = (this.ordenPagoDet.impDolares ?? 0) - ((this.ordenPagoDet.impDolares ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
-      ordenPagoDetProv.codEmpresa = this.codEmpresa;
-      ordenPagoDetProv.codSucursal = '001';
-      ordenPagoDetProv.numOrden = this.orden.numOrden;
-      ordenPagoDetProv.anoProceso = sessionStorage.getItem('periodo_year') || '';
-      ordenPagoDetProv.mesProceso = sessionStorage.getItem('periodo_month') || '';
-      ordenPagoDetProv.codDocumento = this.ordenPagoDet.codDocumento;
-      ordenPagoDetProv.codImpuesto = this.impuestos[e].codImpuesto;
-      ordenPagoDetProv.indAfecto = 'S';
-      this.ordenPagoDetProvs.push(ordenPagoDetProv);
-    }
   }
 
   changeRubro(): void {
@@ -649,7 +698,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
   onSaveAuxiliar(): void {
     let aux: MaeAuxiliarDTO | undefined = this.listaAuxiliares.find(aux => aux.numRuc == this.ruc);
-    console.log("auxi 1 ", aux);
     if (!aux) {
       aux = new MaeAuxiliarDTO();
       aux.codEmpresa = this.codEmpresa;
@@ -661,114 +709,143 @@ export class EditRendirCuentaComponent implements OnInit {
       aux.tipEstado = "";
       this.maestrosService.insertarAuxiliar(aux).subscribe(
         (response: Response) => {
-          console.log("Auxi ", response.resultado);
           this.codAuxiliar = response.resultado;
           this.ordenPagoDet.codAuxiliar = response.resultado;
           this.onSave();
         }
       )
     } else {
+      this.ordenPagoDet.codAuxiliar = aux.codAuxiliar;
       this.onSave()
     }
 
   }
 
-  onSave() {
-    const numserie = this.dataImagen.documentNumber?.split('-')[0] ?? '';
-    const numdoc = this.dataImagen.documentNumber?.split('-')[1] ?? '';
+  async onSave() {
+    const existe: number = await this.onBuscarDocumento();
 
-    this.ordenPagoDet.codEmpresa = this.codEmpresa;
-    this.ordenPagoDet.numOrden = this.orden.numOrden;
-    this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
-    this.ordenPagoDet.codSucursal = this.orden.codSucursal;
+    if (existe == 0) {
 
-    this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
-    this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
-    this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
+      const numserie = this.dataImagen.documentNumber?.split('-')[0] ?? '';
+      const numdoc = this.dataImagen.documentNumber?.split('-')[1] ?? '';
 
-    this.ordenPagoDet.anoEmisionDua = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
-    this.ordenPagoDet.anoProcesoDeclara = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
-    this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
-    this.ordenPagoDet.codCCostos = this.orden.codCCostos;
+      this.ordenPagoDet.codEmpresa = this.codEmpresa;
+      this.ordenPagoDet.numOrden = this.orden.numOrden;
+      this.ordenPagoDet.codCuentaConcepto = this.tipoGastoSeleccionado.codCuentaSoles;
+      this.ordenPagoDet.codSucursal = this.orden.codSucursal;
 
-    this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda === '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
-    this.ordenPagoDet.codCuentaDocumento = this.ordenPagoDet.codMoneda === '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
-    this.ordenPagoDet.numVerPlanCuentas = '001';
-    this.ordenPagoDet.numVerCCostos = '001';
-    this.ordenPagoDet.indDebeHaber = 'D';
+      this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
+      this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
+      this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
 
-    this.ordenPagoDet.fecDocumento = this.dataImagen.documentDate ? new Date(this.dataImagen.documentDate) : new Date();
+      this.ordenPagoDet.anoEmisionDua = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
+      this.ordenPagoDet.anoProcesoDeclara = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
+      this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
+      this.ordenPagoDet.codCCostos = this.orden.codCCostos;
 
-    this.ordenPagoDet.estDocIng = 'TO';
-    this.ordenPagoDet.indDet = 'N';
+      this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda === '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
+      this.ordenPagoDet.codCuentaDocumento = this.ordenPagoDet.codMoneda === '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
+      this.ordenPagoDet.numVerPlanCuentas = '001';
+      this.ordenPagoDet.numVerCCostos = '001';
+      this.ordenPagoDet.indDebeHaber = 'D';
 
-    this.ordenPagoDet.codEmpresa = this.codEmpresa;
-    this.ordenPagoDet.codSucursal = '001';
+      this.ordenPagoDet.fecDocumento = this.dataImagen.documentDate ? new Date(this.dataImagen.documentDate) : new Date();
 
-    this.ordenPagoDet.numSerieDoc = numserie;
-    this.ordenPagoDet.numDocumento = numdoc;
+      this.ordenPagoDet.estDocIng = 'TO';
+      this.ordenPagoDet.indDet = 'N';
 
-    const tipoCambioStorage = sessionStorage.getItem('tipocambio');
-    this.ordenPagoDet.tipCambio = tipoCambioStorage
-      ? JSON.parse(tipoCambioStorage).impVenta ?? 1
-      : 1;
-    if (this.ordenPagoDet.codMoneda == '01') {
-      this.ordenPagoDet.impSoles = Number(this.dataImagen.amount) || 0;
-      this.ordenPagoDet.impDolares = this.ordenPagoDet.impSoles / (this.ordenPagoDet.tipCambio ?? 1);
-    } else {
-      this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) || 0;
-      this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
-    }
+      this.ordenPagoDet.codEmpresa = this.codEmpresa;
+      this.ordenPagoDet.codSucursal = '001';
 
-    const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
+      this.ordenPagoDet.numSerieDoc = numserie;
+      this.ordenPagoDet.numDocumento = numdoc;
 
-    this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
-    this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
+      const tipoCambioStorage = sessionStorage.getItem('tipocambio');
+      this.ordenPagoDet.tipCambio = tipoCambioStorage
+        ? JSON.parse(tipoCambioStorage).impVenta ?? 1
+        : 1;
+      if (this.ordenPagoDet.codMoneda == '01') {
+        this.ordenPagoDet.impSoles = Number(this.dataImagen.amount) || 0;
+        this.ordenPagoDet.impDolares = this.ordenPagoDet.impSoles / (this.ordenPagoDet.tipCambio ?? 1);
+      } else {
+        this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) || 0;
+        this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
+      }
 
-    this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
-      (response: Response) => {
-        const error: number = response.error ?? 0;
-        if (error == 1) {
+      const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
 
-          this.dialog.open(ConfirmDialogComponent, {
-            width: '280px',
-            data: {
-              title: 'Error',
-              message: "Error al guardar la Rendición de Cuenta",
-              type: 'alert'
-            }
-          });
-        } else {
+      this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
+      this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
 
-          this.nroItemOp = response.resultado;
+      this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
+        (response: Response) => {
+          const error: number = response.error ?? 0;
+          if (error == 1) {
 
-          let wrapper: WrapperUploadDocumento = new WrapperUploadDocumento();
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '280px',
+              data: {
+                title: 'Error',
+                message: "Error al guardar la Rendición de Cuenta",
+                type: 'alert'
+              }
+            });
+          } else {
 
-          wrapper.file = this.selectedFile;
-          wrapper.anioPeriodo = this.orden.anoPeriodo;
-          wrapper.mesPeriodo = this.orden.codPeriodo;
-          wrapper.codEmpresa = this.orden.codEmpresa;
-          wrapper.codSucursal = this.orden.codSucursal;
-          wrapper.extension = "PNG";
-          wrapper.numOrden = this.orden.numOrden;
-          wrapper.numItem = this.nroItemOp;
-          wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
+            this.nroItemOp = response.resultado;
 
-          this.documentoService.uploadImage(wrapper).subscribe(
-            (response: any) => {
-              this.dialog.open(ConfirmDialogComponent, {
-                width: '280px',
-                data: {
-                  title: 'Confirmación',
-                  message: "Rendición de Cuenta " + this.nroItemOp + " guardada correctamente",
-                  type: 'confirm'
-                }
-              });
-              this.onBack();
-              this.calcularImpuestos();
-            }
-          )
+            let wrapper: WrapperUploadDocumento = new WrapperUploadDocumento();
+
+            wrapper.file = this.selectedFile;
+            wrapper.anioPeriodo = this.orden.anoPeriodo;
+            wrapper.mesPeriodo = this.orden.codPeriodo;
+            wrapper.codEmpresa = this.orden.codEmpresa;
+            wrapper.codSucursal = this.orden.codSucursal;
+            wrapper.extension = "PNG";
+            wrapper.numOrden = this.orden.numOrden;
+            wrapper.numItem = this.nroItemOp;
+            wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
+
+            this.documentoService.uploadImage(wrapper).subscribe(
+              (response: any) => {
+                this.onSaveImpuestos();
+              }
+            )
+          }
         }
+      )
+    } else {
+      this.dialog.open(ConfirmDialogComponent, {
+        width: '280px',
+        data: {
+          title: 'Alerta',
+          message: "El documento ya existe.",
+          type: 'error'
+        }
+      });
+    }
+  }
+
+  onSaveImpuestos() {
+    this.ordenPagoDetProvs = [];
+    for (let e = 0; e < this.impuestos.length; e++) {
+      const ordenPagoDetProv = new OrdenPagoDetProv();
+      ordenPagoDetProv.impImpuestoBase = (this.ordenPagoDet.impSoles ?? 0) - ((this.ordenPagoDet.impSoles ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
+      ordenPagoDetProv.impImpuestoSecun = (this.ordenPagoDet.impDolares ?? 0) - ((this.ordenPagoDet.impDolares ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
+      ordenPagoDetProv.codEmpresa = this.codEmpresa;
+      ordenPagoDetProv.codSucursal = '001';
+      ordenPagoDetProv.numOrden = this.orden.numOrden;
+      ordenPagoDetProv.anoProceso = sessionStorage.getItem('periodo_year') || '';
+      ordenPagoDetProv.mesProceso = sessionStorage.getItem('periodo_month') || '';
+      ordenPagoDetProv.codDocumento = this.ordenPagoDet.codDocumento;
+      ordenPagoDetProv.codImpuesto = this.impuestos[e].codImpuesto;
+      ordenPagoDetProv.indAfecto = 'S';
+      this.ordenPagoDetProvs.push(ordenPagoDetProv);
+    }
+    this.ordenPagoDetProvService.saveOrdenPagoDetProv(this.ordenPagoDetProvs).subscribe(
+      (response: any) => {
+
+        this.onBack();
       }
     )
   }
