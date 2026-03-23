@@ -549,8 +549,10 @@ export class EditRendirCuentaComponent implements OnInit {
           return;
         }
 
-        this.mapDetectedData(detected);
-        this.onGetDatosRuc();
+        const isValidDoc = this.mapDetectedData(detected);
+        if (isValidDoc) {
+          this.onGetDatosRuc();
+        }
       },
       error: (err) => {
         console.error(err);
@@ -562,7 +564,7 @@ export class EditRendirCuentaComponent implements OnInit {
     });
   }
 
-  private mapDetectedData(detected: any): void {
+  private mapDetectedData(detected: any): boolean {
     this.dataImagen.documentType = detected.documentType;
     if (this.dataImagen.documentType?.startsWith('F')) {
       this.dataImagen.documentType = 'FC';
@@ -599,7 +601,9 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    this.changeDate();
+    if (!this.changeDate()) {
+      return false;
+    }
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
@@ -630,6 +634,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
 
     this.cargarItems(this.dataImagen.items);
+    return true;
   }
 
   isFechaValida(model: any): boolean {
@@ -648,7 +653,7 @@ export class EditRendirCuentaComponent implements OnInit {
     return true;
   }
 
-  changeDate() {
+  changeDate(): boolean {
     if (!this.isFechaValida(this.modelIni)) {
       this.inicializa();
       this.dialog.open(ConfirmDialogComponent, {
@@ -659,7 +664,9 @@ export class EditRendirCuentaComponent implements OnInit {
           type: 'error'
         }
       });
+      return false;
     }
+    return true;
   }
 
   cargarItems(data: any) {
