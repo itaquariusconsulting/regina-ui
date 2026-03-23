@@ -240,9 +240,13 @@ export class EditRendirCuentaComponent implements OnInit {
     });
   }
 
-  validateRules(): boolean {
+  validateRules(options?: { skipRule?: boolean }): boolean {
+    const reglas = options?.skipRule
+      ? this.reglas.filter(r => r.fieldCode !== FieldCode.DOCUMENT_TYPE)
+      : this.reglas;
+
     const result = this.validationEngine.validate({
-      reglas: this.reglas,
+      reglas,
       dataImagen: this.dataImagen,
       padronRuc: this.padronRuc
     });
@@ -254,10 +258,10 @@ export class EditRendirCuentaComponent implements OnInit {
     return this.validate;
   }
 
-  onGetDatosRuc(): void {
+  onGetDatosRuc(skipRule = false): void {
     this.sunatService.getDataRUC(this.ruc).subscribe({
       next: (response: Response) => {
-        this.handleRucResponse(response);
+        this.handleRucResponse(response, skipRule);
         this.codAuxiliar = this.listaAuxiliares.find(aux => aux.numRuc == this.ruc)?.codAuxiliar ?? '';
       },
       error: (err) => this.handleRucError(err)
@@ -415,7 +419,7 @@ export class EditRendirCuentaComponent implements OnInit {
   onMonedaChange() {
   }
 
-  private handleRucResponse(response: Response): void {
+  private handleRucResponse(response: Response, skipRule = false): void {
     if (!response || response.error !== 0) {
       this.hasValidRules = false;
       this.hasValidState();
@@ -430,7 +434,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
 
-    this.validateRules();
+    this.validateRules({ skipRule });
   }
 
   private buildDireccion(data: PadronRuc): string {
@@ -607,7 +611,7 @@ export class EditRendirCuentaComponent implements OnInit {
       return;
     }
 
-    this.onGetDatosRuc();
+    this.onGetDatosRuc(true);
   }
 
   onImageCropped(event: ImageCroppedEvent): void {
