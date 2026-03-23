@@ -43,6 +43,11 @@
             *hasPermission="{ route: '/list-usuarios', action: 'permitEdit' }">
             <i class="fa fa-edit"></i>
           </button>
+          <button (click)="onDeleteUser(reg)" type="button" title="Eliminar Usuario"
+            class="btn btn-danger btn-sm"
+            *hasPermission="{ route: '/list-usuarios', action: 'permitDelete' }">
+            <i class="fa fa-trash"></i>
+          </button>
         </td>
       </tr>
     </tbody>

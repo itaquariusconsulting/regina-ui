@@ -39,6 +39,12 @@ export class RegSecUserService {
     });
   }
 
+  deleteUser(id: number): Observable<Response> {
+    return this.http.delete<Response>(`${this.apiUrlAuth}/api/usuario/eliminar/${id}`, {
+      headers: this.getHeaders()
+    });
+  }
+
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
