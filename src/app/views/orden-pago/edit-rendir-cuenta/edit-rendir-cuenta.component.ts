@@ -665,7 +665,7 @@ export class EditRendirCuentaComponent implements OnInit {
         data: {
           title: 'Alerta',
           message: "La fecha no puede ser menor que la fecha de generación de la Orden de Pago.",
-          type: 'error'
+          type: 'alert'
         }
       });
       return false;
@@ -938,7 +938,7 @@ export class EditRendirCuentaComponent implements OnInit {
         data: {
           title: 'Alerta',
           message: "El documento ya existe.",
-          type: 'error'
+          type: 'alert'
         }
       });
     }
