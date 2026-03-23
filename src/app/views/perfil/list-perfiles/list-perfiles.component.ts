@@ -9,6 +9,8 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
 import { LoadingService } from '../../../services/loading.service';
 import { finalize, Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 
 @Component({
   selector: 'app-list-perfiles',
@@ -19,7 +21,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 export class ListPerfilesComponent implements OnInit {
   constructor(private profileService: RegSecProfileService,
     private router: Router,
-    private loadingService: LoadingService
+    private loadingService: LoadingService,
+    private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -51,5 +54,58 @@ export class ListPerfilesComponent implements OnInit {
 
   onEditProfile(id: number) {
     this.router.navigate(['/edit-perfil', id]);
+  }
+
+  onDeleteProfile(profile: RegSecProfile): void {
+    if (!profile.profileId) return;
+
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Confirmar Eliminación',
+        message: `¿Estás seguro de que deseas eliminar el perfil ${profile.profileShortName}?`,
+        type: 'confirm'
+      }
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.loadingService.show();
+      this.profileService.deleteProfile(profile.profileId!).subscribe({
+        next: (res: Response) => {
+          this.loadingService.hide();
+          if (res.error === 0) {
+            this.profiles = this.profiles.filter(p => p.profileId !== profile.profileId);
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '280px',
+              data: {
+                title: '¡Éxito!',
+                type: 'success',
+                message: 'El perfil fue eliminado correctamente.'
+              }
+            });
+          } else {
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '280px',
+              data: {
+                title: 'Error',
+                type: 'alert',
+                message: res.mensaje || 'No se pudo eliminar el perfil.'
+              }
+            });
+          }
+        },
+        error: (err) => {
+          this.loadingService.hide();
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '280px',
+            data: {
+              title: 'Error de Conexión',
+              type: 'alert',
+              message: err?.message || 'No se pudo eliminar el perfil.'
+            }
+          });
+        }
+      });
+    });
   }
 }

@@ -3,8 +3,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Response } from '../models/response';
 import { environment } from '../../environments/environment';
-import { WrapperRequestUsuario } from '../models/wrappers/wrapper-request-usuario';
-import { RegSecUser } from '../models/reg-sec-user';
 import { RegRenValidate } from '../models/reg-ren-validate';
 
 @Injectable({
@@ -31,6 +29,12 @@ export class RegRenValidateService {
 
   getRuleById(id: number): Observable<Response> {
     return this.http.get<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/${id}`, { headers: this.getHeaders() });
+  }
+
+  patchRule(rule: RegRenValidate): Observable<Response> {
+    return this.http.patch<Response>(`${this.apiUrlProcess}/api/reg-ren-validate/actualizar-regla`, rule, {
+      headers: this.getHeaders()
+    });
   }
 
   private getHeaders(): HttpHeaders {
