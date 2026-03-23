@@ -397,7 +397,9 @@ export class EditRendirCuentaComponent implements OnInit {
       (response: Response) => {
         this.documentos = response.resultado || [];
         this.documentosGeneral = this.documentos;
-        if (this.codDocumentoGeneral?.length == 0) {
+        if (!this.imageChangedEvent) {
+          this.ordenPagoDet.codDocumento = 'NN';
+        } else if (this.codDocumentoGeneral?.length == 0) {
           this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'NN';
         } else {
           this.ordenPagoDet.codDocumento = this.codDocumentoGeneral;
@@ -997,6 +999,23 @@ export class EditRendirCuentaComponent implements OnInit {
       tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto
     ) ?? new MaeTipoGasto();
     this.getMonedas();
+  }
+
+  isSaveDisabled(): boolean {
+    const docNum = (this.dataImagen.documentNumber || '').trim();
+    const subTotal = Number(this.subTotal);
+    const igv = Number(this.dataImagen.igv);
+    const amount = Number(this.dataImagen.amount);
+    const isDocNumValid = this.isDocumentNumberValid(docNum);
+
+    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || igv === 0 || amount === 0;
+  }
+
+  private isDocumentNumberValid(value: string): boolean {
+    if (!value) return false;
+    
+    const pattern = /^[A-Za-z0-9]{1,4}-\d{15}$/;
+    return pattern.test(value.trim());
   }
 }
 

@@ -67,7 +67,7 @@
 
             </ng-container>
 
-            <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button"
+            <button [disabled]="isSaveDisabled()" (click)="onSaveAuxiliar()" type="button"
                 class="general-button btn-primary btn-sm">
                 <i class="fas fa-save"></i>
                 {{isDesktop ? 'Guardar' : ''}}
@@ -192,7 +192,7 @@
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
                 <input class="general-input form-control" name="nrodoc" id="nrodoc" (change)="changeNumDocumento()"
-                    [(ngModel)]="dataImagen.documentNumber" />
+                    [(ngModel)]="dataImagen.documentNumber" placeholder="XXXX-000000000000001" />
             </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Moneda</label>
@@ -207,7 +207,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Subtotal {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="subTotal" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
@@ -215,7 +215,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Impuestos {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="dataImagen.igv" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
@@ -223,7 +223,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Importe {{dataImagen.currency}}
                 </label>
-                <input readonly type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="dataImagen.amount" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
