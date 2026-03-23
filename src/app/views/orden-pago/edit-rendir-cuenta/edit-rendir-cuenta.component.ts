@@ -633,32 +633,32 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   isFechaValida(model: any): boolean {
-    if (!model) return false;
+    if (!model || !this.orden?.fecOrden) return false;
 
-    const hoy = new Date();
+    const fechaOrden = new Date(this.orden.fecOrden);
+    fechaOrden.setHours(0, 0, 0, 0);
 
-    const hoyStruct = {
-      year: hoy.getFullYear(),
-      month: hoy.getMonth() + 1,
-      day: hoy.getDate()
-    };
+    // Convertir NgbDateStruct a Date
+    const fechaModel = new Date(model.year, model.month - 1, model.day);
+    fechaModel.setHours(0, 0, 0, 0);
 
-    // Comparación
-    if (model.year < hoyStruct.year) return false;
-    if (model.year === hoyStruct.year && model.month < hoyStruct.month) return false;
-    if (
-      model.year === hoyStruct.year &&
-      model.month === hoyStruct.month &&
-      model.day < hoyStruct.day
-    ) return false;
+    // ❌ No puede ser menor que la fecha de la orden
+    if (fechaModel < fechaOrden) return false;
 
     return true;
   }
 
   changeDate() {
     if (!this.isFechaValida(this.modelIni)) {
-      console.log('Fecha inválida');
-      return;
+      this.inicializa();
+      this.dialog.open(ConfirmDialogComponent, {
+        width: '280px',
+        data: {
+          title: 'Alerta',
+          message: "La fecha no puede ser menor que la fecha de generación de la Orden de Pago.",
+          type: 'error'
+        }
+      });
     }
   }
 
