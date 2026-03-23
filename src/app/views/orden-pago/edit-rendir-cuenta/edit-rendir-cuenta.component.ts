@@ -915,6 +915,11 @@ export class EditRendirCuentaComponent implements OnInit {
             wrapper.numItem = this.nroItemOp;
             wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
 
+            if (!this.selectedFile) {
+              this.onSaveImpuestos();
+              return;
+            }
+
             this.documentoService.uploadImage(wrapper).subscribe(
               (response: any) => {
                 this.onSaveImpuestos();

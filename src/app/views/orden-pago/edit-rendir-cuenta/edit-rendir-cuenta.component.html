@@ -65,13 +65,13 @@
                     {{isDesktop ? 'Copiar' : ''}}
                 </button>
 
-                <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button"
-                    class="general-button btn-primary btn-sm">
-                    <i class="fas fa-save"></i>
-                    {{isDesktop ? 'Guardar' : ''}}
-                </button>
-
             </ng-container>
+
+            <button [disabled]="!validate" (click)="onSaveAuxiliar()" type="button"
+                class="general-button btn-primary btn-sm">
+                <i class="fas fa-save"></i>
+                {{isDesktop ? 'Guardar' : ''}}
+            </button>
 
             <button (click)="onBack()" class="general-button btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i>
