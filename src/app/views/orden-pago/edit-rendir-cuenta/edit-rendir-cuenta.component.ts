@@ -1,12 +1,12 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import Tesseract from 'tesseract.js';
 import { OrdenPago } from '../../../models/orden-pago';
 import { OcrService } from '../../../services/ocr.service';
-import { NgxCurrencyDirective } from 'ngx-currency';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { LoadingService } from '../../../services/loading.service';
 import { Observable } from 'rxjs';
@@ -46,10 +46,10 @@ import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planil
 import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
 import { OrdenPagoDetProvService } from '../../../services/orden-pago-det-prov.service';
 import { WrapperRequestDocumebtoExistente } from '../../../models/wrappers/wrapper-request-documento-existente';
+import { NgxCurrencyDirective } from 'ngx-currency';
 export class ItemDetalle {
   descripcion?: string;
 }
-
 export class DatosImagen {
   documentType?: string;
   documentNumber?: string;
@@ -71,13 +71,14 @@ export class DatosImagen {
   imports: [
     CommonModule,
     FormsModule,
+    NgbDatepickerModule,
     ImageCropperComponent,
     LoadingDancingSquaresComponent,
     NgxCurrencyDirective
   ],
   templateUrl: './edit-rendir-cuenta.component.html',
-  styleUrl: './edit-rendir-cuenta.component.scss',
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
+  styleUrls: ['./edit-rendir-cuenta.component.scss'], // ✅ corregido
+  schemas: [NO_ERRORS_SCHEMA]
 })
 export class EditRendirCuentaComponent implements OnInit {
   @ViewChild('orderDialog') orderDialog!: TemplateRef<any>;
@@ -145,20 +146,34 @@ export class EditRendirCuentaComponent implements OnInit {
   nroItemOp: string = "";
   subTotal: number = 0;
   selectedFile?: File;
+
   codRubroDefault?: string = "";
   codTipoGastoDefault?: string = "";
+
+  codRubroMovilidad?: string = "";
+  codTipoGastoMovilidad?: string = "";
+  codDocumentoGeneral?: string = "";
+
   indMovilidad?: string = "N";
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
+  newDate: Date = new Date();
+  modelIni: NgbDateStruct = { year: this.newDate.getFullYear(), month: this.newDate.getMonth() + 1, day: this.newDate.getDate() };
+
   async ngOnInit() {
     this.loadingService.show();
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data.orden;
       this.indMovilidad = state.data.movilidad;
+      await this.configService.loadConfig();
+      this.codDocumentoGeneral = this.configService.get('COD_DOCUMENTO_GENERAL');
       if (this.indMovilidad == 'S') {
-        await this.configService.loadConfig();
-        this.codRubroDefault = this.configService.get('COD_RUBRO_MOVILIDAD');
-        this.codTipoGastoDefault = this.configService.get('COD_TIPO_GASTO_MOVILIDAD');
+        this.codRubroMovilidad = this.configService.get('COD_RUBRO_MOVILIDAD');
+        this.codTipoGastoMovilidad = this.configService.get('COD_TIPO_GASTO_MOVILIDAD');
+      } else {
+        console.log("aqui estoy");
+        this.codRubroDefault = this.configService.get('COD_RUBRO_GENERAL');
+        this.codTipoGastoDefault = this.configService.get('COD_TIPO_GASTO_GENERAL');
       }
       this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
       this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
@@ -329,13 +344,18 @@ export class EditRendirCuentaComponent implements OnInit {
   // ..
 
   getRubros(): void {
+    console.log(this.codRubroDefault);
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
       (response: Response) => {
         this.rubros = response.resultado || [];
         if (this.indMovilidad !== 'S') {
-          this.ordenPagoDet.codRubro = this.rubros.length > 0 ? this.rubros[0].codRubro : '';
+          if (this.codRubroDefault?.length == 0) {
+            this.ordenPagoDet.codRubro = this.rubros.length > 0 ? this.rubros[0].codRubro : '';
+          } else {
+            this.ordenPagoDet.codRubro = this.codRubroDefault;
+          }
         } else {
-          this.ordenPagoDet.codRubro = this.codRubroDefault;
+          this.ordenPagoDet.codRubro = this.codRubroMovilidad;
         }
         this.getTiposGasto(this.ordenPagoDet.codRubro ?? '');
       },
@@ -350,11 +370,15 @@ export class EditRendirCuentaComponent implements OnInit {
       (response: Response) => {
         this.tiposGasto = response.resultado || [];
         if (this.indMovilidad !== 'S') {
-          this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+          if (this.codTipoGastoDefault?.length == 0) {
+            this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
+          } else {
+            this.ordenPagoDet.codTipoGasto = this.codTipoGastoDefault;
+          }
         } else {
-          this.ordenPagoDet.codTipoGasto = this.codTipoGastoDefault;
+          this.ordenPagoDet.codTipoGasto = this.codTipoGastoMovilidad;
         }
-        this.getMonedas();
+        this.onChangeTipoGasto();
       },
       (error) => {
         console.error('Error al cargar tipos de gasto', error);
@@ -367,7 +391,11 @@ export class EditRendirCuentaComponent implements OnInit {
       (response: Response) => {
         this.documentos = response.resultado || [];
         this.documentosGeneral = this.documentos;
-        this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'NN';
+        if (this.codDocumentoGeneral?.length == 0) {
+          this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'NN';
+        } else {
+          this.ordenPagoDet.codDocumento = this.codDocumentoGeneral;
+        }
         this.getImpuestos();
       },
       (error) => {
@@ -409,7 +437,26 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   changeDocumento() {
+    if (this.ordenPagoDet.codDocumento == 'SD') {
+      this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
+      this.tipoGastoSeleccionado = new MaeTipoGasto();
+      this.ordenPagoDet.codCuentaConcepto = undefined;
+    } else {
+      this.tipoGastoSeleccionado = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
+      const cuentaConcepto = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto);
+      this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda == '01' ? cuentaConcepto?.codCuentaSoles : cuentaConcepto?.codCuentaDolares;
+    }
+    console.log("OrdenDet : ", this.ordenPagoDet);
     this.getImpuestos();
+  }
+
+  changeNumDocumento() {
+    const partes = this.dataImagen.documentNumber?.split('-');
+    if (partes?.length === 2) {
+      const serie = partes[0];
+      const numero = partes[1].padStart(15, '0');
+      this.dataImagen.documentNumber = (serie + "-" + numero).toUpperCase();
+    }
   }
 
   onMonedaChange() {
@@ -535,6 +582,21 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
+
+    let date: Date;
+    if (this.dataImagen.documentDate) {
+      date = new Date(this.dataImagen.documentDate + 'T12:00:00');
+    } else {
+      date = new Date();
+    }
+    this.modelIni = {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1, // meses van de 1 a 12
+      day: date.getDate()
+    };
+
+    this.changeDate();
+
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
     this.subTotal = Number(this.dataImagen.amount) - Number(this.dataImagen.igv);
@@ -564,6 +626,36 @@ export class EditRendirCuentaComponent implements OnInit {
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
 
     this.cargarItems(this.dataImagen.items);
+  }
+
+  isFechaValida(model: any): boolean {
+    if (!model) return false;
+
+    const hoy = new Date();
+
+    const hoyStruct = {
+      year: hoy.getFullYear(),
+      month: hoy.getMonth() + 1,
+      day: hoy.getDate()
+    };
+
+    // Comparación
+    if (model.year < hoyStruct.year) return false;
+    if (model.year === hoyStruct.year && model.month < hoyStruct.month) return false;
+    if (
+      model.year === hoyStruct.year &&
+      model.month === hoyStruct.month &&
+      model.day < hoyStruct.day
+    ) return false;
+
+    return true;
+  }
+
+  changeDate() {
+    if (!this.isFechaValida(this.modelIni)) {
+      console.log('Fecha inválida');
+      return;
+    }
   }
 
   cargarItems(data: any) {
@@ -738,6 +830,12 @@ export class EditRendirCuentaComponent implements OnInit {
       this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
       this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
 
+      if (this.modelIni) {
+        const { year, month, day } = this.modelIni;
+        this.dataImagen.documentDate =
+          `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      }
+
       this.ordenPagoDet.anoEmisionDua = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
       this.ordenPagoDet.anoProcesoDeclara = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
       this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
@@ -874,6 +972,13 @@ export class EditRendirCuentaComponent implements OnInit {
     return this.documentosGeneral
       .find(doc => doc.desCorta == tipoDoc)
       ?.desDocumento ?? '';
+  }
+
+  onChangeTipoGasto() {
+    this.tipoGastoSeleccionado = this.tiposGasto.find(
+      tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto
+    ) ?? new MaeTipoGasto();
+    this.getMonedas();
   }
 }
 
