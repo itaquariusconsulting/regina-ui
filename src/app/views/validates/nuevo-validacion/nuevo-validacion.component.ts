@@ -5,7 +5,7 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
 import { LoadingService } from '../../../services/loading.service';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { RegRenValidateService } from '../../../services/reg-ren-validate.service';
 import { RegRenValidate } from '../../../models/reg-ren-validate';
@@ -42,7 +42,7 @@ export class NuevoValidacionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.regla.dataType = "01";
+    this.regla.dataType = "string";
     this.regla.isRequired = true;
     this.regla.isActive = true;
     this.regla.maxLength = 0;
@@ -83,91 +83,36 @@ export class NuevoValidacionComponent implements OnInit {
     );
   }
 
-  private async validarReglaConTabla(): Promise<string[]> {
+  private validarNuevaRegla(): string[] {
 
     const errores: string[] = [];
+    if (!this.regla.ruleName || !this.regla.ruleName.trim()) {
+      errores.push('El nombre de la regla es obligatorio.');
+    }
 
-    const response: Response = await firstValueFrom(
-      this.regRenValidateService.getRegRenValidateRules()
-    );
+    if (!this.regla.fieldCode || !this.regla.fieldCode.trim()) {
+      errores.push('El campo a validar es obligatorio.');
+    }
 
-    const reglas: RegRenValidate[] = response.resultado || [];
+    if (!this.regla.dataType) {
+      errores.push('El tipo de dato es obligatorio.');
+    }
 
-    for (const rule of reglas) {
+    if (!this.regla.errorMessage || !this.regla.errorMessage.trim()) {
+      errores.push('El mensaje de error es obligatorio.');
+    }
 
-      const field = rule.fieldCode;
-
-      if (!field) {
-        continue;
+    if (this.regla.dataType === 'number') {
+      if (this.regla.minValue != null && this.regla.maxValue != null
+        && this.regla.minValue > this.regla.maxValue) {
+        errores.push('El valor mínimo no puede ser mayor que el valor máximo.');
       }
+    }
 
-      const value = (this.regla as any)[field];
-
-      if (rule.dependsOnField) {
-        const dep = (this.regla as any)[rule.dependsOnField];
-        if (String(dep) !== String(rule.dependsOnValue)) {
-          continue;
-        }
-      }
-
-      if (rule.isRequired) {
-        if (value === null || value === undefined || value === '') {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-          continue;
-        }
-      }
-
-      if (value === null || value === undefined || value === '') {
-        continue;
-      }
-
-      if (rule.dataType === 'number') {
-
-        const n = Number(value);
-
-        if (isNaN(n)) {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-          continue;
-        }
-
-        if (rule.minValue != null && n < rule.minValue) {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-        }
-
-        if (rule.maxValue != null && n > rule.maxValue) {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-        }
-      }
-
-      if (rule.dataType === 'string') {
-
-        const s = String(value);
-
-        if (rule.minLength != null && s.length < rule.minLength) {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-        }
-
-        if (rule.maxLength != null && s.length > rule.maxLength) {
-          errores.push(rule.errorMessage ?? 'Error de validación');
-        }
-
-        if (rule.regexPattern) {
-          const reg = new RegExp(rule.regexPattern);
-          if (!reg.test(s)) {
-            errores.push(rule.errorMessage ?? 'Error de validación');
-          }
-        }
-
-        if (rule.allowedValues) {
-
-          const allowed = rule.allowedValues
-            .split(',')
-            .map(v => v.trim());
-
-          if (!allowed.includes(s)) {
-            errores.push(rule.errorMessage ?? 'Error de validación');
-          }
-        }
+    if (this.regla.dataType === 'string') {
+      if (this.regla.minLength != null && this.regla.maxLength != null
+        && this.regla.minLength > this.regla.maxLength) {
+        errores.push('La longitud mínima no puede ser mayor que la longitud máxima.');
       }
     }
 
@@ -176,7 +121,7 @@ export class NuevoValidacionComponent implements OnInit {
 
   async onGuardarRegla(): Promise<void> {
 
-    const errores = await this.validarReglaConTabla();
+    const errores = this.validarNuevaRegla();
 
     if (errores.length > 0) {
 
