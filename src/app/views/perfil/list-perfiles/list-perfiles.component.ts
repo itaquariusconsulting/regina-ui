@@ -11,6 +11,7 @@ import { finalize, Observable } from 'rxjs';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { HttpStatusCode } from '@angular/common/http';
 
 @Component({
   selector: 'app-list-perfiles',
@@ -96,12 +97,13 @@ export class ListPerfilesComponent implements OnInit {
         },
         error: (err) => {
           this.loadingService.hide();
+          const isFkConstraint = err?.status === HttpStatusCode.Conflict;
           this.dialog.open(ConfirmDialogComponent, {
             width: '280px',
             data: {
-              title: 'Error de Conexión',
+              title: isFkConstraint ? 'No permitido' : 'Error de Conexión',
               type: 'alert',
-              message: err?.message || 'No se pudo eliminar el perfil.'
+              message: err?.error?.mensaje || 'No se pudo eliminar el perfil.'
             }
           });
         }
