@@ -40,6 +40,11 @@
                         *hasPermission="{ route: '/list-perfiles', action: 'permitEdit' }">
                         <i class="fa fa-edit"></i>
                     </button>
+                    <button (click)="onDeleteProfile(profile)" type="button" title="Eliminar Perfil"
+                        class="btn btn-danger btn-sm"
+                        *hasPermission="{ route: '/list-perfiles', action: 'permitDelete' }">
+                        <i class="fa fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         </tbody>

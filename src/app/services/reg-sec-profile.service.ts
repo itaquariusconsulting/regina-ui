@@ -32,6 +32,10 @@ export class RegSecProfileService {
     return this.http.put<Response>(`${this.apiUrlAuth}/api/profile/actualizar`, profile, { headers: this.getHeaders() });
   }
 
+  deleteProfile(id: number): Observable<Response> {
+    return this.http.delete<Response>(`${this.apiUrlAuth}/api/profile/eliminar/${id}`, { headers: this.getHeaders() });
+  }
+
   private getHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
