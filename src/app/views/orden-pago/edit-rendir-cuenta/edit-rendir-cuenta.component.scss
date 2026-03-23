@@ -1,9 +1,12 @@
 .form-container {
   font-size: 0.8rem;
 
-  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
   min-height: 0;
-  height: calc(100vh - 120px); /* ajusta según header + footer */
+
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -107,4 +110,13 @@
   background: rgba(255, 255, 255, 0.8); 
   backdrop-filter: blur(2px);          
   z-index: 9999;
+}
+
+.boton-fecha {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.ngb-dp-header {
+  display: block !important;
 }

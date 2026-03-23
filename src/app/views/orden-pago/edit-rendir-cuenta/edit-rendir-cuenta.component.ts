@@ -2,7 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { Component, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
+import { NgbDatepickerConfig, NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import Tesseract from 'tesseract.js';
 import { OrdenPago } from '../../../models/orden-pago';
@@ -99,9 +99,11 @@ export class EditRendirCuentaComponent implements OnInit {
     private documentoService: DocumentoService,
     private ordenPagoDetService: OrdenPagoDetService,
     private ordenPagoDetProvService: OrdenPagoDetProvService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private config: NgbDatepickerConfig
   ) {
     this.isLoading$ = this.loadingService.loading$;
+    this.config.navigation = 'select';
   }
 
   codEmpresa: string = sessionStorage.getItem('codempresa') || '';

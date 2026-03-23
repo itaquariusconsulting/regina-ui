@@ -175,8 +175,8 @@
                 <label class="form-label fw-semibold mb-2 d-block">Fecha Doc.</label>
                 <div class="input-group">
                     <input class="form-control" placeholder="yyyy-mm-dd" name="dp1" id="dp1" [(ngModel)]="modelIni"
-                        ngbDatepicker #d1="ngbDatepicker" (change)="changeDate()"/>
-                    <button class="btn btn-primary bi bi-calendar3" (click)="d1.toggle()" type="button"></button>
+                        ngbDatepicker #d1="ngbDatepicker" (change)="changeDate()" [navigation]="'select'"/>
+                    <button class="btn boton-fecha btn-sm" (click)="d1.toggle()" type="button"><i class="fas fa-calendar"></i></button>
                 </div>
             </div>
             <div class="col-md-3">
