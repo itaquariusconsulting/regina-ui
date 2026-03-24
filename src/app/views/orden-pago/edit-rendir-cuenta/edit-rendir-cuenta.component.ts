@@ -173,7 +173,6 @@ export class EditRendirCuentaComponent implements OnInit {
         this.codRubroMovilidad = this.configService.get('COD_RUBRO_MOVILIDAD');
         this.codTipoGastoMovilidad = this.configService.get('COD_TIPO_GASTO_MOVILIDAD');
       } else {
-        console.log("aqui estoy");
         this.codRubroDefault = this.configService.get('COD_RUBRO_GENERAL');
         this.codTipoGastoDefault = this.configService.get('COD_TIPO_GASTO_GENERAL');
       }
@@ -304,7 +303,6 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     wrapper.numDocumento = numero;
     wrapper.numSerieDoc = serie;
-    console.log("El Wrapper : ", wrapper);
 
     return new Promise<number>((resolve) => {
       this.ordenPagoDetService.onBuscarDocumento(wrapper).subscribe(
@@ -350,7 +348,6 @@ export class EditRendirCuentaComponent implements OnInit {
   // ..
 
   getRubros(): void {
-    console.log(this.codRubroDefault);
     this.maestrosService.getRubros(this.codEmpresa).subscribe(
       (response: Response) => {
         this.rubros = response.resultado || [];
@@ -453,8 +450,11 @@ export class EditRendirCuentaComponent implements OnInit {
       this.tipoGastoSeleccionado = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
       const cuentaConcepto = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto);
       this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda == '01' ? cuentaConcepto?.codCuentaSoles : cuentaConcepto?.codCuentaDolares;
+      const doc = this.documentos.find(doc=>doc.desCorta == this.ordenPagoDet.codDocumento);    
+      
+      this.ordenPagoDet.codCuentaDocumento = 
+      this.ordenPagoDet.codMoneda=='01' ? doc?.codCuentaSoles : doc?.codCuentaDolares;
     }
-    console.log("OrdenDet : ", this.ordenPagoDet);
     this.getImpuestos();
   }
 
@@ -573,9 +573,14 @@ export class EditRendirCuentaComponent implements OnInit {
     if (this.dataImagen.documentType?.startsWith('F')) {
       this.dataImagen.documentType = 'FC';
     }
+    if (this.dataImagen.documentType?.startsWith('B')) {
+      this.dataImagen.documentType = 'BV';
+    }
     if (this.dataImagen.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.desCorta?.includes(this.dataImagen.documentType ?? ''));
       this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FC';
+      this.ordenPagoDet.codCuentaDocumento = 
+      this.ordenPagoDet.codMoneda=='01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
@@ -1013,7 +1018,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private isDocumentNumberValid(value: string): boolean {
     if (!value) return false;
-    
+
     const pattern = /^[A-Za-z0-9]{1,4}-\d{15}$/;
     return pattern.test(value.trim());
   }

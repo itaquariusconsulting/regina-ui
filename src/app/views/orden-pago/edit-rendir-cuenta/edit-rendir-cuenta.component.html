@@ -179,7 +179,7 @@
                     <button class="btn boton-fecha btn-sm" (click)="d1.toggle()" type="button"><i class="fas fa-calendar"></i></button>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Tipo de Documento</label>
                 <select name="documento" id="documento" class="general-select form-select"
                     [(ngModel)]="ordenPagoDet.codDocumento" (change)="changeDocumento()">
@@ -188,6 +188,11 @@
                         {{ doc.desDocumento }}
                     </option>
                 </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold mb-2 d-block">Cuenta Documento</label>
+                            <input readonly type="text" class="form-control"
+                [value]="ordenPagoDet.codCuentaDocumento" />
             </div>
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Nro. Documento</label>
