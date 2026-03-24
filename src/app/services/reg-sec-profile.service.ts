@@ -33,13 +33,21 @@ export class RegSecProfileService {
   }
 
   deleteProfile(id: number): Observable<Response> {
-    return this.http.delete<Response>(`${this.apiUrlAuth}/api/profile/eliminar/${id}`, { headers: this.getHeaders() });
+    return this.http.delete<Response>(`${this.apiUrlAuth}/api/profile/eliminar/${id}`, { 
+      headers: this.getHeaders({ skipErrorHandler: true }) 
+    });
   }
 
-  private getHeaders(): HttpHeaders {
-    return new HttpHeaders({
+  private getHeaders(options?: { skipErrorHandler?: boolean }): HttpHeaders {
+    const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
-    });
+    };
+
+    if (options?.skipErrorHandler) {
+      headers['X-Skip-Error-Handler'] = 'true';
+    }
+
+    return new HttpHeaders(headers);
   }
 }
