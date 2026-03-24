@@ -441,8 +441,8 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   changeDocumento() {
-    this.documentoSeleccionado = this.documentos.find(doc=>doc.codDocumento==this.codDocumentoGeneral)!;
-    
+    this.documentoSeleccionado = this.documentos.find(doc => doc.codDocumento == this.codDocumentoGeneral)!;
+
     if (this.codDocumentoGeneral == 'SD') {
       this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
       this.tipoGastoSeleccionado = new MaeTipoGasto();
@@ -571,14 +571,17 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.documentType = detected.documentType;
     console.log("Detected : ", detected)
     if (this.dataImagen.documentType?.startsWith('F')) {
-      this.dataImagen.documentType = 'FC';
+      this.dataImagen.documentType = 'F';
     }
     if (this.dataImagen.documentType?.startsWith('B')) {
-      this.dataImagen.documentType = 'BV';
+      this.dataImagen.documentType = 'B';
+    }
+    if (this.dataImagen.documentType?.startsWith('R')) {
+      this.dataImagen.documentType = 'R';
     }
     if (this.dataImagen.documentType) {
-      this.documentos = this.documentosGeneral.filter(doc => doc.desCorta?.includes(this.dataImagen.documentType ?? ''));
-      this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento ?? 'FC';
+      this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0,1) == (this.dataImagen.documentType!));
+      this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento;
       this.ordenPagoDet.codCuentaDocumento =
         this.ordenPagoDet.codMoneda == '01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
     }
@@ -851,7 +854,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.documentoSeleccionado = this.documentos.find(d => d.codDocumento === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
 
 
-      this.ordenPagoDet.codDocumento=this.codDocumentoGeneral;
+      this.ordenPagoDet.codDocumento = this.codDocumentoGeneral;
 
       if (this.modelIni) {
         const { year, month, day } = this.modelIni;
