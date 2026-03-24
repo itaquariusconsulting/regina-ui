@@ -163,7 +163,7 @@
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Cuenta Gasto</label>
             <input readonly type="text" class="form-control"
-                [value]="ordenPagoDet.codDocumento != 'SD' ? tipoGastoSeleccionado.codCuentaSoles : ''" />
+                [value]="codDocumentoGeneral != 'SD' ? tipoGastoSeleccionado.codCuentaSoles : ''" />
         </div>
 
     </div>
@@ -182,9 +182,9 @@
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Tipo de Documento</label>
                 <select name="documento" id="documento" class="general-select form-select"
-                    [(ngModel)]="ordenPagoDet.codDocumento" (change)="changeDocumento()">
+                    [(ngModel)]="codDocumentoGeneral" (change)="changeDocumento()">
                     <option class="option" value="SD">{{"SIN DOCUMENTO"}}</option>
-                    <option class="option" *ngFor="let doc of documentos" [value]="doc.desCorta">
+                    <option class="option" *ngFor="let doc of documentos" [value]="doc.codDocumento">
                         {{ doc.desDocumento }}
                     </option>
                 </select>

@@ -154,7 +154,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
   codRubroMovilidad?: string = "";
   codTipoGastoMovilidad?: string = "";
-  codDocumentoGeneral?: string = "";
+  codDocumentoGeneral: string = "";
 
   indMovilidad?: string = "N";
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
@@ -392,15 +392,12 @@ export class EditRendirCuentaComponent implements OnInit {
   getTiposDocumento() {
     this.maestrosService.getTiposDocumento(this.codEmpresa).subscribe(
       (response: Response) => {
-        this.documentos = response.resultado || [];
+        this.documentos = response.resultado;
         this.documentosGeneral = this.documentos;
-        if (!this.imageChangedEvent) {
-          this.ordenPagoDet.codDocumento = 'NN';
-        } else if (this.codDocumentoGeneral?.length == 0) {
-          this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'NN';
-        } else {
-          this.ordenPagoDet.codDocumento = this.codDocumentoGeneral;
-        }
+        this.documentoSeleccionado = this.documentos[0];
+        this.ordenPagoDet.codDocumento = this.documentoSeleccionado.codDocumento;
+        this.codDocumentoGeneral = this.documentoSeleccionado.codDocumento!;
+        this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
         this.getImpuestos();
       },
       (error) => {
@@ -424,9 +421,11 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   getImpuestos() {
-    this.maestrosService.getImpuestos(this.codEmpresa, this.ordenPagoDet.codDocumento ?? '').subscribe(
+    this.documentoSeleccionado = this.documentosGeneral.find(doc => doc.codDocumento == this.codDocumentoGeneral)!;
+    this.maestrosService.getImpuestos(this.codEmpresa, this.codDocumentoGeneral).subscribe(
       (response: Response) => {
-        this.impuestos = response.resultado || [];
+        this.impuestos = response.resultado;
+        console.log("Los Impuestos : ", this.impuestos)
         this.onListaAuxiliares();
       },
       (error) => {
@@ -442,7 +441,9 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   changeDocumento() {
-    if (this.ordenPagoDet.codDocumento == 'SD') {
+    this.documentoSeleccionado = this.documentos.find(doc=>doc.codDocumento==this.codDocumentoGeneral)!;
+    
+    if (this.codDocumentoGeneral == 'SD') {
       this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
       this.tipoGastoSeleccionado = new MaeTipoGasto();
       this.ordenPagoDet.codCuentaConcepto = undefined;
@@ -450,10 +451,8 @@ export class EditRendirCuentaComponent implements OnInit {
       this.tipoGastoSeleccionado = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
       const cuentaConcepto = this.tiposGasto.find(tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto);
       this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda == '01' ? cuentaConcepto?.codCuentaSoles : cuentaConcepto?.codCuentaDolares;
-      const doc = this.documentos.find(doc=>doc.desCorta == this.ordenPagoDet.codDocumento);    
-      
-      this.ordenPagoDet.codCuentaDocumento = 
-      this.ordenPagoDet.codMoneda=='01' ? doc?.codCuentaSoles : doc?.codCuentaDolares;
+      this.ordenPagoDet.codCuentaDocumento =
+        this.ordenPagoDet.codMoneda == '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
     }
     this.getImpuestos();
   }
@@ -570,6 +569,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): boolean {
     this.dataImagen.documentType = detected.documentType;
+    console.log("Detected : ", detected)
     if (this.dataImagen.documentType?.startsWith('F')) {
       this.dataImagen.documentType = 'FC';
     }
@@ -578,9 +578,9 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     if (this.dataImagen.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.desCorta?.includes(this.dataImagen.documentType ?? ''));
-      this.ordenPagoDet.codDocumento = this.documentos[0].desCorta ?? 'FC';
-      this.ordenPagoDet.codCuentaDocumento = 
-      this.ordenPagoDet.codMoneda=='01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
+      this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento ?? 'FC';
+      this.ordenPagoDet.codCuentaDocumento =
+        this.ordenPagoDet.codMoneda == '01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
@@ -848,7 +848,10 @@ export class EditRendirCuentaComponent implements OnInit {
 
       this.rubroSeleccionado = this.rubros.find(r => r.codRubro === this.ordenPagoDet.codRubro) ?? new MaeRubro();
       this.tipoGastoSeleccionado = this.tiposGasto.find(t => t.codTipoGasto === this.ordenPagoDet.codTipoGasto) ?? new MaeTipoGasto();
-      this.documentoSeleccionado = this.documentos.find(d => d.desCorta === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
+      this.documentoSeleccionado = this.documentos.find(d => d.codDocumento === this.ordenPagoDet.codDocumento) ?? new MaeDocumento();
+
+
+      this.ordenPagoDet.codDocumento=this.codDocumentoGeneral;
 
       if (this.modelIni) {
         const { year, month, day } = this.modelIni;
@@ -995,7 +998,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
   devolverDocumento(tipoDoc: string): string {
     return this.documentosGeneral
-      .find(doc => doc.desCorta == tipoDoc)
+      .find(doc => doc.codDocumento == tipoDoc)
       ?.desDocumento ?? '';
   }
 

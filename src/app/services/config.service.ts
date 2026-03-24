@@ -20,7 +20,6 @@ export class ConfigService {
       }
 
       this.config = this.parseIni(data);
-      console.log("Contenmido : ", data)
     } catch (error) {
       console.error('Error cargando config.ini', error);
       throw error;
