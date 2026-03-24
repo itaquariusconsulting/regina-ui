@@ -221,7 +221,7 @@
                     Impuestos {{dataImagen.currency}}
                 </label>
                 <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
-                    [(ngModel)]="dataImagen.igv" currencyMask
+                    [(ngModel)]="impuesto" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
             <div class="col-md-1">
@@ -229,7 +229,7 @@
                     Importe {{dataImagen.currency}}
                 </label>
                 <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
-                    [(ngModel)]="dataImagen.amount" currencyMask
+                    [(ngModel)]="total" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
         </div>

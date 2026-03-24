@@ -147,6 +147,8 @@ export class EditRendirCuentaComponent implements OnInit {
   itemsText: string = '';
   nroItemOp: string = "";
   subTotal: number = 0;
+  impuesto: number = 0;
+  total: number = 0;
   selectedFile?: File;
 
   codRubroDefault?: string = "";
@@ -421,7 +423,29 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getImpuestos(this.codEmpresa, this.codDocumentoGeneral).subscribe(
       (response: Response) => {
         this.impuestos = response.resultado;
-        console.log("Los Impuestos : ", this.impuestos)
+
+        const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
+
+        const tipoCambioStorage = sessionStorage.getItem('tipocambio');
+        this.ordenPagoDet.tipCambio = tipoCambioStorage
+          ? JSON.parse(tipoCambioStorage).impVenta ?? 1
+          : 1;
+        if (this.orden.codMoneda == '01') {
+          this.ordenPagoDet.impSoles = Number(this.dataImagen.amount) ?? 0;
+          this.ordenPagoDet.impDolares = this.ordenPagoDet.impSoles / (this.ordenPagoDet.tipCambio ?? 1);
+        } else {
+          this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) ?? 0;
+          this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
+        }
+
+        this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
+        this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
+
+        this.total = Number(this.dataImagen.amount) ?? 0;
+        this.subTotal = this.total / totalPorcentaje;
+        this.impuesto = this.total - this.subTotal;
+
+        
         this.onListaAuxiliares();
       },
       (error) => {
@@ -576,7 +600,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.dataImagen.documentType = 'R';
     }
     if (this.dataImagen.documentType) {
-      this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0,1) == (this.dataImagen.documentType!));
+      this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0, 1) == (this.dataImagen.documentType!));
       this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento;
       this.ordenPagoDet.codCuentaDocumento =
         this.ordenPagoDet.codMoneda == '01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
@@ -615,7 +639,13 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
-    this.subTotal = Number(this.dataImagen.amount) - Number(this.dataImagen.igv);
+
+    this.getImpuestos();
+    console.log("Orden Pago Det : ", this.ordenPagoDet)
+
+    //this.ordenPagoDet.impSoles = Number(this.dataImagen.amount);
+
+    //this.subTotal = Number(this.dataImagen.amount) - Number(this.dataImagen.igv);
 
     this.dataImagen.documentCurrency = detected.documentCurrency;
     if (detected.documentCurrency) {
