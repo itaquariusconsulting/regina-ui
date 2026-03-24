@@ -231,11 +231,7 @@ export class EditRendirCuentaComponent implements OnInit {
   loadValidationRules(): void {
     this.regRenValidateService.getRegRenValidateRules().subscribe({
       next: (response: Response) => {
-        this.reglas = (response?.resultado ?? []).filter(
-          ({ documentType, documentSection, isActive }: RegRenValidate) =>
-            (documentType === DocumentType.FACTURA || documentSection === DocumentSection.ENCABEZADO)
-            && isActive === true
-        );
+        this.reglas = (response?.resultado ?? []).filter(({ isActive }: RegRenValidate) => isActive);
       },
       error: (error) => {
         console.error('Error al cargar reglas de validación', error);
