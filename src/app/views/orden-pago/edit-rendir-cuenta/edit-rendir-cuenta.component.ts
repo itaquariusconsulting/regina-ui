@@ -569,15 +569,11 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): boolean {
     this.dataImagen.documentType = detected.documentType;
-    if (this.dataImagen.documentType?.startsWith('F')) {
-      this.dataImagen.documentType = 'F';
+    if (this.dataImagen.documentType === DocumentType.NO_RECONOCIDO || !this.dataImagen.documentType) {
+      this.mensaje = 'Tipo de documento no reconocido.'
+      return false;
     }
-    if (this.dataImagen.documentType?.startsWith('B')) {
-      this.dataImagen.documentType = 'B';
-    }
-    if (this.dataImagen.documentType?.startsWith('R')) {
-      this.dataImagen.documentType = 'R';
-    }
+
     if (this.dataImagen.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0, 1) == (this.dataImagen.documentType!));
       this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento;
