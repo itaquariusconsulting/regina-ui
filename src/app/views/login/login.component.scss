@@ -21,11 +21,10 @@ img {
   width: 50%;
 }
 
-
-/* login.component.css */
+/* ================= BOTONES ================= */
 .btn-casa-container {
-  position: relative;
-  justify-items: center;
+  display: flex;
+  justify-content: center;
   align-items: center;
 }
 
@@ -38,17 +37,17 @@ img {
   border: solid 2px #ffffff;
 }
 
-/* password y boton para mostrar el password */
+/* ================= INPUTS ================= */
 .input-container {
   position: relative;
   display: flex;
   align-items: center;
 
   input {
-    padding: 10px 40px 10px 40px; // Espacio suficiente para íconos
+    padding: 10px 40px;
     width: 100%;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 15px;
   }
 
   i {
@@ -61,14 +60,13 @@ img {
 
   .password-toggle {
     position: absolute;
-    right: 10px;
+    right: 30px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
     cursor: pointer;
     color: #aaa;
-    padding: 5px;
     display: flex;
     align-items: center;
   }
@@ -79,95 +77,89 @@ img {
   }
 }
 
-.icono {
-  position: fixed;
-  left: -20px !important;
-  padding-top: 0px;
-  margin-top: 0px;
-  top: -2px;
-  transform: translateY(-2px);
-  color: #aaa;
-}
-
-/* aca termina el input-container */
-
+/* ================= LOGIN ================= */
 .login-container {
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  background-color: #91c55b;
+  background-color: #a0b258;
+
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  /* centra respecto al propio tamaño */
-  z-index: 1;
 
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  z-index: 1;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
+/* ================= SPINNER + PULSO ================= */
 .spinner-container {
-  position: fixed;
-  /* Usa fixed para que no dependa del contenedor padre */
-  //top: 50%;
-  //left: 50%;
-  //transform: translate(-50%, -50%);
-
+  position: absolute;
   width: 110%;
-  /* Ajusta a tamaño real necesario, no 510px */
   height: 110%;
-
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 50%;
-  z-index: 1000;
+  z-index: 0;
   pointer-events: none;
-  /* evita interferencias con clics */
 }
 
+/* CÍRCULO BASE */
 .spinner {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 5px solid #ffffff;
-  //animation:
-  //  spin 4s linear infinite,
-  //  glow 2.5s infinite alternate;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  z-index: 1;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg) scale(1);
+/* 🔥 ANILLOS DE PULSO */
+.spinner-container::before,
+.spinner-container::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  animation: pulseRing 2.5s ease-out infinite;
+}
+
+.spinner-container::after {
+  animation-delay: 1.2s;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ANIMACIÓN PULSO */
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
   }
 
-  to {
-    transform: rotate(360deg) scale(1);
+  70% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
   }
 }
 
-@keyframes glow {
-  from {
-    box-shadow: 0 0 5px #008cff;
-  }
-
-  to {
-    box-shadow: 0 0 20px #008cff;
-  }
-}
-
+/* ================= FORM ================= */
 .login-form {
   z-index: 1;
   text-align: center;
-  //background: #0d104d;
-  padding: 2px;
-  border-radius: 50%;
-  color: #ffffff;
-  /* height: 500px; */
+  color: white;
 }
 
 form {
@@ -175,192 +167,149 @@ form {
   flex-direction: column;
 }
 
-label {
-  margin-top: 10px;
-}
-
 input {
   padding: 10px;
   margin: 5px 0;
-  border: none;
   border-radius: 5px;
-  outline: none;
+  border: none;
+}
+
+.input-all {
+  width: 200px !important;
+  border-radius: 15px !important;
 }
 
 button {
   max-width: 260px;
   background: #008cff;
-  color: rgb(255, 255, 255);
+  color: white;
   padding: 5px;
-  margin-top: 10px;
-  border: none;
   border-radius: 5px;
+  border: none;
   cursor: pointer;
-}
-
-.form-group {
-  position: relative;
-  margin-bottom: 1rem;
-}
-
-.form-label {
-  position: absolute;
-  top: -10px;
-  /* Ajusta según sea necesario */
-  left: 10px;
-  /* Ajusta según sea necesario */
-  font-size: 12px;
-  /* O el tamaño que desees */
-  color: #555;
-  /* Color de la etiqueta */
-  transition: 0.2s;
-}
-
-input:focus+.form-label,
-input:not(:placeholder-shown)+.form-label {
-  top: -20px;
-  color: #007bff;
 }
 
 button:hover {
   background: #22621f;
 }
 
-a {
-  color: #ffffff;
-  text-decoration: none;
-  margin-top: 10px;
-}
-
-a:hover {
-  text-decoration: underline;
-  color: #008cff;
-}
-
-.error-message {
-  color: red;
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.otp-inputs {
-  display: flex;
-  gap: 6px;
-  text-align: center !important;
-  justify-content: center !important;
-}
-
-.otp-inputs input {
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
-  font-weight: 600;
-  text-align: center !important;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.otp-inputs input:focus {
-  border-color: #007bff;
-  outline: none;
-}
-
-.otp-container {
-  text-align: center;
-  justify-items: center;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.btn-otp {
-  color: white !important;
-}
-
-ng-select {
-  width: 300px;
-  margin: 0px 0;
-  font-size: 0.8rem;
-
-  .ng-select-container {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 8px;
-    background-color: #fff;
-
-    &:focus-within {
-      border-color: #007bff;
-    }
-  }
-
-  .ng-option {
-    padding: 10px;
-    cursor: pointer;
-
-    &:hover {
-      background-color: #f0f0f0;
-    }
-
-    &.ng-option-selected {
-      background-color: #007bff;
-      color: #fff;
-    }
-  }
-
-  .ng-select-placeholder {
-    color: #999;
-  }
-}
-
-::ng-deep.bs-datepicker-head button.current:nth-child(3) {
-  display: none;
-}
-
-.login-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  background-size: cover;
-  background-position: center;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #042309;
-  /* antes 0.6, ahora 0.3 */
-  z-index: -1;
-}
-
-.input-group {
-  display: flex;
-  align-items: center;
-}
-
-.input-group-text {
-  background-color: transparent;
-  border: none;
-  /* Elimina el borde del ícono */
-}
-
-.input-all {
-  font-size: 0.8remm !important;
-  width: 200px !important;
-  border-radius: 15px !important;
-}
-
 .boton-inicio {
-  margin-top: 0px !important;
+  margin-top: 20px;
   border-radius: 15px !important;
   background-color: rgb(2, 31, 7);
   border: 2px solid white !important;
   height: 38px !important;
   width: 160px !important;
+}
+
+/* ================= BACKGROUND ================= */
+.login-background {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(22, 22, 22);
+  z-index: -1;
+}
+
+/* ================= MARQUESINA ================= */
+.video-marquee {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 20vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background: rgb(22, 22, 22);
+}
+
+/* FADE */
+.video-marquee::before,
+.video-marquee::after {
+  content: "";
+  position: absolute;
+  width: 20%;
+  height: 100%;
+  top: 0;
+}
+
+.video-marquee::before {
+  left: 0;
+  background: linear-gradient(to right, rgb(22, 22, 22), transparent);
+}
+
+.video-marquee::after {
+  right: 0;
+  background: linear-gradient(to left, rgb(22, 22, 22), transparent);
+}
+
+/* CABECERA */
+.marquee-header {
+  position: fixed;
+  bottom: 22vh;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+
+  h6 {
+    color: #ffffff;
+    font-size: 14px;
+  }
+
+  hr {
+    width: 200px;
+    margin: 5px auto;
+    background: linear-gradient(to right, transparent, #ffffff, transparent);
+    height: 1px;
+    border: none;
+  }
+}
+
+/* VIDEO */
+.video-wrapper {
+  width: 320px;
+  height: 180px;
+  animation: slideVideo 12.75s linear infinite;
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+  filter: brightness(1) contrast(1.2) saturate(1.2);
+}
+
+/* ANIMACIÓN VIDEO */
+@keyframes slideVideo {
+  0% {
+    transform: translateX(80%);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: translateX(0%);
+    opacity: 0.85;
+  }
+
+  90% {
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateX(-80%);
+    opacity: 0;
+  }
 }
