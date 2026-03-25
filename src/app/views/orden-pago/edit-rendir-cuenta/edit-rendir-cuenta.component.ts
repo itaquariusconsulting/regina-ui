@@ -423,6 +423,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getImpuestos(this.codEmpresa, this.codDocumentoGeneral).subscribe(
       (response: Response) => {
         this.impuestos = response.resultado;
+        console.log("Impuestos : ", this.impuestos)
         const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
         const tipoCambioStorage = sessionStorage.getItem('tipocambio');
         this.ordenPagoDet.tipCambio = tipoCambioStorage
