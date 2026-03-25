@@ -1019,11 +1019,11 @@ export class EditRendirCuentaComponent implements OnInit {
   isSaveDisabled(): boolean {
     const docNum = (this.dataImagen.documentNumber || '').trim();
     const subTotal = Number(this.subTotal);
-    const igv = Number(this.dataImagen.igv);
-    const amount = Number(this.dataImagen.amount);
+    const impuesto = Number(this.impuesto);
+    const total = Number(this.total);
     const isDocNumValid = this.isDocumentNumberValid(docNum);
 
-    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || igv === 0 || amount === 0;
+    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || impuesto === 0 || total === 0;
   }
 
   changeImporte(importe: Event) {
