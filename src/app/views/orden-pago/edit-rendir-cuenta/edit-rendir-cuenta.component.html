@@ -228,7 +228,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Importe {{dataImagen.currency}}
                 </label>
-                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input (ngModelChange)="changeImporte($event)" type="text" name="importe" id="importe" class="general-input form-control text-end"
                     [(ngModel)]="total" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>

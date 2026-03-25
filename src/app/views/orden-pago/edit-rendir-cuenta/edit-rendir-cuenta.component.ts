@@ -423,9 +423,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getImpuestos(this.codEmpresa, this.codDocumentoGeneral).subscribe(
       (response: Response) => {
         this.impuestos = response.resultado;
-
         const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
-
         const tipoCambioStorage = sessionStorage.getItem('tipocambio');
         this.ordenPagoDet.tipCambio = tipoCambioStorage
           ? JSON.parse(tipoCambioStorage).impVenta ?? 1
@@ -437,15 +435,11 @@ export class EditRendirCuentaComponent implements OnInit {
           this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) ?? 0;
           this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
         }
-
-        this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
-        this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
-
+        this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles - (this.ordenPagoDet.impSoles / totalPorcentaje);
+        this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares - (this.ordenPagoDet.impDolares / totalPorcentaje);
         this.total = Number(this.dataImagen.amount) ?? 0;
         this.subTotal = this.total / totalPorcentaje;
         this.impuesto = this.total - this.subTotal;
-
-        
         this.onListaAuxiliares();
       },
       (error) => {
@@ -462,7 +456,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
   changeDocumento() {
     this.documentoSeleccionado = this.documentos.find(doc => doc.codDocumento == this.codDocumentoGeneral)!;
-
     if (this.codDocumentoGeneral == 'SD') {
       this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
       this.tipoGastoSeleccionado = new MaeTipoGasto();
@@ -493,17 +486,13 @@ export class EditRendirCuentaComponent implements OnInit {
     if (!response || response.error !== 0) {
       this.hasValidRules = false;
       this.hasValidState();
-
       return;
     }
-
     this.padronRuc = response.resultado;
     this.mensaje = '';
     this.hasValidRules = true;
     this.hasValidState();
-
     this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
-
     this.validateRules({ skipRule });
   }
 
@@ -516,14 +505,11 @@ export class EditRendirCuentaComponent implements OnInit {
       data.manzana && data.manzana !== '-' ? `MZA. ${data.manzana}` : '',
       data.lote && data.lote !== '-' ? `LTE. ${data.lote}` : ''
     ];
-
     return parts.filter(Boolean).join(' ').trim();
   }
 
   private handleRucError(error?: HttpErrorResponse): void {
-    let message = error?.error.mensaje
-      || 'No se pudo consultar SUNAT. Intente nuevamente.';
-
+    let message = error?.error.mensaje || 'No se pudo consultar SUNAT. Intente nuevamente.';
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
       data: {
@@ -532,7 +518,6 @@ export class EditRendirCuentaComponent implements OnInit {
         type: 'alert'
       }
     });
-
     this.hasValidRules = false;
     this.hasValidState();
     this.mensaje = message;
@@ -543,24 +528,19 @@ export class EditRendirCuentaComponent implements OnInit {
     if (!input.files || input.files.length === 0) {
       return;
     }
-
     this.loadingService.show();
-
     const file = input.files[0];
     this.imageChangedEvent = event;
     this.selectedFile = file;
-
     this.loadPreview(file);
     this.processImage(file);
   }
 
   private loadPreview(file: File): void {
     const reader = new FileReader();
-
     reader.onload = () => {
       this.previewImage = reader.result as string;
     };
-
     reader.readAsDataURL(file);
   }
 
@@ -571,7 +551,6 @@ export class EditRendirCuentaComponent implements OnInit {
         if (!detected) {
           return;
         }
-
         const isValidDoc = this.mapDetectedData(detected);
         if (isValidDoc) {
           this.onGetDatosRuc();
@@ -589,7 +568,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private mapDetectedData(detected: any): boolean {
     this.dataImagen.documentType = detected.documentType;
-    console.log("Detected : ", detected)
     if (this.dataImagen.documentType?.startsWith('F')) {
       this.dataImagen.documentType = 'F';
     }
@@ -604,6 +582,7 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento;
       this.ordenPagoDet.codCuentaDocumento =
         this.ordenPagoDet.codMoneda == '01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
+      this.codDocumentoGeneral = this.ordenPagoDet.codDocumento!;
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
@@ -909,7 +888,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
       this.ordenPagoDet.numSerieDoc = numserie;
       this.ordenPagoDet.numDocumento = numdoc;
-
       const tipoCambioStorage = sessionStorage.getItem('tipocambio');
       this.ordenPagoDet.tipCambio = tipoCambioStorage
         ? JSON.parse(tipoCambioStorage).impVenta ?? 1
@@ -923,9 +901,8 @@ export class EditRendirCuentaComponent implements OnInit {
       }
 
       const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
-
-      this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles / totalPorcentaje;
-      this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares / totalPorcentaje;
+      this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles - (this.ordenPagoDet.impSoles / totalPorcentaje);
+      this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares - (this.ordenPagoDet.impDolares / totalPorcentaje);
 
       this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
         (response: Response) => {
@@ -1048,11 +1025,21 @@ export class EditRendirCuentaComponent implements OnInit {
     return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || igv === 0 || amount === 0;
   }
 
+  changeImporte(importe: Event) {
+    this.total = Number(importe);
+    console.log(this.total);
+    const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
+    this.subTotal = this.total / totalPorcentaje;
+    this.impuesto = this.total - this.subTotal;
+  }
+
   private isDocumentNumberValid(value: string): boolean {
     if (!value) return false;
 
     const pattern = /^[A-Za-z0-9]{1,4}-\d{15}$/;
     return pattern.test(value.trim());
   }
+
+
 }
 
