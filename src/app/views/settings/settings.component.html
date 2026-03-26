@@ -20,37 +20,43 @@
     <div class="radio-group">
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('AZUL')" />
+        <input type="radio" name="theme" [value]="'AZUL'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Azul</span>
       </label>
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('VERDE')" />
+        <input type="radio" name="theme" [value]="'VERDE'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Verde</span>
       </label>
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('ROJO')" />
+        <input type="radio" name="theme" [value]="'ROJO'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Rojo</span>
       </label>
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('NARANJA')" />
+        <input type="radio" name="theme" [value]="'NARANJA'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Naranja</span>
       </label>
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('VIOLETA')" />
+        <input type="radio" name="theme" [value]="'VIOLETA'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Violeta</span>
       </label>
 
       <label class="donut-radio">
-        <input type="radio" name="theme" (change)="changeTheme('GRIS')" />
+        <input type="radio" name="theme" [value]="'GRIS'" [(ngModel)]="selectedTheme"
+          (ngModelChange)="changeTheme($event)" />
         <span class="control"></span>
         <span class="text">Gris</span>
       </label>
