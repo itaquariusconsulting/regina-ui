@@ -8,4 +8,6 @@ export class WrapperUploadDocumento {
     numOrden?: string;
     numItem?: string;
     extension?: string;
+    serDocumento?: string;
+    numDocumento?: string;
 }

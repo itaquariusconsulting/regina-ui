@@ -929,6 +929,8 @@ export class EditRendirCuentaComponent implements OnInit {
             wrapper.numOrden = this.orden.numOrden;
             wrapper.numItem = this.nroItemOp;
             wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
+            wrapper.serDocumento = this.ordenPagoDet.numSerieDoc;
+            wrapper.numDocumento = this.ordenPagoDet.numDocumento;
 
             if (!this.selectedFile) {
               this.onSaveImpuestos();
