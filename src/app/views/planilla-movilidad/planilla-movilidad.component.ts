@@ -45,7 +45,7 @@ export class PlanillaMovilidadComponent implements OnInit {
   totalPages = 0;
 
   isDesktop: boolean = false;
-  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
+
   documentosGeneral: MaeDocumento[] = [];
 
   ngOnInit(): void {

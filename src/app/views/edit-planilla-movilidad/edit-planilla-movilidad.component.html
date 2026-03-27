@@ -25,7 +25,10 @@
             <ng-container>
 
             </ng-container>
-
+            <button class="general-button btn-primary btn-sm me-2">
+                <i class="fas fa-save"></i>
+                {{isDesktop ? 'Guardar' : ''}}
+            </button>
             <button (click)="onBack()" class="general-button btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i>
                 {{isDesktop ? 'Regresar' : ''}}
@@ -35,50 +38,48 @@
 
     </div>
 
-    <div class="row mt-1">
-        <div class="col-md-3">
-            <label class="form-label fw-semibold mb-2 d-block">Banco</label>
-            <select class="form-select" id="bancos" name="bancos" [(ngModel)]="banco">
-                <option *ngFor="let banco of bancos" [value]="banco.codAuxiliar">{{banco.desAuxiliar}}</option>
-            </select>
-        </div>
-
-    </div>
-    <div class="row mt-1">
-        <h6 class="h6-header">DATOS REALES DEL PROVEEDOR</h6>
-
-        <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
-            <input maxlength="11" (input)="ruccompleto()" class="form-control" name="ruc" id="ruc" [(ngModel)]="ruc" />
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
-            <input readonly class="form-control" name="proveedor" id="proveedor" [(ngModel)]="padronRuc.razonSocial" />
-        </div>
-
-        <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2 d-block">Estado</label>
-            <input readonly class="form-control" name="estado" id="estado" [(ngModel)]="padronRuc.estado" />
-        </div>
-
-        <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2 d-block">Condición</label>
-            <input readonly class="form-control" name="condicion" id="condicion" [(ngModel)]="padronRuc.condicion" />
-        </div>
-    </div>
-
-    <div class="row mt-2">
-        <div class="col-md-12">
-            <label class="form-label fw-semibold mb-2 d-block">Dirección</label>
-            <input class="form-control" name="direccion" id="direccion" [(ngModel)]="padronRuc.nombreVia" />
-        </div>
-    </div>
-
     <div class="row">
         <div *ngIf="mensaje" class="col-md-12">
             <span class="mensaje-alerta">{{mensaje}}</span>
         </div>
     </div>
-
 </div>
+
+    <div class="bar-buttons-top d-flex justify-content-between align-items-end flex-wrap">
+        <h6 class="h6-header">DETALLE DE TRASLADOS ASOCIADOS A LA PLANILLA</h6>
+        <div class="d-flex gap-2">
+            <button title="Nuevo Traslado" class="general-button btn-primary btn-sm" type="button"><i
+                    class="fas fa-plus"></i> {{isDesktop ? 'Nuevo' : ''}}</button>
+        </div>
+    </div>
+    <table class="table table-striped table-hover">
+        <thead>
+            <th>Fecha</th>
+            <th>Tipo Documento</th>
+            <th>Nro Documento</th>
+            <th>Razón Social</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Observaciones</th>
+            <th>Importe </th>
+            <th>Nro Ocupantes</th>
+        </thead>
+        <tbody>
+            <tr *ngFor="let traslado of listaMovilidad">
+                <td class="text-center">{{traslado.fechaTraslado | date: 'dd-MM-yyyy'}}</td>
+                <td class="text-start">{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
+                <td class="text-start">{{traslado.numDocumento}}</td>
+                <td class="text-start">{{traslado.codAuxiliarProveedor}}</td>
+                <td class="text-start">{{traslado.codOrigen}}</td>
+                <td class="text-start">{{traslado.codDestino}}</td>
+                <td class="text-start">{{traslado.observaciones}}</td>
+                <td class="text-end">{{traslado.impSoles | number: '1.2-2'}}</td>
+                <td class="text-center">
+                    <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
+                        <span
+                            style="font-weight: 600 !important; color: white !important">{{traslado.nroOcupantes}}</span>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>

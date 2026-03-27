@@ -16,6 +16,9 @@ import { MaestrosService } from '../../services/maestros.service';
 import { MaeBanco } from '../../models/mae-banco';
 import { OrdenPagoCabPlanilla } from '../../models/orden-pago-planilla-movilidad-cab';
 import { NgxCurrencyDirective } from 'ngx-currency';
+import { OrdenPagoPlanillaMovilidadDet } from '../../models/orden-pago-planilla-movilidad-det';
+import { MOCK_PLANILLA_MOVILIDAD } from '../planilla-movilidad/planilla-movilidad-mock';
+import { MaeDocumento } from '../../models/mae-documento';
 
 @Component({
   selector: 'app-edit-planilla-movilidad',
@@ -43,7 +46,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   bancos: MaeBanco[] = [];
   banco: string = "";
   ordenPagoPlanillaMovilidadCab: OrdenPagoCabPlanilla = new OrdenPagoCabPlanilla();
-
+  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
+  documentosGeneral: MaeDocumento[] = [];
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
@@ -128,4 +132,10 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.mensaje = message;
   }
 
+
+    devolverDocumento(tipoDoc: string): string {
+    return this.documentosGeneral
+      .find(doc => doc.codDocumento == tipoDoc)
+      ?.desDocumento ?? '';
+  }
 }
