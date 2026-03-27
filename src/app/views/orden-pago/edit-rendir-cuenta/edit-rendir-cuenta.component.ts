@@ -157,7 +157,8 @@ export class EditRendirCuentaComponent implements OnInit {
   codRubroMovilidad?: string = "";
   codTipoGastoMovilidad?: string = "";
   codDocumentoGeneral: string = "";
-
+  lstDivGastos: string = "";
+  arrGastos: string[] = [];
   indMovilidad?: string = "N";
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
   newDate: Date = new Date();
@@ -171,6 +172,8 @@ export class EditRendirCuentaComponent implements OnInit {
       this.indMovilidad = state.data.movilidad;
       await this.configService.loadConfig();
       this.codDocumentoGeneral = this.configService.get('COD_DOCUMENTO_GENERAL');
+      this.lstDivGastos = this.configService.get('LST_DIVISION_GASTO');
+      this.arrGastos = this.lstDivGastos.replace(/'/g, '').split(',');
       if (this.indMovilidad == 'S') {
         this.codRubroMovilidad = this.configService.get('COD_RUBRO_MOVILIDAD');
         this.codTipoGastoMovilidad = this.configService.get('COD_TIPO_GASTO_MOVILIDAD');
@@ -369,7 +372,8 @@ export class EditRendirCuentaComponent implements OnInit {
   getTiposGasto(codRubro: string): void {
     this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
       (response: Response) => {
-        this.tiposGasto = response.resultado || [];
+        this.tiposGasto = response.resultado;
+        this.tiposGasto = this.tiposGasto.filter(tg=>this.arrGastos.includes(tg.codCuentaSoles??''));
         if (this.indMovilidad !== 'S') {
           if (this.codTipoGastoDefault?.length == 0) {
             this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
@@ -379,6 +383,7 @@ export class EditRendirCuentaComponent implements OnInit {
         } else {
           this.ordenPagoDet.codTipoGasto = this.codTipoGastoMovilidad;
         }
+        this.ordenPagoDet.codTipoGasto = this.tiposGasto[0].codTipoGasto;
         this.onChangeTipoGasto();
       },
       (error) => {

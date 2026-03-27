@@ -37,7 +37,7 @@
                 style="height: 32px !important;">
                 <i class="fa fa-camera me-1"></i>
                 {{isDesktop ? 'Subir' : 'Capturar'}}
-                <input type="file" accept="image/*" capture="environment" (change)="onSelectImage($event)" hidden>
+                <input type="file" accept="image/*,application/pdf" capture="environment" (change)="onSelectImage($event)" hidden>
             </label>
 
             <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="imageChangedEvent"
