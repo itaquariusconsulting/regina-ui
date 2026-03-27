@@ -19,6 +19,7 @@ import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { RegRenKeywordDTO } from '../../../models/reg-ren-keyword-dto';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
 import { ValidationContext } from '../../../shared/models/validation-context';
 import {
@@ -99,7 +100,8 @@ export class EditRendirCuentaComponent implements OnInit {
     private ordenPagoDetService: OrdenPagoDetService,
     private ordenPagoDetProvService: OrdenPagoDetProvService,
     private configService: ConfigService,
-    private config: NgbDatepickerConfig
+    private config: NgbDatepickerConfig,
+    private sanitizer: DomSanitizer
   ) {
     this.isLoading$ = this.loadingService.loading$;
     this.config.navigation = 'select';
@@ -114,6 +116,8 @@ export class EditRendirCuentaComponent implements OnInit {
   imageChangedEvent: Event | null = null;
   previewImage: string | null = null;
   croppedImage: string | null = null;
+  pdfPreviewUrl: SafeResourceUrl | null = null;
+  private pdfObjectUrl: string | null = null;
   showImageCropper = true;
   recognizedText = '';
   isLoading$: Observable<boolean>;
@@ -209,6 +213,8 @@ export class EditRendirCuentaComponent implements OnInit {
     this.imageChangedEvent = null;
     this.previewImage = null;
     this.croppedImage = null;
+    this.clearPdfPreview();
+    this.selectedFile = undefined;
     this.showImageCropper = true;
     this.recognizedText = '';
     this.detalle = '';
@@ -527,17 +533,30 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensaje = message;
   }
 
-  onSelectImage(event: Event): void {
+  onSelectFile(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) {
       return;
     }
     this.loadingService.show();
     const file = input.files[0];
-    this.imageChangedEvent = event;
     this.selectedFile = file;
+
+    if (this.isPdfFile(file)) {
+      this.imageChangedEvent = null;
+      this.previewImage = null;
+      this.croppedImage = null;
+      this.showImageCropper = false;
+      this.setPdfPreview(file);
+      this.processFile(file);
+      return;
+    }
+
+    this.imageChangedEvent = event;
+    this.showImageCropper = true;
+    this.clearPdfPreview();
     this.loadPreview(file);
-    this.processImage(file);
+    this.processFile(file);
   }
 
   private loadPreview(file: File): void {
@@ -548,8 +567,8 @@ export class EditRendirCuentaComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
-  private processImage(file: File): void {
-    this.ocrService.uploadImage(file).subscribe({
+  private processFile(file: File): void {
+    this.ocrService.uploadFile(file).subscribe({
       next: (response: any) => {
         const detected = response?.detectedData;
         if (!detected) {
@@ -568,6 +587,34 @@ export class EditRendirCuentaComponent implements OnInit {
         this.loadingService.hide();
       }
     });
+  }
+
+  private setPdfPreview(file: File): void {
+    this.clearPdfPreview();
+    this.pdfObjectUrl = URL.createObjectURL(file);
+    this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjectUrl);
+  }
+
+  private clearPdfPreview(): void {
+    if (this.pdfObjectUrl) {
+      URL.revokeObjectURL(this.pdfObjectUrl);
+    }
+    this.pdfObjectUrl = null;
+    this.pdfPreviewUrl = null;
+  }
+
+  private isPdfFile(file: File): boolean {
+    const name = file.name?.toLowerCase() || '';
+    return file.type === 'application/pdf' || name.endsWith('.pdf');
+  }
+
+  private getFileExtension(file: File): string {
+    const name = file.name || '';
+    const dot = name.lastIndexOf('.');
+    if (dot === -1) {
+      return '';
+    }
+    return name.substring(dot + 1).toUpperCase();
   }
 
   private mapDetectedData(detected: any): boolean {
@@ -789,6 +836,8 @@ export class EditRendirCuentaComponent implements OnInit {
     this.imageChangedEvent = null;
     this.previewImage = null;
     this.croppedImage = null;
+    this.clearPdfPreview();
+    this.selectedFile = undefined;
     this.showImageCropper = true;
     this.recognizedText = '';
     this.detalle = '';
@@ -805,7 +854,7 @@ export class EditRendirCuentaComponent implements OnInit {
       return;
     }
     this.documentoService
-      .uploadImage(wrapper)
+      .uploadFile(wrapper)
       .subscribe({
         next: (resp) => {
           console.log('Archivo subido', resp);
@@ -928,7 +977,7 @@ export class EditRendirCuentaComponent implements OnInit {
             wrapper.mesPeriodo = this.orden.codPeriodo;
             wrapper.codEmpresa = this.orden.codEmpresa;
             wrapper.codSucursal = this.orden.codSucursal;
-            wrapper.extension = "PNG";
+            wrapper.extension = this.selectedFile ? this.getFileExtension(this.selectedFile) : '';
             wrapper.numOrden = this.orden.numOrden;
             wrapper.numItem = this.nroItemOp;
             wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
@@ -940,7 +989,7 @@ export class EditRendirCuentaComponent implements OnInit {
               return;
             }
 
-            this.documentoService.uploadImage(wrapper).subscribe(
+            this.documentoService.uploadFile(wrapper).subscribe(
               (response: any) => {
                 this.onSaveImpuestos();
               }

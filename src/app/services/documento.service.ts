@@ -14,7 +14,7 @@ export class DocumentoService {
   token = sessionStorage.getItem('authToken');
   private apiUrlProcess: string = environment.apiUrlProcess;
 
-  uploadImage(wrapper: WrapperUploadDocumento): Observable<any> {
+  uploadFile(wrapper: WrapperUploadDocumento): Observable<any> {
     const formData = new FormData();
     if (wrapper.file) {
       formData.append('file', wrapper.file);

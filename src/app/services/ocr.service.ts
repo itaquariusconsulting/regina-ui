@@ -9,7 +9,7 @@ export class OcrService {
 
   constructor(private http: HttpClient) { }
 
-  uploadImage(file: File) {
+  uploadFile(file: File) {
     const formData = new FormData();
     formData.append('file', file);
 

@@ -227,7 +227,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
 
     const file = input.files[0];
 
-    this.ocrService.uploadImage(file).subscribe(
+    this.ocrService.uploadFile(file).subscribe(
       (response: any) => {
         console.log('Respuesta del OCR:', response);
         this.imagen.documentType = response.detectedData.documentType;
