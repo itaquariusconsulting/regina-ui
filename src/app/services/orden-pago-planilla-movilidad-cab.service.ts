@@ -25,7 +25,7 @@ export class OrdenPagoPlanillaMovilidadCabService {
             'Content-Type': 'application/json'
         });
         return this.http.get<Response>
-        (`${this.apiUrlProcess}planilla-movilidad-cab/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.anioPeriodo}/${wrapper.codPeriodo}/${wrapper.numOrden}`, {
+        (`${this.apiUrlProcess}orden-pago-planilla/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.anioPeriodo}/${wrapper.codPeriodo}/${wrapper.numOrden}`, {
             headers,
             responseType: 'json'
         });
