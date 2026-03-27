@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { DeviceService } from './services/core-service/device.service';
-import { SidebarComponent } from "./components/sidebar/sidebar.component";
+import { ThemeService } from './shared/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -11,12 +11,21 @@ import { SidebarComponent } from "./components/sidebar/sidebar.component";
   styleUrl: './app.component.scss',
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
 
-  constructor(public deviceService: DeviceService) {}
+  constructor(
+    public deviceService: DeviceService,
+    private themeService: ThemeService
+  ) {}
 
+  ngOnInit(): void {
+    const theme = this.themeService.getStoredTheme();
+
+    if (theme) {
+      this.themeService.applyTheme(theme);
+    }
+  }
 
   title = 'Rendición de Cuentas';
-
 
 }
