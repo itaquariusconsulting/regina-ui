@@ -7,7 +7,8 @@ import { Response } from '../models/response';
 import { WrapperRequestOrdenPagoDet } from '../models/wrappers/wrapper-request-orden-pago-det';
 import { OrdenPagoDetDTO } from '../models/orden-pago-det';
 import { WrapperRequestPlanillaMovilidadCab } from '../models/wrappers/wrapper-request-planilla-movilidad-cab';
-import { OrdenPagoPlanillaMovilidadCab } from '../models/orden-pago-planilla-movilidad-cab';
+import { OrdenPagoCabPlanilla } from '../models/orden-pago-planilla-movilidad-cab';
+
 @Injectable({
     providedIn: 'root'
 })
@@ -23,13 +24,14 @@ export class OrdenPagoPlanillaMovilidadCabService {
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json'
         });
-        return this.http.post<Response>(`${this.apiUrlProcess}planilla-movilidad-cab/listar`, wrapper, {
+        return this.http.get<Response>
+        (`${this.apiUrlProcess}planilla-movilidad-cab/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.anioPeriodo}/${wrapper.codPeriodo}/${wrapper.numOrden}`, {
             headers,
             responseType: 'json'
         });
     }
 
-    savePlanillaMovilidad(dto: OrdenPagoPlanillaMovilidadCab): Observable<Response> {
+    savePlanillaMovilidad(dto: OrdenPagoCabPlanilla): Observable<Response> {
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json'

@@ -14,7 +14,7 @@ import { Response } from '../../models/response';
 import { MaeCentroCostrosDTO } from '../../models/mae-centro-costos';
 import { MaestrosService } from '../../services/maestros.service';
 import { MaeBanco } from '../../models/mae-banco';
-import { OrdenPagoPlanillaMovilidadCab } from '../../models/orden-pago-planilla-movilidad-cab';
+import { OrdenPagoCabPlanilla } from '../../models/orden-pago-planilla-movilidad-cab';
 import { NgxCurrencyDirective } from 'ngx-currency';
 
 @Component({
@@ -42,7 +42,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   centro: MaeCentroCostrosDTO = new MaeCentroCostrosDTO();
   bancos: MaeBanco[] = [];
   banco: string = "";
-  ordenPagoPlanillaMovilidadCab: OrdenPagoPlanillaMovilidadCab = new OrdenPagoPlanillaMovilidadCab();
+  ordenPagoPlanillaMovilidadCab: OrdenPagoCabPlanilla = new OrdenPagoCabPlanilla();
 
   ngOnInit(): void {
     const state = history.state;

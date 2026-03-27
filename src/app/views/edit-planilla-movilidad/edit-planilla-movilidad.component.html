@@ -42,20 +42,8 @@
                 <option *ngFor="let banco of bancos" [value]="banco.codAuxiliar">{{banco.desAuxiliar}}</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold mb-2 d-block">Monto S/</label>
-            <input style="width:200px" type="text" name="saldoSoles" id="saldoSoles" class="form-control text-end"
-                [(ngModel)]="ordenPagoPlanillaMovilidadCab.codAuxiliarBanco" currencyMask
-                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
-        </div>
+
     </div>
-
-
-
-
-
-
-
     <div class="row mt-1">
         <h6 class="h6-header">DATOS REALES DEL PROVEEDOR</h6>
 

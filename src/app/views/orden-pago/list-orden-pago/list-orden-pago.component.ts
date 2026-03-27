@@ -331,7 +331,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   onPlanillaMovilidad(orden: OrdenPago) {
-    this.router.navigate(['/edit-rendir-cuenta'], { state: { data: {orden: orden, movilidad: 'S' } }});
+    this.router.navigate(['/planilla-movilidad'], { state: { data: {orden: orden, movilidad: 'S' } }});
   }
 
     openEditRendirCuenta(orden: OrdenPago) {

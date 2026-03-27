@@ -43,7 +43,6 @@ import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
 import { ConfigService } from '../../../services/config.service';
 import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
-import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
 import { OrdenPagoDetProvService } from '../../../services/orden-pago-det-prov.service';
 import { WrapperRequestDocumebtoExistente } from '../../../models/wrappers/wrapper-request-documento-existente';
 import { NgxCurrencyDirective } from 'ngx-currency';
@@ -160,7 +159,6 @@ export class EditRendirCuentaComponent implements OnInit {
   lstDivGastos: string = "";
   arrGastos: string[] = [];
   indMovilidad?: string = "N";
-  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
   newDate: Date = new Date();
   modelIni: NgbDateStruct = { year: this.newDate.getFullYear(), month: this.newDate.getMonth() + 1, day: this.newDate.getDate() };
 

@@ -11,8 +11,11 @@ import { Response } from '../../models/response';
 import { DeviceService } from '../../services/core-service/device.service';
 import { OrdenPagoPlanillaMovilidadCabService } from '../../services/orden-pago-planilla-movilidad-cab.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../models/wrappers/wrapper-request-planilla-movilidad-cab';
-import { OrdenPagoPlanillaMovilidadCab } from '../../models/orden-pago-planilla-movilidad-cab';
 import { Router, NavigationEnd } from '@angular/router';
+import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
+import { OrdenPagoPlanillaMovilidadDet } from '../../models/orden-pago-planilla-movilidad-det';
+import { MaeDocumento } from '../../models/mae-documento';
+import { OrdenPagoCabPlanilla } from '../../models/orden-pago-planilla-movilidad-cab';
 @Component({
   selector: 'app-planilla-movilidad',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
@@ -35,19 +38,22 @@ export class PlanillaMovilidadComponent implements OnInit {
   codAuxiliar: string = '';
 
   orden: OrdenPago = new OrdenPago();
-  planillas: OrdenPagoPlanillaMovilidadCab[] = [];
+  planillas: OrdenPagoCabPlanilla[] = [];
   pageSize = 6;
   currentPage = 0;
   totalItems = 0;
   totalPages = 0;
 
   isDesktop: boolean = false;
+  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
+  documentosGeneral: MaeDocumento[] = [];
 
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
-      this.orden = state.data;
+      this.orden = state.data.orden;
     }
+    console.log("Orden: ", this.orden);
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
       ? JSON.parse(sessionStorage.getItem('user')!)
@@ -57,6 +63,13 @@ export class PlanillaMovilidadComponent implements OnInit {
 
     this.getPlanillaMovilidad();
 
+  }
+
+  
+  devolverDocumento(tipoDoc: string): string {
+    return this.documentosGeneral
+      .find(doc => doc.codDocumento == tipoDoc)
+      ?.desDocumento ?? '';
   }
 
 
@@ -71,6 +84,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     this.planillaService.getPlanillaMovilidad(wrapper).subscribe(
       (response: Response) => {
         this.planillas = response.resultado;
+        console.log("Planillas : ", this.planillas)
         this.loadingService.hide();
       },
       (error) => {

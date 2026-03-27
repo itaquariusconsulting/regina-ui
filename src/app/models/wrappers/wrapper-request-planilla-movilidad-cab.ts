@@ -1,5 +1,5 @@
 export class WrapperRequestPlanillaMovilidadCab {
-codEmpresa?: string;
+    codEmpresa?: string;
     codSucursal?: string ;
     anioPeriodo?: string;
     codPeriodo?: string;
