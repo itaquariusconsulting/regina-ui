@@ -7,12 +7,15 @@ export class OrdenPagoCabPlanilla {
     numOrden?: string;          // varchar(10)
     numItemOP?: string;
     numPlanilla?: string;       // varchar(10)
-
+    fecPlanilla?: string;
     fecCreatePlanilla?: string;  // LocalDate → string (yyyy-MM-dd)
     fecClosePlanilla?: string;   // LocalDate → string
     fecUpdatePlanilla?: string;  // LocalDate → string
 
     amountPlanilla?: number;     // BigDecimal → number
     statusPlanilla?: boolean;    // bit → boolean
+    glosaPlanilla?: string;
+    numViajes?: number;
+    numMaxViajes?: number;
 
 }

@@ -43,7 +43,6 @@ import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
 import { ConfigService } from '../../../services/config.service';
-import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
 import { OrdenPagoDetProvService } from '../../../services/orden-pago-det-prov.service';
 import { WrapperRequestDocumebtoExistente } from '../../../models/wrappers/wrapper-request-documento-existente';
 import { NgxCurrencyDirective } from 'ngx-currency';

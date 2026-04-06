@@ -68,7 +68,8 @@ export class DefaultLayoutComponent implements OnInit {
   isListening = false;
   mensajeRegina: string = "";
 
-url: string = environment.apiUrlIA + "/chat";
+  url: string = environment.apiUrlIA + "/chat";
+  isThinking = false;
 
   ngOnInit(): void {
     this.isDesktop = this.deviceService.isDesktopDevice();
@@ -213,6 +214,9 @@ url: string = environment.apiUrlIA + "/chat";
       this.saludoInicialMostrado = true;
 
     } else {
+
+      this.isThinking = true;
+      this.messages.push({ from: 'bot', text: 'Pensando...' });
       this.wrapperRequestIA.mensaje = texto;
       this.wrapperRequestIA.userUserName = 'mangulom';
       this.wrapperRequestIA.anoPeriodo = sessionStorage.getItem('periodo_year') || '';
@@ -225,21 +229,20 @@ url: string = environment.apiUrlIA + "/chat";
         .subscribe({
           next: (res: ChatResponse) => {
 
+            this.isThinking = false;
+
+            // ❌ eliminar el "Pensando..."
+            this.messages = this.messages.filter(m => m.text !== 'Pensando...');
+
             this.retorno = (res as any)['data'] || [];
 
             switch (res.tipo) {
               case 'ordenes':
-                this.router.navigate(
-                  ['/list-orders'],
-                  { state: { data: this.retorno } }
-                );
+                this.router.navigate(['/list-orders'], { state: { data: this.retorno } });
                 break;
 
               case 'usuarios':
-                this.router.navigate(
-                  ['/list-usuarios'],
-                  { state: { data: this.retorno } }
-                );
+                this.router.navigate(['/list-usuarios'], { state: { data: this.retorno } });
                 break;
 
               case 'usuario_true':
@@ -250,13 +253,13 @@ url: string = environment.apiUrlIA + "/chat";
             const respuesta = res.respuesta || 'No entendí eso, ¿podrías repetirlo?';
 
             this.messages.push({ from: 'bot', text: respuesta });
-            this.mensajeRegina="SI ERROR";
             this.hablarTexto(respuesta);
           },
           error: (err) => {
-            console.error(err);
-            this.mensajeRegina = err;
-            
+            this.isThinking = false;
+
+            this.messages = this.messages.filter(m => m.text !== 'Pensando...');
+
             const errorTexto = 'Hubo un problema al conectar con Regina, lo siento.';
             this.messages.push({ from: 'bot', text: errorTexto });
             this.hablarTexto(errorTexto);

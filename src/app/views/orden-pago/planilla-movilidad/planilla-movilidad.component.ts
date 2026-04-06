@@ -1,21 +1,19 @@
 import { Component, OnInit } from '@angular/core';
-import { LoadingDancingSquaresComponent } from '../../components/loading-dancing-squares/loading-dancing-squares.component';
+import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs/internal/Observable';
-import { LoadingService } from '../../services/loading.service';
+import { LoadingService } from '../../../services/loading.service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { OrdenPago } from '../../models/orden-pago';
-import { Response } from '../../models/response';
-import { DeviceService } from '../../services/core-service/device.service';
-import { OrdenPagoPlanillaMovilidadCabService } from '../../services/orden-pago-planilla-movilidad-cab.service';
-import { WrapperRequestPlanillaMovilidadCab } from '../../models/wrappers/wrapper-request-planilla-movilidad-cab';
-import { Router, NavigationEnd } from '@angular/router';
-import { MOCK_PLANILLA_MOVILIDAD } from './planilla-movilidad-mock';
-import { OrdenPagoPlanillaMovilidadDet } from '../../models/orden-pago-planilla-movilidad-det';
-import { MaeDocumento } from '../../models/mae-documento';
-import { OrdenPagoCabPlanilla } from '../../models/orden-pago-planilla-movilidad-cab';
+import { OrdenPago } from '../../../models/orden-pago';
+import { Response } from '../../../models/response';
+import { DeviceService } from '../../../services/core-service/device.service';
+import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
+import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
+import { Router } from '@angular/router';
+import { MaeDocumento } from '../../../models/mae-documento';
+import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
 @Component({
   selector: 'app-planilla-movilidad',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],

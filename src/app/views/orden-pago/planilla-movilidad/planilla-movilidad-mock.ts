@@ -1,6 +1,6 @@
 // src/app/mocks/orden-pago-planilla-movilidad.mock.ts
 
-import { OrdenPagoPlanillaMovilidadDet } from "../../models/orden-pago-planilla-movilidad-det";
+import { OrdenPagoPlanillaMovilidadDet } from "../../../models/orden-pago-planilla-movilidad-det";
 
 export const MOCK_PLANILLA_MOVILIDAD: OrdenPagoPlanillaMovilidadDet[] = [
     ...Array.from({ length: 20 }, (_, i) => ({

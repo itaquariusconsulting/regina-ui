@@ -1,9 +1,8 @@
-
 <div class="layout" [class.no-sidebar]="!isDesktop || !isSidebarVisible">
   <aside *ngIf="isDesktop && isSidebarVisible" class="sidebar">
-      <div class="logo-container">
-    <img src="assets/images/brand/logo regina.png" width="60%">
-  </div>
+    <div class="logo-container">
+      <img src="assets/images/brand/logo regina.png" width="60%">
+    </div>
     <app-sidebar></app-sidebar>
   </aside>
 
@@ -18,15 +17,9 @@
   </main>
 
   <!-- Botón flotante Regina -->
-  <div
-    *ngIf="showReginaIcon"
-    class="regina-chat-slot"
-    (click)="toggleReginaChat()">
+  <div *ngIf="showReginaIcon" class="regina-chat-slot" (click)="toggleReginaChat()">
 
-    <img
-      src="assets/images/icono-chatbot.png"
-      alt="Regina"
-      class="regina-chat-icon" />
+    <img src="assets/images/icono-chatbot.png" alt="Regina" class="regina-chat-icon" />
   </div>
 
   <!-- Panel de chat -->
@@ -40,47 +33,40 @@
     <div class="regina-chat-body">
 
       <div class="regina-messages">
-        <div
-          *ngFor="let m of messages"
-          class="msg"
-          [class.user]="m.from === 'user'"
-          [class.bot]="m.from === 'bot'">
+        <div *ngFor="let m of messages" class="msg" [class.user]="m.from === 'user'" [class.bot]="m.from === 'bot'">
 
           <b>{{ m.from === 'user' ? 'Tú' : 'Regina' }}:</b>
           {{ m.text }}
         </div>
+
+        <!-- 🔥 INDICADOR TYPING -->
+        <div *ngIf="isThinking" class="msg bot typing">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
       </div>
 
       <div class="regina-input">
 
         <div class="voice-input-wrapper">
 
-          <input
-            type="text"
-            [(ngModel)]="userInput"
-            placeholder="Escribe a Regina..."
-            [disabled]="isListening" />
+          <input type="text" [(ngModel)]="userInput" placeholder="Escribe a Regina..." [disabled]="isListening"
+            (keydown.enter)="enviarTexto()" />
 
           <div class="voice-wave" *ngIf="isListening"></div>
 
         </div>
 
-        <button
-          type="button"
-          class="mic"
-          (click)="toggleMic()">
+        <button type="button" class="mic" (click)="toggleMic()">
 
-          <i
-            class="fa"
-            [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'">
+          <i class="fa" [ngClass]="isListening ? 'fa-microphone-slash' : 'fa-microphone'">
           </i>
 
         </button>
 
-        <button
-          type="button"
-          class="send"
-          (click)="enviarTexto()">➤</button>
+        <button type="button" class="send" (click)="enviarTexto()">➤</button>
 
       </div>
 

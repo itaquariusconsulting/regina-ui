@@ -17,8 +17,8 @@ import { EditValidacionComponent } from './views/validates/edit-validacion/edit-
 import { EditRendirCuentaComponent } from './views/orden-pago/edit-rendir-cuenta/edit-rendir-cuenta.component';
 import { ListPermisosComponent } from './views/permisos/list-permisos/list-permisos.component';
 import { ViewOrdenPagoComponent } from './views/orden-pago/view-orden-pago/view-orden-pago.component';
-import { PlanillaMovilidadComponent } from './views/planilla-movilidad/planilla-movilidad.component';
-import { EditPlanillaMovilidadComponent } from './views/edit-planilla-movilidad/edit-planilla-movilidad.component';
+import { PlanillaMovilidadComponent } from './views/orden-pago/planilla-movilidad/planilla-movilidad.component';
+import { EditPlanillaMovilidadComponent } from './views/orden-pago/edit-planilla-movilidad/edit-planilla-movilidad.component';
 
 export const routes: Routes = [
 

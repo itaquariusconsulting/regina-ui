@@ -331,10 +331,10 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   onPlanillaMovilidad(orden: OrdenPago) {
-    this.router.navigate(['/planilla-movilidad'], { state: { data: {orden: orden, movilidad: 'S' } }});
+    this.router.navigate(['/planilla-movilidad'], { state: { data: { orden: orden, movilidad: 'S' } } });
   }
 
-    openEditRendirCuenta(orden: OrdenPago) {
+  openEditRendirCuenta(orden: OrdenPago) {
     const hoy = new Date();
     if (orden.fecRendicion) {
 
@@ -354,7 +354,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
           }
         });
       }
-      this.router.navigate(['/edit-rendir-cuenta'], { state: { data: {orden: orden, movilidad: 'N' }} });
+      this.router.navigate(['/edit-rendir-cuenta'], { state: { data: { orden: orden, movilidad: 'N' } } });
     }
   }
 }
