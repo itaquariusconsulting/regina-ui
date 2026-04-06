@@ -118,6 +118,7 @@ export class EditRendirCuentaComponent implements OnInit {
   pdfPreviewUrl: SafeResourceUrl | null = null;
   private pdfObjectUrl: string | null = null;
   showImageCropper = true;
+  showPdfPreview = false;
   recognizedText = '';
   isLoading$: Observable<boolean>;
   detalle: string = '';
@@ -213,6 +214,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.previewImage = null;
     this.croppedImage = null;
     this.clearPdfPreview();
+    this.showPdfPreview = false;
     this.selectedFile = undefined;
     this.showImageCropper = true;
     this.recognizedText = '';
@@ -592,6 +594,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.clearPdfPreview();
     this.pdfObjectUrl = URL.createObjectURL(file);
     this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjectUrl);
+    this.showPdfPreview = true;
   }
 
   private clearPdfPreview(): void {
@@ -600,6 +603,7 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.pdfObjectUrl = null;
     this.pdfPreviewUrl = null;
+    this.showPdfPreview = false;
   }
 
   private isPdfFile(file: File): boolean {
@@ -617,6 +621,7 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   private mapDetectedData(detected: any): boolean {
+    console.log("Detected RAW TEXT:", detected.rawText);
     this.dataImagen.documentType = detected.documentType;
     if (this.dataImagen.documentType === DocumentType.NO_RECONOCIDO || !this.dataImagen.documentType) {
       this.mensaje = 'Tipo de documento no reconocido.'
@@ -658,9 +663,9 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    if (!this.changeDate()) {
-      return false;
-    }
+    // if (!this.changeDate()) {
+    //   return false;
+    // }
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
@@ -794,6 +799,10 @@ export class EditRendirCuentaComponent implements OnInit {
     this.showImageCropper = !this.showImageCropper;
   }
 
+  togglePdfPreview(): void {
+    this.showPdfPreview = !this.showPdfPreview;
+  }
+
   async runOcr(): Promise<void> {
     try {
       const result = await Tesseract.recognize(
@@ -836,6 +845,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.previewImage = null;
     this.croppedImage = null;
     this.clearPdfPreview();
+    this.showPdfPreview = false;
     this.selectedFile = undefined;
     this.showImageCropper = true;
     this.recognizedText = '';

@@ -89,6 +89,55 @@
   margin: 2px !important;
 }
 
+.preview-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.preview-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 35%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.preview-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.preview-image {
+  border-left: 4px solid #14b8a6;
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.2), 0 14px 28px rgba(20, 184, 166, 0.18);
+}
+
+.preview-image .preview-badge {
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+}
+
+.preview-pdf {
+  border-left: 4px solid #ef4444;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2), 0 14px 28px rgba(239, 68, 68, 0.18);
+}
+
+.preview-pdf .preview-badge {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
 .mensaje-alerta {
   font-size: 0.8rem !important;
   color: red !important;
