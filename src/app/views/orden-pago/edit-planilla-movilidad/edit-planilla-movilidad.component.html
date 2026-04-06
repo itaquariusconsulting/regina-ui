@@ -80,17 +80,17 @@
     </thead>
     <tbody>
         <tr *ngFor="let traslado of pagedViajes">
-            <td class="text-center">{{traslado.fechaTraslado | date: 'dd-MM-yyyy'}}</td>
+            <td class="text-center">{{traslado.fecItemPlanilla | date: 'dd-MM-yyyy'}}</td>
             <td class="text-start">{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
             <td class="text-start">{{traslado.numDocumento}}</td>
             <td class="text-start">{{traslado.codAuxiliarProveedor}}</td>
             <td class="text-start">{{traslado.codOrigen}}</td>
             <td class="text-start">{{traslado.codDestino}}</td>
-            <td class="text-start">{{traslado.observaciones}}</td>
-            <td class="text-end">{{traslado.impSoles | number: '1.2-2'}}</td>
+            <td class="text-start">{{traslado.glosa}}</td>
+            <td class="text-end">{{traslado.importe | number: '1.2-2'}}</td>
             <td class="text-center">
                 <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
-                    <span style="font-weight: 600 !important; color: white !important">{{traslado.nroOcupantes}}</span>
+                    <span style="font-weight: 600 !important; color: white !important">{{traslado.cantPersonas}}</span>
                 </button>
             </td>
         </tr>

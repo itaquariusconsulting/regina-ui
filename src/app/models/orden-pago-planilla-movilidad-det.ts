@@ -5,17 +5,15 @@ export class OrdenPagoPlanillaMovilidadDet {
     codPeriodo?: string;
     numOrden?: string;
     codPlanilla?: string;
-    numItem?: string;
-    fechaTraslado?: Date;
+    numItemPlanilla?: string;
+    fecItemPlanilla?: Date;
     codDocumento?: string;
     numDocumento?: string;
+    serDocumento?: string;
     codAuxiliarProveedor?: string;
+    glosa?: string;
+    importe?: number;
+    cantPersonas?: number;
     codOrigen?: string;
     codDestino?: string;
-    observaciones?: string;
-    codMoneda?: string;
-    impSoles?: number = 0.00;
-    impDolares?: number = 0.00;
-    tipCambio?: number = 0;
-    nroOcupantes?: number = 0;
 }
