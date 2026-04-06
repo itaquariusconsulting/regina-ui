@@ -129,13 +129,26 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       (response: Response) => {
         this.bancos = response.resultado;
         this.banco = this.bancos[0].codAuxiliar ?? '';
-        this.loadingService.hide();
+        this.getDocumentos();
       },
       (error) => {
         console.log("No se pudo obtener la lista de bancos");
         this.loadingService.hide();
       }
     )
+  }
+
+  getDocumentos() {
+    this.maestrosService.getTiposDocumento(this.orden.codEmpresa ?? '0001').subscribe(
+      (response: Response) => {
+        this.documentosGeneral = response.resultado;
+        this.loadingService.hide();
+      },
+      (error) => {
+        console.log("No se pudo obtener la lista de documentos");
+        this.loadingService.hide();
+      }
+    );
   }
 
   onBack(): void {

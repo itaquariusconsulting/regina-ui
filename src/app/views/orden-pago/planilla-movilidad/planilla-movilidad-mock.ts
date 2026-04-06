@@ -13,7 +13,7 @@ export const MOCK_PLANILLA_MOVILIDAD: OrdenPagoPlanillaMovilidadDet[] = [
         codPlanilla: 'PL' + String(i + 1).padStart(3, '0'),
         numItem: String(i + 1),
 
-        fechaTraslado: randomDate(),
+        fecItemPlanilla: randomDate(),
         codDocumento: randomFrom(['FC', 'RH', 'BV']),
         numDocumento: 'DOC' + Math.floor(Math.random() * 100000),
 
@@ -24,10 +24,10 @@ export const MOCK_PLANILLA_MOVILIDAD: OrdenPagoPlanillaMovilidadDet[] = [
         observaciones: 'Movilidad ' + (i + 1),
 
         codMoneda: randomFrom(['PEN', 'USD']),
-        impSoles: randomMoney(),
+        importe: randomMoney(),
         impDolares: randomMoney(),
         tipCambio: +(3.5 + Math.random()).toFixed(3),
-        nroOcupantes: Math.floor(Math.random() * 5) + 1
+        cantPersonas: Math.floor(Math.random() * 5) + 1
     }))
 ];
 
