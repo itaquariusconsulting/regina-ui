@@ -19,7 +19,9 @@ export class ReginaIaService {
   constructor(private http: HttpClient) { }
   
   enviarPregunta(payload: WrapperRequestIA): Observable<ChatResponse> {
-    const url = `${environment.apiUrlIA}/stream`;
+    const url = `${environment.apiUrlIA}/chat`;
+    console.log("Enviando pregunta a IA:", payload);
+    console.log("URL del servicio IA:", url);
 
     return this.http.post<ChatResponse>(url, payload).pipe(
       catchError((error: HttpErrorResponse) => {

@@ -79,14 +79,14 @@
         </thead>
         <tbody>
             <tr *ngFor="let traslado of pagedViajes">
-            <td>{{traslado.fecItemPlanilla | date: 'dd-MM-yyyy'}}</td>
-            <td>{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
-            <td>{{traslado.numDocumento}}</td>
-            <td>{{traslado.codAuxiliarProveedor}}</td>
-            <td>{{traslado.codOrigen}}</td>
-            <td>{{traslado.codDestino}}</td>
-            <td>{{traslado.glosa}}</td>
-            <td>{{traslado.importe | number: '1.2-2'}}</td>
+                <td>{{traslado.fecItemPlanilla | date: 'dd-MM-yyyy'}}</td>
+                <td>{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
+                <td>{{traslado.numDocumento}}</td>
+                <td>{{traslado.codAuxiliarProveedor}}</td>
+                <td>{{traslado.codOrigen}}</td>
+                <td>{{traslado.codDestino}}</td>
+                <td>{{traslado.glosa}}</td>
+                <td>{{traslado.importe | number: '1.2-2'}}</td>
                 <td class="text-center">
                     <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
                         <span
@@ -175,8 +175,13 @@
 
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Proveedor / Auxiliar</label>
-                        <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.codAuxiliarProveedor"
-                            maxlength="6" />
+                        <div class="input-group">
+                            <input readonly type="text" class="form-control"
+                                [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" maxlength="6" />
+                            <button class="btn btn-small" (click)="openAuxiliaresModal()" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                         <small class="text-muted d-block">Max 6 caracteres</small>
                     </div>
                     <div class="col-md-6">
@@ -212,6 +217,39 @@
                     [disabled]="guardandoDetalle">
                     {{guardandoDetalle ? 'Guardando...' : 'Guardar'}}
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalAuxiliares" tabindex="-2">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Auxiliares - Proveedores</h5>
+                <button type="button" class="btn-close" (click)="closeAuxiliaresModal()"></button>
+            </div>
+            <div class="modal-body">
+                <table>
+                    <tbody>
+                        <tr *ngFor="let auxiliar of auxiliaresPR">
+                            <td class="text-start">{{ auxiliar.desAuxiliar }}</td>
+                            <td class="text-start">
+                                <button class="btn btn-small">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="general-button btn-primary" type="button">
+                    Seleccionar
+                </button>
+                <button class="general-button btn-secondary" type="button"
+                    (click)="closeAuxiliaresModal()">Cancelar</button>
             </div>
         </div>
     </div>

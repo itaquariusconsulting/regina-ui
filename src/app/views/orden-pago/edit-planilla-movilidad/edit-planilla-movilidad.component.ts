@@ -26,6 +26,7 @@ import { provideMomentDateAdapter } from '@angular/material-moment-adapter';
 import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pago-planilla-movilidad-det.service';
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
+import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 
 @Component({
   selector: 'app-edit-planilla-movilidad',
@@ -86,10 +87,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   minDate = moment('2020-01-01');
   maxDate = moment('2030-12-31');
   modal: any;
+  modalAuxiliares: any;
   nuevoDetalle: OrdenPagoPlanillaMovilidadDet = new OrdenPagoPlanillaMovilidadDet();
   nuevoDetalleFecha: string = '';
   guardandoDetalle: boolean = false;
   guardandoCabecera: boolean = false;
+  auxiliaresPR: MaeAuxiliarDTO[] = [];
+  auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
 
   ngOnInit(): void {
     const state = history.state;
@@ -152,10 +156,24 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.maestrosService.getTiposDocumento(this.orden.codEmpresa ?? '0001').subscribe(
       (response: Response) => {
         this.documentosGeneral = response.resultado;
-        this.loadingService.hide();
+        this.getAuxiliaresPR();
       },
       (error) => {
         console.log("No se pudo obtener la lista de documentos");
+        this.loadingService.hide();
+      }
+    );
+  }
+
+  getAuxiliaresPR() {
+    this.maestrosService.getListaAuxiliaresPR(this.orden.codEmpresa ?? '0001').subscribe(
+      (response: Response) => {
+        this.auxiliaresPR = response.resultado;
+        this.auxiliarSeleccionado = this.auxiliaresPR[0];
+        this.loadingService.hide();
+      },
+      (error) => {
+        console.log("No se pudo obtener la lista de auxiliares PR");
         this.loadingService.hide();
       }
     );
@@ -290,6 +308,18 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   closeDetailModal(): void {
     this.modal?.hide();
+  }
+
+  openAuxiliaresModal(): void {
+    const modalElement = document.getElementById('modalAuxiliares');
+    if (modalElement) {
+      this.modalAuxiliares = new bootstrap.Modal(modalElement);
+      this.modalAuxiliares.show();
+    }
+  }
+
+  closeAuxiliaresModal(): void {
+    this.modalAuxiliares?.hide();
   }
 
   appendDetails(): void {
