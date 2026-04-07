@@ -37,7 +37,7 @@ export class ListUsuariosComponent implements OnInit{
   ngOnInit(): void {
     const userString = sessionStorage.getItem('user');
     const state = history.state;
-
+    console.log("State recibido:", state);
     if (userString) {
       try {
         const user = JSON.parse(userString);

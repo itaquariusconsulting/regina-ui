@@ -200,11 +200,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       ?.desDocumento ?? '';
   }
 
-  changeDate() {
-
-  }
-
-
   private buildPagination(): void {
 
     this.totalItems = this.listaMovilidad.length;

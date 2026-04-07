@@ -242,7 +242,7 @@ export class DefaultLayoutComponent implements OnInit {
                 break;
 
               case 'usuarios':
-                this.router.navigate(['/list-usuarios'], { state: { data: this.retorno } });
+                this.router.navigate(['/list-usuarios']);
                 break;
 
               case 'usuario_true':
