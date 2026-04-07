@@ -80,6 +80,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   totalItems = 0;
   totalPages = 0;
 
+
+  pageSizeAux = 10;
+  currentPageAux = 0;
+  totalItemsAux = 0;
+  totalPagesAux = 0;
+
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = [];
   documentosGeneral: MaeDocumento[] = [];
   newDate: Date = new Date();
@@ -94,6 +100,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   guardandoCabecera: boolean = false;
   auxiliaresPR: MaeAuxiliarDTO[] = [];
   auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
+  pagedViajesAux: MaeAuxiliarDTO[] = [];
 
   ngOnInit(): void {
     const state = history.state;
@@ -169,7 +176,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.maestrosService.getListaAuxiliaresPR(this.orden.codEmpresa ?? '0001').subscribe(
       (response: Response) => {
         this.auxiliaresPR = response.resultado;
-        this.auxiliarSeleccionado = this.auxiliaresPR[0];
+        this.currentPageAux = 0;
+        this.buildPaginationAuxiliares();
         this.loadingService.hide();
       },
       (error) => {
@@ -199,6 +207,16 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.pagedViajes = this.listaMovilidad.slice(start, end);
   }
 
+    private buildPaginationAuxiliares(): void {
+    this.totalItemsAux = this.auxiliaresPR.length;
+    this.totalPagesAux = Math.ceil(this.totalItemsAux / this.pageSizeAux);
+
+    const start = this.currentPageAux * this.pageSizeAux;
+    const end = start + this.pageSizeAux;
+
+    this.pagedViajesAux = this.auxiliaresPR.slice(start, end);
+  }
+
   changePage(page: number): void {
     if (page < 0 || page >= this.totalPages) {
       return;
@@ -206,6 +224,15 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
     this.currentPage = page;
     this.buildPagination();
+  }
+
+  changePageAuxiliares(page: number): void {
+    if (page < 0 || page >= this.totalPagesAux) {
+      return;
+    }
+
+    this.currentPageAux = page;
+    this.buildPaginationAuxiliares();
   }
 
   private getOrderParams() {

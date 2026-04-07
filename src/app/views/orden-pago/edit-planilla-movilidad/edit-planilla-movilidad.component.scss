@@ -176,3 +176,18 @@
         max-width: 100%;
     }
 }
+
+.modal-custom {
+    max-width: 460px; /* ajusta a tu gusto */
+}
+
+.modal-header-2 {
+    background-color: black !important;
+    color: white !important;
+    padding: 2px !important;
+    border-bottom: none !important;
+}
+.modal-title-2 {
+    font-family: var(--app-font-family) !important; 
+    font-size: 1.1rem !important;
+}
