@@ -36,7 +36,7 @@ export class OrdenPagoPlanillaMovilidadCabService {
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json'
         });
-        return this.http.post<Response>(`${this.apiUrlProcess}planilla-movilidad-cab/insertar`, dto, {
+        return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-planilla/insertar`, dto, {
             headers,
             responseType: 'json'
         });
