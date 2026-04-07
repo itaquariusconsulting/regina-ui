@@ -1,15 +1,15 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import moment from 'moment'
+import Swal from 'sweetalert2';
+import * as bootstrap from 'bootstrap';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
-import { Observable } from 'rxjs';
+import { Observable, finalize, forkJoin } from 'rxjs';
 import { OrdenPago } from '../../../models/orden-pago';
 import { DeviceService } from '../../../services/core-service/device.service';
-import { RucInput } from '../../../shared/constants/validation-constants';
-import { SunatService } from '../../../services/sunat-service';
 import { PadronRuc } from '../../../models/padron-ruc';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Response } from '../../../models/response';
 import { MaeCentroCostrosDTO } from '../../../models/mae-centro-costos';
 import { MaestrosService } from '../../../services/maestros.service';
@@ -17,14 +17,16 @@ import { MaeBanco } from '../../../models/mae-banco';
 import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
 import { NgxCurrencyDirective } from 'ngx-currency';
 import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
-import { MOCK_PLANILLA_MOVILIDAD } from '../planilla-movilidad/planilla-movilidad-mock';
 import { MaeDocumento } from '../../../models/mae-documento';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideMomentDateAdapter } from '@angular/material-moment-adapter';
-import moment from 'moment'
+import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pago-planilla-movilidad-det.service';
+import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
+import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
+
 @Component({
   selector: 'app-edit-planilla-movilidad',
   providers: [
@@ -50,9 +52,13 @@ import moment from 'moment'
   styleUrl: './edit-planilla-movilidad.component.scss'
 })
 export class EditPlanillaMovilidadComponent implements OnInit {
-  constructor(private loadingService: LoadingService,
-    private deviceService: DeviceService, private location: Location,
-    private sunatService: SunatService, private maestrosService: MaestrosService
+  constructor(
+    private location: Location,
+    private deviceService: DeviceService,
+    private loadingService: LoadingService,
+    private maestrosService: MaestrosService,
+    private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
+    private planillaCabService: OrdenPagoPlanillaMovilidadCabService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -60,8 +66,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   isLoading$: Observable<boolean>;
   orden: OrdenPago = new OrdenPago();
   isDesktop: boolean = false;
-  ruc: string = "";
-  mensaje: string = "";
   validate: boolean = false;
   padronRuc: PadronRuc = new PadronRuc();
   centroCostos: MaeCentroCostrosDTO[] = [];
@@ -75,13 +79,18 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   totalItems = 0;
   totalPages = 0;
 
-  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = MOCK_PLANILLA_MOVILIDAD;
+  listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = [];
   documentosGeneral: MaeDocumento[] = [];
   newDate: Date = new Date();
-  //modelPlanillaIni: NgbDateStruct = { year: this.newDate.getFullYear(), month: this.newDate.getMonth() + 1, day: this.newDate.getDate() };
   modelPlanillaIni: moment.Moment | null = moment();
   minDate = moment('2020-01-01');
   maxDate = moment('2030-12-31');
+  modal: any;
+  nuevoDetalle: OrdenPagoPlanillaMovilidadDet = new OrdenPagoPlanillaMovilidadDet();
+  nuevoDetalleFecha: string = '';
+  guardandoDetalle: boolean = false;
+  guardandoCabecera: boolean = false;
+
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
@@ -91,6 +100,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.isDesktop = this.deviceService.isDesktopDevice();
     this.buildPagination();
     this.getCentroCostos();
+    this.loadPlanillaHeader();
   }
 
   formatDate(date: Date | null): string {
@@ -155,45 +165,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.location.back();
   }
 
-  ruccompleto(): void {
-    if (this.ruc.length !== RucInput.LENGTH) {
-      this.mensaje = 'El RUC debe contener 11 dígitos.';
-      this.validate = false;
-      return;
-    }
-
-    this.onGetDatosRuc();
-  }
-
-  onGetDatosRuc(): void {
-    this.sunatService.getDataRUC(this.ruc).subscribe({
-      next: (response: Response) => this.handleRucResponse(response),
-      error: (err) => this.handleRucError(err)
-    });
-  }
-
-  private handleRucResponse(response: Response): void {
-    if (!response || response.error !== 0) {
-      this.validate = false;
-      return;
-    }
-    this.padronRuc = response.resultado;
-    this.mensaje = '';
-    this.validate = true;
-  }
-
-
-  private handleRucError(error?: HttpErrorResponse): void {
-    let message = error?.error.mensaje
-      || 'No se pudo consultar SUNAT. Intente nuevamente.';
-
-    console.log("Error al obtener RUC);")
-
-    this.validate = false;
-    this.mensaje = message;
-  }
-
-
   devolverDocumento(tipoDoc: string): string {
     return this.documentosGeneral
       .find(doc => doc.codDocumento == tipoDoc)
@@ -201,7 +172,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   private buildPagination(): void {
-
     this.totalItems = this.listaMovilidad.length;
     this.totalPages = Math.ceil(this.totalItems / this.pageSize);
 
@@ -212,12 +182,224 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   changePage(page: number): void {
-
     if (page < 0 || page >= this.totalPages) {
       return;
     }
 
     this.currentPage = page;
     this.buildPagination();
+  }
+
+  private getOrderParams() {
+    const { codEmpresa, codSucursal, anoPeriodo, codPeriodo, numOrden } = this.orden;
+    return {
+      codEmpresa: codEmpresa ?? '',
+      codSucursal: codSucursal ?? '',
+      anioPeriodo: anoPeriodo ?? '',
+      codPeriodo: codPeriodo ?? '',
+      numOrden: numOrden ?? ''
+    };
+  }
+
+  private resetListState(): void {
+    this.listaMovilidad = [];
+    this.currentPage = 0;
+    this.buildPagination();
+  }
+
+  private loadPlanillaDetails(): void {
+    const params = this.getOrderParams();
+    const codPlanilla = this.ordenPagoPlanillaMovilidadCab.numPlanilla ?? '';
+
+    if (Object.values(params).some(val => !val) || !codPlanilla) {
+      this.resetListState();
+      return;
+    }
+
+    this.loadingService.show();
+    this.planillaDetService.listarDetalle(
+      params.codEmpresa,
+      params.codSucursal,
+      params.anioPeriodo,
+      params.codPeriodo,
+      params.numOrden,
+      codPlanilla
+    )
+      .pipe(finalize(() => this.loadingService.hide()))
+      .subscribe({
+        next: (response: any) => {
+          this.listaMovilidad = response.resultado || [];
+          this.currentPage = 0;
+          this.buildPagination();
+        },
+        error: () => this.resetListState()
+      });
+  }
+
+  private loadPlanillaHeader(): void {
+    const params = this.getOrderParams();
+
+    if (Object.values(params).some(val => !val)) return;
+
+    const wrapper: WrapperRequestPlanillaMovilidadCab = { ...params };
+
+    this.loadingService.show();
+    this.planillaCabService.getPlanillaMovilidad(wrapper)
+      .pipe(finalize(() => this.loadingService.hide()))
+      .subscribe({
+        next: (response: any) => {
+          const planillas = response.resultado || [];
+          if (planillas.length > 0) {
+            const lastPlanilla = planillas[planillas.length - 1];
+            this.mapHeaderData(lastPlanilla);
+            this.loadPlanillaDetails();
+          } else {
+            this.resetListState();
+          }
+        }
+      });
+  }
+
+  private mapHeaderData(data: any): void {
+    const cab = this.ordenPagoPlanillaMovilidadCab;
+    cab.numPlanilla = data.codPlanilla ?? data.numPlanilla;
+    cab.numMaxViajes = data.monto ?? data.numMaxViajes;
+    cab.amountPlanilla = data.total ?? data.amountPlanilla;
+    cab.glosaPlanilla = data.glosaPlanilla;
+
+    const fecha = data.fechaPlanilla ?? data.fecPlanilla;
+    if (fecha) {
+      this.modelPlanillaIni = moment(fecha);
+    }
+  }
+
+  openDetailModal(): void {
+    this.nuevoDetalle = new OrdenPagoPlanillaMovilidadDet();
+    this.nuevoDetalleFecha = new Date().toISOString().slice(0, 10);
+
+    Object.assign(this.nuevoDetalle, this.getOrderParams(), {
+      codPlanilla: this.ordenPagoPlanillaMovilidadCab.numPlanilla ?? ''
+    });
+
+    const modalElement = document.getElementById('modalNuevoDetalle');
+    if (modalElement) {
+      this.modal = new bootstrap.Modal(modalElement);
+      this.modal.show();
+    }
+  }
+
+  closeDetailModal(): void {
+    this.modal?.hide();
+  }
+
+  appendDetails(): void {
+    if (this.guardandoDetalle) return;
+
+    if (!this.nuevoDetalleFecha) return;
+
+    const importeNuevo = Number(this.nuevoDetalle.importe ?? 0);
+    const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.amountPlanilla ?? 0);
+    const totalActual = this.getTotalImporteDetalles();
+
+    if (totalCabecera > 0 && (totalActual + importeNuevo) > totalCabecera) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'La suma de los importes supera el total permitido en la cabecera.',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      return;
+    }
+
+    const maxViajes = Number(this.ordenPagoPlanillaMovilidadCab.numMaxViajes ?? 0);
+    if (maxViajes > 0 && (this.listaMovilidad.length + 1) > maxViajes) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'Has alcanzado el número máximo de viajes permitido en la cabecera.',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      return;
+    }
+
+    const detalleInsertado: OrdenPagoPlanillaMovilidadDet = {
+      ...this.nuevoDetalle,
+      fecItemPlanilla: new Date(this.nuevoDetalleFecha)
+    };
+
+    this.listaMovilidad = [detalleInsertado, ...this.listaMovilidad];
+    this.currentPage = 0;
+    this.buildPagination();
+    this.closeDetailModal();
+  }
+
+  savePlanilla(): void {
+    if (this.guardandoCabecera) return;
+
+    if (!this.modelPlanillaIni) return;
+
+    this.guardandoCabecera = true;
+    this.loadingService.show();
+
+    const dto = {
+      ...this.getOrderParams(),
+      fechaPlanilla: moment(this.modelPlanillaIni).format('YYYY-MM-DD'),
+      monto: this.ordenPagoPlanillaMovilidadCab.numMaxViajes,
+      total: this.ordenPagoPlanillaMovilidadCab.amountPlanilla,
+      cCentroCostos: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla
+    };
+
+    this.planillaCabService.savePlanillaMovilidad(dto)
+      .subscribe({
+        next: (response: any) => {
+          if (response?.error === 0) {
+            this.saveDetails(response.resultado);
+          } else {
+            this.finalizeSave();
+          }
+        },
+        error: () => {
+          this.finalizeSave();
+        }
+      });
+  }
+
+  private saveDetails(codPlanilla: string): void {
+    if (this.listaMovilidad.length === 0) {
+      this.finalizeSave();
+      return;
+    }
+
+    const commonParams = this.getOrderParams();
+    const requests = this.listaMovilidad.map(det => {
+      const dto: OrdenPagoPlanillaMovilidadDet = {
+        ...det,
+        ...commonParams,
+        codPlanilla
+      };
+      return this.planillaDetService.insertarDetalle(dto);
+    });
+
+    forkJoin(requests)
+      .pipe(finalize(() => this.finalizeSave()))
+      .subscribe({
+        error: (err) => (console.error('Error al guardar detalles:', err))
+      });
+  }
+
+  private finalizeSave(): void {
+    this.loadingService.hide();
+    this.guardandoCabecera = false;
+    this.guardandoDetalle = false;
+  }
+
+  private getTotalImporteDetalles(): number {
+    return this.listaMovilidad.reduce((sum, d) => sum + Number(d.importe ?? 0), 0);
   }
 }

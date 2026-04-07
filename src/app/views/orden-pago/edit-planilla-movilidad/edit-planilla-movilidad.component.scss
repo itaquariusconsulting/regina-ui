@@ -118,11 +118,13 @@
     position: relative;
     display: flex;
     align-items: center;
+    width: 100%;
 
     input {
         width: 100%;
         height: 34px;
         padding-left: 10px;
+        padding-right: 34px;
         font-size: 1rem;
 
         border: 1px solid #ccc;
@@ -146,5 +148,31 @@
         cursor: pointer;
 
         color: var(--primary-color);
+    }
+}
+
+/* Modal: narrower and taller, with two fields per row */
+.modal-vertical {
+    max-width: 620px;
+    width: 620px;
+}
+
+.modal-vertical .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+@media (max-width: 768px) {
+    .modal-vertical {
+        width: 95vw;
+        max-width: 95vw;
+        margin: 0 auto;
+    }
+
+    .modal-vertical .row > [class*='col-'] {
+        flex: 0 0 100%;
+        max-width: 100%;
     }
 }

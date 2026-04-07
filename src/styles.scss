@@ -543,3 +543,7 @@ select.general-select option {
   color: var(--text-on-primary);
   /* texto blanco */
 }
+
+.cdk-overlay-container {
+  z-index: 2000; 
+}
