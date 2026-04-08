@@ -57,6 +57,17 @@
   font-size: 1.2rem;   /* Icono grande */
 }
 
+
+/* Área tema */
+.theme-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #ffffff;
+}
+
 .arrow {
   font-size: 1.2rem;
 }
@@ -69,6 +80,19 @@
   background: #ffffff;
   color: #333;
   min-width: 350px;
+  border-radius: 6px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  z-index: 2000;
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: 56px;
+  right: 10px;
+  background: #ffffff;
+  color: #333;
+  min-width: 230px;
   border-radius: 6px;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
   padding: 12px;
@@ -128,4 +152,106 @@
   padding: 8px !important;
   margin-bottom: 10px !important;
   border-radius: 11px !important;
+}
+
+.page {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 120px;
+  /* 👈 ajusta aquí */
+  max-width: 120px;
+}
+
+.theme-card {
+  width: 200px;
+  /* 👈 ajusta aquí */
+  max-width: 220px;
+  height: 300px;
+  max-height: 300px;
+}
+
+.theme-card .card-header {
+  background-color: color-mix(in srgb,
+      var(--primary-color) 85%,
+      transparent);
+  color: #ffffff;
+
+  border-bottom: 3px solid var(--primary-color);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding-top: 18px;
+}
+
+/* ==========================
+   Contenedor
+========================== */
+
+.donut-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Oculta radio nativo */
+.donut-radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Donut */
+.control {
+  --size: 20px;
+
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  position: relative;
+
+  background: #f1f3f5;
+  border: 2px solid #cfd4da;
+
+  box-shadow:
+    inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.18),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+
+  transition: all 0.2s ease;
+}
+
+/* Anillo interno */
+.control::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+/* Checked → usa variable global */
+.donut-radio input:checked+.control {
+  border-color: var(--primary-color);
+}
+
+.donut-radio input:checked+.control::after {
+  background: var(--primary-color);
+}
+
+/* Hover */
+.donut-radio:hover .control {
+  transform: scale(1.05);
+}
+
+/* Texto */
+.text {
+  font-size: 14px;
 }

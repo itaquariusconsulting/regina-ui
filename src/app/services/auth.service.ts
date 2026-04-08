@@ -46,7 +46,7 @@ export class AuthService {
 
   // Método para verificar si el usuario está autenticado
   isLoggedIn(): boolean {
-    const token = localStorage.getItem('authToken');
+    const token = sessionStorage.getItem('authToken');
     return !!token && !this.isTokenExpired(token);
   }
 
@@ -59,13 +59,13 @@ export class AuthService {
 
   // Método para establecer el token y notificar el estado de autenticación
   setToken(token: string): void {
-    localStorage.setItem('authToken', token);
+    sessionStorage.setItem('authToken', token);
     this.authStatusListener.next(true); // El usuario está autenticado
   }
 
   // Método para cerrar sesión
   logout(): void {
-    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
     this.authStatusListener.next(false); // El usuario ha cerrado sesión
   }
 

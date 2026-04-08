@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { DeviceService } from '../../../../services/core-service/device.service';
 import { ExchangeRateService } from '../../../../shared/services/exchange-rate.service';
+import { ThemeKey, ThemeService } from '../../../../shared/services/theme.service';
+import { RegSecUserService } from '../../../../services/reg-sec-user.service';
 
 @Component({
   selector: 'app-default-header',
@@ -48,6 +50,9 @@ export class DefaultHeaderComponent implements OnInit {
   isDesktop: boolean = false;
   tipoCambioVenta: number = 0;
   currentDateShort: string = ("Lima, " + (new Date()).getDate() + "/" + this.meses[(new Date()).getMonth()].value.toString().padStart(2, '0') + "/" + (new Date()).getFullYear()).toUpperCase();
+  showThemeDropdown: boolean = false;
+  selectedTheme: ThemeKey | null = null;
+
   private subscription: Subscription = new Subscription();
 
   readonly colorModes = [
@@ -59,7 +64,9 @@ export class DefaultHeaderComponent implements OnInit {
   constructor(
     private router: Router,
     public deviceService: DeviceService,
-    public exchangeRateService: ExchangeRateService
+    public exchangeRateService: ExchangeRateService,
+    private themeService: ThemeService,
+    private regSecUserService: RegSecUserService
   ) {
     const currentYear = new Date().getFullYear();
     this.years = Array.from({ length: 10 }, (_, i) => currentYear - i);
@@ -72,6 +79,12 @@ export class DefaultHeaderComponent implements OnInit {
     this.nombresCompletos = sessionStorage.getItem('nombresCompletos') || '';
     this.empresa = sessionStorage.getItem('razonSocial') || '';
     this.periodo = (this.meses.find(m => m.value === parseInt(sessionStorage.getItem('periodo_month') || ''))?.nombre ?? '') + ' del ' + sessionStorage.getItem('periodo_year');
+
+    const theme = this.themeService.getStoredTheme();
+    if (theme) {
+      this.selectedTheme = theme;
+      this.themeService.applyTheme(theme);
+    }
 
     //RECUPERA DATOS DEL SESSION STORAGE
     const userString = sessionStorage.getItem("user");
@@ -208,5 +221,24 @@ export class DefaultHeaderComponent implements OnInit {
   cambiaPeriodo() {
     sessionStorage.setItem('periodo_month', this.selectedMonth.toString().padStart(2, '0'));
     sessionStorage.setItem('periodo_year', this.selectedYear.toString().padStart(4, '0'));
+  }
+
+
+  changeTheme(theme: ThemeKey): void {
+    this.selectedTheme = theme;
+    this.themeService.setTheme(theme);
+    sessionStorage.setItem('theme', theme);
+  }
+
+  saveTheme(): void {
+    this.showThemeDropdown = false;
+    this.regSecUserService.updateThemePreference(this.user.userId ?? 0, this.selectedTheme || '').subscribe({
+      next: (response) => {
+        console.log('El Tema se actualizó correctamente', response);
+      },
+      error: (err) => {
+        console.error('Error al actualizar el tema', err);
+      }
+    });
   }
 }

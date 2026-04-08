@@ -10,6 +10,7 @@ import { MaeTipoCambio } from '../../models/mae-tipo-cambio';
 import { MaestrosService } from '../../services/maestros.service';
 import { ExchangeRateService } from '../../shared/services/exchange-rate.service';
 import { AccountStatus } from '../../shared/constants/accounts';
+import { ThemeKey, ThemeService } from '../../shared/services/theme.service';
 
 @Component({
   selector: 'app-login',
@@ -38,12 +39,14 @@ export class LoginComponent implements OnInit, OnDestroy {
   selectedYear: string = "";
   selectedMonth: string = "";
   tiposCambio: MaeTipoCambio[] = [];
+  selectedTheme: ThemeKey | null = null;
 
   constructor(
     private router: Router,
     private service: AuthService,
     private maestrosService: MaestrosService,
-    private exchangeRateService: ExchangeRateService
+    private exchangeRateService: ExchangeRateService,
+    private themeService: ThemeService
   ) {
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
       this.router.navigate(['/dashboard']);
@@ -136,6 +139,14 @@ export class LoginComponent implements OnInit, OnDestroy {
               this.onOtp();
             } else {
               this.dtoUser = response.resultado;
+
+              const theme = this.dtoUser.userTheme as ThemeKey | null;
+              if (theme) {
+                this.selectedTheme = theme;
+                this.themeService.applyTheme(theme);
+              }
+
+
               this.authToken = this.dtoUser.authToken;
               if (response.resultado.userStatus === AccountStatus.INACTIVE) {
                 Swal.fire({

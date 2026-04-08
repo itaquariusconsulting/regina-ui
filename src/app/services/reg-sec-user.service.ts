@@ -51,4 +51,11 @@ export class RegSecUserService {
       'Content-Type': 'application/json'
     });
   }
+
+  updateThemePreference(userId: number, theme: string): Observable<Response> {
+    const body = { themePreference: theme };
+    return this.http.put<Response>(`${this.apiUrlAuth}/api/theme/update/${userId}/${theme}`, {
+      headers: this.getHeaders()
+    });
+  }
 }

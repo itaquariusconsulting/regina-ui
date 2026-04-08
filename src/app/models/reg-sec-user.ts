@@ -23,4 +23,5 @@ export class RegSecUser {
     mensaje?: string;
     codAuxiliar?: string;
     userAdmin?: boolean;
+    userTheme?: string;
 }
