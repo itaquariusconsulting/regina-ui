@@ -96,8 +96,8 @@ export class AuthService {
   }
 
   changePassword(dto: RegSecUser): Observable<any> {
-    return this.http.put(`${this.apiurlAuth}usuario/change-password`, dto, {
-      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+    return this.http.put(`${this.apiurlAuth}/api/usuario/change-password`, dto, {
+      headers: new HttpHeaders({ 'Content-Type': 'application/json', 'X-Skip-Error-Handler': 'true' })
     });
   }
 
