@@ -312,7 +312,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     cab.amountPlanilla = data.total;
     cab.glosaPlanilla = data.glosa;
 
-    const fecha = data.fechaPlanilla ?? data.fecPlanilla;
+    const fecha = data.fechaPlanilla;
     if (fecha) {
       this.modelPlanillaIni = moment(fecha);
     }
@@ -464,5 +464,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   private getTotalImporteDetalles(): number {
     return this.listaMovilidad.reduce((sum, d) => sum + Number(d.importe ?? 0), 0);
+  }
+
+  isGuardarDisabled(): boolean {
+    return !this.modelPlanillaIni
+      || !this.ordenPagoPlanillaMovilidadCab.amountPlanilla
+      || !this.ordenPagoPlanillaMovilidadCab.numMaxViajes
+      || !this.ordenPagoPlanillaMovilidadCab.glosaPlanilla;
   }
 }
