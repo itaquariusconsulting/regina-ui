@@ -19,6 +19,7 @@ import { ListPermisosComponent } from './views/permisos/list-permisos/list-permi
 import { ViewOrdenPagoComponent } from './views/orden-pago/view-orden-pago/view-orden-pago.component';
 import { PlanillaMovilidadComponent } from './views/orden-pago/planilla-movilidad/planilla-movilidad.component';
 import { EditPlanillaMovilidadComponent } from './views/orden-pago/edit-planilla-movilidad/edit-planilla-movilidad.component';
+import { ChangePasswordComponent } from './views/usuario/change-password/change-password.component';
 
 export const routes: Routes = [
 
@@ -107,6 +108,10 @@ export const routes: Routes = [
       {
         path: 'settings',
         component: SettingsComponent
+      },
+      {
+        path: 'change-password',
+        component: ChangePasswordComponent
       }
     ]
   }

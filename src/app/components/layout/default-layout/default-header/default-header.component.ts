@@ -135,7 +135,7 @@ export class DefaultHeaderComponent implements OnInit {
   }
 
   onChangePassword() {
-    this.router.navigate(['/cambiar-password']);
+    this.router.navigate(['/change-password']);
   }
 
   public newMessages = [
