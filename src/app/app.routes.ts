@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './views/login/login.component';
 import { DefaultLayoutComponent } from './components/layout/default-layout/default-layout.component';
 import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-orden-pago.component';
-import { SettingsComponent } from './views/settings/settings.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { NuevoUsuarioComponent } from './views/usuario/nuevo-usuario/nuevo-usuario.component';
@@ -104,10 +103,6 @@ export const routes: Routes = [
         path: 'edit-validacion/:id',
         component: EditValidacionComponent
       },
-      {
-        path: 'settings',
-        component: SettingsComponent
-      }
     ]
   }
 ];

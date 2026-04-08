@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="d-flex align-items-center gap-1 mt-3">
-            <button title="Nueva Planilla de Movilidad" (click)="onEditPlanillaMovilidad()"
+            <button title="Nueva Planilla de Movilidad" (click)="onEditPlanillaMovilidad(planilla,1)"
                 class="general-button btn-primary">
                 <i class="fas fa-plus"></i>
                 Nueva
@@ -30,18 +30,42 @@
     <div class="table-container table-responsive">
         <table class="table global-table table-striped table-hover">
             <thead>
-                <th class="text-center">Orden</th>
-                <th class="text-center">Auxiliar</th>
-                <th class="text-center">Fecha de Orden</th>
-                <th class="text-center">Tipo de Gasto</th>
-                <th class="text-center">Moneda</th>
-                <th class="text-center">Importe</th>
-                <th class="text-center">Rendido</th>
+                <th class="text-center">Nro Planilla</th>
+                <th class="text-center">Fecha Creación</th>
+                <th class="text-center">Importe Máximo</th>
+                <th class="text-center">Máximo de Viajes</th>
+                <th class="text-center">Observaciones</th>
                 <th class="text-center">Estado</th>
                 <th class="text-center">Acciones</th>
             </thead>
             <tbody>
-
+                <tr *ngFor="let planilla of planillas">
+                    <td class="text-center">{{ planilla.codPlanilla }}</td>
+                    <td class="text-center">{{ planilla.fechaPlanilla | date: 'dd/MM/yyyy' }}</td>
+                    <td class="text-end">{{ planilla.total | number: '1.2-2' }}</td>
+                    <td class="text-end">{{ planilla.maxNumViajes }}</td>
+                    <td class="text-center">{{ planilla.glosa }}</td>
+                    <td class="text-center">
+                        <span class="badge rounded-pill px-3 py-2 text-white" [ngClass]="{
+    'bg-success': planilla.statusPlanilla === 'PE',
+    'bg-warning text-dark': planilla.statusPlanilla === 'CE',
+    'bg-danger': planilla.statusPlanilla === 'RE'}">
+                            {{
+                            planilla.statusPlanilla === 'PE' ? 'PENDIENTE' :
+                            planilla.statusPlanilla === 'CE' ? 'CERRADA' :
+                            planilla.statusPlanilla === 'RE' ? 'RECHAZADA' :
+                            planilla.statusPlanilla
+                            }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <button title="Editar Planilla de Movilidad" (click)="onEditPlanillaMovilidad(planilla, 2)" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button title="Eliminar Planilla de Movilidad" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
             </tbody>
         </table>
 

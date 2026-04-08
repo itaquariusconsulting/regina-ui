@@ -27,6 +27,7 @@ import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pa
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
+import { MaeUbigeo } from '../../../models/mae-ubigeo';
 
 @Component({
   selector: 'app-edit-planilla-movilidad',
@@ -80,11 +81,15 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   totalItems = 0;
   totalPages = 0;
 
-
   pageSizeAux = 10;
   currentPageAux = 0;
   totalItemsAux = 0;
   totalPagesAux = 0;
+
+  pageSizeUbigeos = 10;
+  currentPageUbigeos = 0;
+  totalItemsUbigeos = 0;
+  totalPagesUbigeos = 0;
 
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = [];
   documentosGeneral: MaeDocumento[] = [];
@@ -94,6 +99,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   maxDate = moment('2030-12-31');
   modal: any;
   modalAuxiliares: any;
+  modalUbigeos: any;
   nuevoDetalle: OrdenPagoPlanillaMovilidadDet = new OrdenPagoPlanillaMovilidadDet();
   nuevoDetalleFecha: string = '';
   guardandoDetalle: boolean = false;
@@ -102,10 +108,17 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
   pagedViajesAux: MaeAuxiliarDTO[] = [];
 
+  ubigeos: MaeUbigeo[] = [];
+  ubigeosGeneral: MaeUbigeo[] = [];
+  pagedUbigeos: MaeUbigeo[] = [];
+
+  searchUbigeo: string = '';
+
   ngOnInit(): void {
     const state = history.state;
     if (state && state.data) {
       this.orden = state.data;
+      this.ordenPagoPlanillaMovilidadCab = state.data.planilla;
       this.minDate = moment(this.orden.fecOrden);
     }
     this.isDesktop = this.deviceService.isDesktopDevice();
@@ -128,9 +141,35 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modelPlanillaIni = event.value;
   }
 
+  getUbigeos() {
+    this.loadingService.show();
+    this.maestrosService.getUbigeos().subscribe(
+      (response: Response) => {
+        this.ubigeos = response.resultado;
+        this.ubigeosGeneral = response.resultado;
+        this.currentPageUbigeos = 0;
+        this.buildPaginationUbigeos();
+        this.getAuxiliaresPR();
+      },
+      (error) => {
+        console.log("No se pudo obtener la lista de ubigeos");
+        this.loadingService.hide();
+      }
+    );
+  }
+
+  filterUbigeos() {
+    const searchTerm = this.searchUbigeo.toLowerCase();
+    this.ubigeos = this.ubigeosGeneral.filter(ubigeo =>
+      ubigeo.desDepartamento?.toLowerCase().includes(searchTerm) ||
+      ubigeo.desProvincia?.toLowerCase().includes(searchTerm) ||
+      ubigeo.desDistrito?.toLowerCase().includes(searchTerm)
+    );
+    this.buildPaginationUbigeos();
+  }
+
   getCentroCostos() {
     this.loadingService.show();
-    console.log(this.orden.codCCostos);
     this.maestrosService.getCentroCostos(this.orden.codEmpresa ?? '0001', "001").subscribe(
       (response: Response) => {
         this.centroCostos = response.resultado;
@@ -163,7 +202,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.maestrosService.getTiposDocumento(this.orden.codEmpresa ?? '0001').subscribe(
       (response: Response) => {
         this.documentosGeneral = response.resultado;
-        this.getAuxiliaresPR();
+        this.getUbigeos();
       },
       (error) => {
         console.log("No se pudo obtener la lista de documentos");
@@ -217,6 +256,16 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.pagedViajesAux = this.auxiliaresPR.slice(start, end);
   }
 
+  private buildPaginationUbigeos(): void {
+    this.totalItemsUbigeos = this.ubigeos.length;
+    this.totalPagesUbigeos = Math.ceil(this.totalItemsUbigeos / this.pageSizeUbigeos);
+
+    const start = this.currentPageUbigeos * this.pageSizeUbigeos;
+    const end = start + this.pageSizeUbigeos;
+
+    this.pagedUbigeos = this.ubigeos.slice(start, end);
+  }
+
   changePage(page: number): void {
     if (page < 0 || page >= this.totalPages) {
       return;
@@ -235,14 +284,23 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.buildPaginationAuxiliares();
   }
 
+  changePageUbigeos(page: number): void {
+    if (page < 0 || page >= this.totalPagesUbigeos) {
+      return;
+    }
+    this.currentPageUbigeos = page;
+    this.buildPaginationUbigeos();
+  }
+
   private getOrderParams() {
-    const { codEmpresa, codSucursal, anoPeriodo, codPeriodo, numOrden } = this.orden;
+    const { codEmpresa, codSucursal, anioPeriodo, codPeriodo, numOrden, codPlanilla } = this.ordenPagoPlanillaMovilidadCab;
     return {
       codEmpresa: codEmpresa ?? '',
       codSucursal: codSucursal ?? '',
-      anioPeriodo: anoPeriodo ?? '',
+      anioPeriodo: anioPeriodo ?? '',
       codPeriodo: codPeriodo ?? '',
-      numOrden: numOrden ?? ''
+      numOrden: numOrden ?? '',
+      codPlanilla: codPlanilla ?? ''
     };
   }
 
@@ -254,12 +312,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   private loadPlanillaDetails(): void {
     const params = this.getOrderParams();
-    const codPlanilla = this.ordenPagoPlanillaMovilidadCab.numPlanilla ?? '';
-
-    if (Object.values(params).some(val => !val) || !codPlanilla) {
-      this.resetListState();
-      return;
-    }
 
     this.loadingService.show();
     this.planillaDetService.listarDetalle(
@@ -268,12 +320,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       params.anioPeriodo,
       params.codPeriodo,
       params.numOrden,
-      codPlanilla
+      params.codPlanilla
     )
       .pipe(finalize(() => this.loadingService.hide()))
       .subscribe({
         next: (response: any) => {
           this.listaMovilidad = response.resultado || [];
+          console.log("Lista de detalles de movilidad: ", this.listaMovilidad);
           this.currentPage = 0;
           this.buildPagination();
         },
@@ -283,7 +336,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   private loadPlanillaHeader(): void {
     const params = this.getOrderParams();
-
+    console.log("Planilla header params: ", this.ordenPagoPlanillaMovilidadCab);
     if (Object.values(params).some(val => !val)) return;
 
     const wrapper: WrapperRequestPlanillaMovilidadCab = { ...params };
@@ -307,10 +360,10 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   private mapHeaderData(data: any): void {
     const cab = this.ordenPagoPlanillaMovilidadCab;
-    cab.numPlanilla = data.codPlanilla;
-    cab.numMaxViajes = data.maxNumViajes;
-    cab.amountPlanilla = data.total;
-    cab.glosaPlanilla = data.glosa;
+    cab.codPlanilla = data.codPlanilla;
+    cab.maxNumViajes = data.maxNumViajes;
+    cab.monto = data.total;
+    cab.glosa = data.glosa;
 
     const fecha = data.fechaPlanilla;
     if (fecha) {
@@ -323,7 +376,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.nuevoDetalleFecha = new Date().toISOString().slice(0, 10);
 
     Object.assign(this.nuevoDetalle, this.getOrderParams(), {
-      codPlanilla: this.ordenPagoPlanillaMovilidadCab.numPlanilla ?? ''
+      codPlanilla: this.ordenPagoPlanillaMovilidadCab.codPlanilla ?? ''
     });
 
     const modalElement = document.getElementById('modalNuevoDetalle');
@@ -349,13 +402,25 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modalAuxiliares?.hide();
   }
 
+  openUbigeosModal(): void {
+    const modalElement = document.getElementById('modalUbigeos');
+    if (modalElement) {
+      this.modalUbigeos = new bootstrap.Modal(modalElement);
+      this.modalUbigeos.show();
+    }
+  }
+
+  closeUbigeosModal(): void {
+    this.modalUbigeos?.hide();
+  }
+
   appendDetails(): void {
     if (this.guardandoDetalle) return;
 
     if (!this.nuevoDetalleFecha) return;
 
     const importeNuevo = Number(this.nuevoDetalle.importe ?? 0);
-    const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.amountPlanilla ?? 0);
+    const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.monto ?? 0);
     const totalActual = this.getTotalImporteDetalles();
 
     if (totalCabecera > 0 && (totalActual + importeNuevo) > totalCabecera) {
@@ -371,7 +436,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       return;
     }
 
-    const maxViajes = Number(this.ordenPagoPlanillaMovilidadCab.numMaxViajes ?? 0);
+    const maxViajes = Number(this.ordenPagoPlanillaMovilidadCab.maxNumViajes ?? 0);
     if (maxViajes > 0 && (this.listaMovilidad.length + 1) > maxViajes) {
       Swal.fire({
         toast: true,
@@ -404,18 +469,18 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.guardandoCabecera = true;
     this.loadingService.show();
 
-    const dto = {
+    const dto: OrdenPagoCabPlanilla = {
       ...this.getOrderParams(),
-      fechaPlanilla: moment(this.modelPlanillaIni).format('YYYY-MM-DD'),
-      maxNumViajes: this.ordenPagoPlanillaMovilidadCab.numMaxViajes,
-      total: this.ordenPagoPlanillaMovilidadCab.amountPlanilla,
-      glosa: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla,
-      codAuxiliarBanco: null,
-      codAuxiliarPersonal: null,
-      cCentroCostos: null,
-      monto: null,
-      recibido: null,
-      devolucion: null,
+      fechaPlanilla: moment(this.modelPlanillaIni).toDate(),
+      maxNumViajes: this.ordenPagoPlanillaMovilidadCab.maxNumViajes,
+      total: this.ordenPagoPlanillaMovilidadCab.monto,
+      glosa: this.ordenPagoPlanillaMovilidadCab.glosa,
+      codAuxiliarBanco: '',
+      codAuxiliarPersonal: '',
+      cCentroCostos: '',
+      monto: 0,
+      recibido: 0,
+      devolucion: 0,
     };
 
     this.planillaCabService.savePlanillaMovilidad(dto)
@@ -468,8 +533,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   isGuardarDisabled(): boolean {
     return !this.modelPlanillaIni
-      || !this.ordenPagoPlanillaMovilidadCab.amountPlanilla
-      || !this.ordenPagoPlanillaMovilidadCab.numMaxViajes
-      || !this.ordenPagoPlanillaMovilidadCab.glosaPlanilla;
+      || !this.ordenPagoPlanillaMovilidadCab.monto
+      || !this.ordenPagoPlanillaMovilidadCab.maxNumViajes
+      || !this.ordenPagoPlanillaMovilidadCab.glosa;
   }
 }

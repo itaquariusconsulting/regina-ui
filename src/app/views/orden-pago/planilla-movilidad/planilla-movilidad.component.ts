@@ -37,6 +37,7 @@ export class PlanillaMovilidadComponent implements OnInit {
 
   orden: OrdenPago = new OrdenPago();
   planillas: OrdenPagoCabPlanilla[] = [];
+  planilla: OrdenPagoCabPlanilla = new OrdenPagoCabPlanilla();
   pageSize = 6;
   currentPage = 0;
   totalItems = 0;
@@ -51,7 +52,6 @@ export class PlanillaMovilidadComponent implements OnInit {
     if (state && state.data) {
       this.orden = state.data.orden;
     }
-    console.log("Orden: ", this.orden);
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
       ? JSON.parse(sessionStorage.getItem('user')!)
@@ -138,7 +138,27 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
-  onEditPlanillaMovilidad() {
-    this.router.navigate(['/edit-planilla-movilidad'], { state: { data: this.orden } });
+  onEditPlanillaMovilidad(planilla: OrdenPagoCabPlanilla, edit: number): void {
+    if(edit==1) {
+      planilla = new OrdenPagoCabPlanilla();
+      planilla.codEmpresa = this.orden.codEmpresa;
+      planilla.codSucursal = this.orden.codSucursal;
+      planilla.anioPeriodo = this.orden.anoPeriodo;
+      planilla.codPeriodo = this.orden.codPeriodo;
+      planilla.numOrden = this.orden.numOrden;
+      planilla.cCentroCostos = this.orden.codCCostos;
+      planilla.total = 0;
+      planilla.recibido = 0;
+      planilla.devolucion = 0;
+      planilla.maxNumViajes = 0;
+      planilla.glosa = '';
+      planilla.statusPlanilla = 'PE';
+      planilla.fechaPlanilla = new Date();
+      planilla.codAuxiliarBanco = '';
+      planilla.codAuxiliarPersonal = '';
+      planilla.codPlanilla = '';
+      planilla.monto = 0;
+    }
+    this.router.navigate(['/edit-planilla-movilidad'], { state: { data: {orden: this.orden, planilla: planilla } }});
   }
 }

@@ -19,25 +19,30 @@ import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dial
   templateUrl: './list-usuarios.component.html',
   styleUrl: './list-usuarios.component.scss'
 })
-export class ListUsuariosComponent implements OnInit{
+export class ListUsuariosComponent implements OnInit {
   constructor(private regSecUserService: RegSecUserService, private location: Location,
     private router: Router,
     private dialog: MatDialog,
     private loadingService: LoadingService
-  ) { 
+  ) {
     this.isLoading$ = this.loadingService.loading$;
   }
 
   @ViewChild('myTable', { static: true }) tableRef!: ElementRef;
 
   usuarios: RegSecUser[] = [];
+  pagedUsuarios: RegSecUser[] = [];
   wrapperRequestUsuario: WrapperRequestUsuario = new WrapperRequestUsuario();
   isLoading$: Observable<boolean>;
+
+  pageSize = 8;
+  currentPage = 0;
+  totalItems = 0;
+  totalPages = 0;
 
   ngOnInit(): void {
     const userString = sessionStorage.getItem('user');
     const state = history.state;
-    console.log("State recibido:", state);
     if (userString) {
       try {
         const user = JSON.parse(userString);
@@ -59,9 +64,30 @@ export class ListUsuariosComponent implements OnInit{
     this.regSecUserService.getRegSecUsers(this.wrapperRequestUsuario).subscribe(
       (response: Response) => {
         this.usuarios = response.resultado || [];
+        this.currentPage = 0;
+        this.buildPagination();
         this.loadingService.hide();
       }
     );
+  }
+
+  private buildPagination(): void {
+
+    this.totalItems = this.usuarios.length;
+    this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+
+    const start = this.currentPage * this.pageSize;
+    const end = start + this.pageSize;
+
+    this.pagedUsuarios = this.usuarios.slice(start, end);
+  }
+
+  changePage(page: number): void {
+    if (page < 0 || page >= this.totalPages) {
+      return;
+    }
+    this.currentPage = page;
+    this.buildPagination();
   }
 
   onBack() {

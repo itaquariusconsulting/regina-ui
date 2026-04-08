@@ -1,19 +1,20 @@
 
 export class OrdenPagoCabPlanilla {
-    codEmpresa?: string;        
-    codSucursal?: string;      
-    anioPeriodo?: string;      
-    codPeriodo?: string;        
-    numOrden?: string;          
-    numItemOP?: string;
-    numPlanilla?: string;       
-    fecPlanilla?: string;
-    fecCreatePlanilla?: string;  
-    fecClosePlanilla?: string;   
-    fecUpdatePlanilla?: string;  
-    amountPlanilla?: number;     
-    statusPlanilla?: boolean;    
-    glosaPlanilla?: string;
-    numViajes?: number;
-    numMaxViajes?: number;
+    codEmpresa?: string;
+    codSucursal?: string;
+    anioPeriodo?: string;
+    codPeriodo?: string;
+    numOrden?: string;
+    codPlanilla?: string;
+    codAuxiliarBanco?: string;
+    codAuxiliarPersonal?: string;
+    fechaPlanilla?: Date;
+    cCentroCostos?: string;
+    monto?: number;
+    total?: number;
+    recibido?: number;
+    devolucion?: number;
+    maxNumViajes?: number;
+    glosa?: string;
+    statusPlanilla?: string;
 }

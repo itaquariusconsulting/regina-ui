@@ -24,7 +24,7 @@
   height: var(--size);
   border-radius: 6px;
 
-  background: linear-gradient(135deg, #4f46e5, #22d3ee);
+  background: linear-gradient(135deg, var(--primary-color), var(--sidebar-color));
 
   animation: dance 1.2s ease-in-out infinite;
   transform-origin: center;

@@ -44,16 +44,16 @@
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Importe Total</label>
             <input type="text" name="importe" id="importe" class="general-input form-control text-end"
-                [(ngModel)]="ordenPagoPlanillaMovilidadCab.amountPlanilla" currencyMask
+                [(ngModel)]="ordenPagoPlanillaMovilidadCab.total" currencyMask
                 [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Número Máximo de Viajes</label>
-            <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.numMaxViajes" />
+            <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.maxNumViajes" />
         </div>
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Glosa</label>
-            <input type="text" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.glosaPlanilla" />
+            <input type="text" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.glosa" />
         </div>
     </div>
 
@@ -200,7 +200,13 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Origen</label>
-                        <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.codOrigen" maxlength="6" />
+                        <div class="input-group">
+                            <input readonly type="text" class="form-control"
+                                [(ngModel)]="nuevoDetalle.codOrigen" maxlength="6" />
+                            <button class="btn btn-small" (click)="openUbigeosModal()" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                         <small class="text-muted d-block">Max 6 caracteres</small>
                     </div>
                     <div class="col-md-6">
@@ -235,6 +241,74 @@
                     <tbody>
                         <tr *ngFor="let auxiliar of pagedViajesAux">
                             <td class="text-start">{{ auxiliar.desAuxiliar }}</td>
+                            <td class="text-start">
+                                <button class="btn btn-small">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small" style="font-family: var(--app-font-family) !important;">
+                        Mostrando Página <strong>{{ currentPageAux + 1 }}</strong> de
+                        <strong>{{ totalPagesAux }}</strong> (Total: {{ totalItemsAux }})
+                    </span>
+
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" [class.disabled]="currentPageAux === 0">
+                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux - 1)" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo; Anterior</span>
+                                </button>
+                            </li>
+
+                            <li class="page-item disabled">
+                                <span class="page-link border-0 text-dark fw-bold">{{
+                                    currentPageAux + 1
+                                    }}</span>
+                            </li>
+
+                            <li class="page-item" [class.disabled]="currentPageAux >= totalPagesAux - 1">
+                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux + 1)" aria-label="Next">
+                                    <span aria-hidden="true">Siguente &raquo;</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="general-button btn-primary" type="button">
+                    Seleccionar
+                </button>
+                <button class="general-button btn-secondary" type="button"
+                    (click)="closeAuxiliaresModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalUbigeos" tabindex="-2">
+    <div class="modal-dialog modal-dialog-centered modal-custo-2">
+        <div class="modal-content">
+            <div class="modal-header-2">
+                <h5 class="modal-title-2">Ubigeos</h5>
+                <button type="button" class="btn-close" (click)="closeUbigeosModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Buscar</label>
+                        <input type="text" class="form-control" [(ngModel)]="searchUbigeo" (ngModelChange)="filterUbigeos()" />
+                    </div>
+                </div>
+                <table>
+                    <tbody>
+                        <tr *ngFor="let ubigeo of pagedUbigeos">
+                            <td class="text-start">{{ ubigeo.desDepartamento }}</td>
+                            <td class="text-start">{{ ubigeo.desProvincia }}</td>
+                            <td class="text-start">{{ ubigeo.desDistrito }}</td>
                             <td class="text-start">
                                 <button class="btn btn-small">
                                     <i class="fas fa-check"></i>
