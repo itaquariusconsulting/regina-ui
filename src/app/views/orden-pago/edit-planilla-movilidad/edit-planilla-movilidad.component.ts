@@ -81,12 +81,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   totalItems = 0;
   totalPages = 0;
 
-  pageSizeAux = 10;
+  pageSizeAux = 7;
   currentPageAux = 0;
   totalItemsAux = 0;
   totalPagesAux = 0;
 
-  pageSizeUbigeos = 10;
+  pageSizeUbigeos = 7;
   currentPageUbigeos = 0;
   totalItemsUbigeos = 0;
   totalPagesUbigeos = 0;
