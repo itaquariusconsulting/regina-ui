@@ -23,6 +23,7 @@ export class ChangePasswordComponent {
   showCurrent = false;
   showNew = false;
   showConfirm = false;
+  capsLockOn = false;
 
   isSubmitting = false;
   isLoading$: Observable<boolean>;
@@ -48,6 +49,16 @@ export class ChangePasswordComponent {
 
   onBack(): void {
     this.location.back();
+  }
+
+  onCapsLock(event: KeyboardEvent): void {
+    if (event.getModifierState) {
+      this.capsLockOn = event.getModifierState('CapsLock');
+    }
+  }
+
+  clearCapsLock(): void {
+    this.capsLockOn = false;
   }
 
   onSave(): void {
