@@ -307,10 +307,10 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   private mapHeaderData(data: any): void {
     const cab = this.ordenPagoPlanillaMovilidadCab;
-    cab.numPlanilla = data.codPlanilla ?? data.numPlanilla;
-    cab.numMaxViajes = data.monto ?? data.numMaxViajes;
-    cab.amountPlanilla = data.total ?? data.amountPlanilla;
-    cab.glosaPlanilla = data.glosaPlanilla;
+    cab.numPlanilla = data.codPlanilla;
+    cab.numMaxViajes = data.maxNumViajes;
+    cab.amountPlanilla = data.total;
+    cab.glosaPlanilla = data.glosa;
 
     const fecha = data.fechaPlanilla ?? data.fecPlanilla;
     if (fecha) {
@@ -407,9 +407,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     const dto = {
       ...this.getOrderParams(),
       fechaPlanilla: moment(this.modelPlanillaIni).format('YYYY-MM-DD'),
-      monto: this.ordenPagoPlanillaMovilidadCab.numMaxViajes,
+      maxNumViajes: this.ordenPagoPlanillaMovilidadCab.numMaxViajes,
       total: this.ordenPagoPlanillaMovilidadCab.amountPlanilla,
-      cCentroCostos: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla
+      glosa: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla
     };
 
     this.planillaCabService.savePlanillaMovilidad(dto)
