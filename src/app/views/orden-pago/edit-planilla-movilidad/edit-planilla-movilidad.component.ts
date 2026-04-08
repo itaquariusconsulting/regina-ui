@@ -207,7 +207,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.pagedViajes = this.listaMovilidad.slice(start, end);
   }
 
-    private buildPaginationAuxiliares(): void {
+  private buildPaginationAuxiliares(): void {
     this.totalItemsAux = this.auxiliaresPR.length;
     this.totalPagesAux = Math.ceil(this.totalItemsAux / this.pageSizeAux);
 
@@ -409,7 +409,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       fechaPlanilla: moment(this.modelPlanillaIni).format('YYYY-MM-DD'),
       maxNumViajes: this.ordenPagoPlanillaMovilidadCab.numMaxViajes,
       total: this.ordenPagoPlanillaMovilidadCab.amountPlanilla,
-      glosa: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla
+      glosa: this.ordenPagoPlanillaMovilidadCab.glosaPlanilla,
+      codAuxiliarBanco: null,
+      codAuxiliarPersonal: null,
+      cCentroCostos: null,
+      monto: null,
+      recibido: null,
+      devolucion: null,
     };
 
     this.planillaCabService.savePlanillaMovilidad(dto)
