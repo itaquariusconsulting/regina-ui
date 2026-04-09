@@ -84,8 +84,8 @@
                 <td>{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
                 <td>{{traslado.numDocumento}}</td>
                 <td>{{traslado.codAuxiliarProveedor}}</td>
-                <td>{{traslado.codOrigen}}</td>
-                <td>{{traslado.codDestino}}</td>
+                <td>{{mapUbigeoText(traslado.codOrigen)}}</td>
+                <td>{{mapUbigeoText(traslado.codDestino)}}</td>
                 <td>{{traslado.glosa}}</td>
                 <td>{{traslado.importe | number: '1.2-2'}}</td>
                 <td class="text-center">

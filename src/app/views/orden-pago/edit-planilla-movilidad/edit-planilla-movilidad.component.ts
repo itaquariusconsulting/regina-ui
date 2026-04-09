@@ -251,6 +251,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       ?.desDocumento ?? '';
   }
 
+  mapUbigeoText(cod: string | undefined | null): string {
+    if (!cod) return '';
+    const u = this.ubigeosGeneral.find(x => x.codUbigeo === cod);
+    return u ? `${u.desDepartamento}-${u.desProvincia}-${u.desDistrito}` : cod;
+  }
+
   private buildPagination(): void {
     this.totalItems = this.listaMovilidad.length;
     this.totalPages = Math.ceil(this.totalItems / this.pageSize);
