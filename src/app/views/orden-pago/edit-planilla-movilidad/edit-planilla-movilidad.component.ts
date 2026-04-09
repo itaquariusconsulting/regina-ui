@@ -393,7 +393,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     const cab = this.ordenPagoPlanillaMovilidadCab;
     cab.codPlanilla = data.codPlanilla;
     cab.maxNumViajes = data.maxNumViajes;
-    cab.monto = data.total;
+    cab.total = data.total;
     cab.glosa = data.glosa;
 
     const fecha = data.fechaPlanilla;
@@ -471,7 +471,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     }
 
     const importeNuevo = Number(this.nuevoDetalle.importe ?? 0);
-    const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.monto ?? 0);
+    const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.total ?? 0);
     const totalActual = this.getTotalImporteDetalles();
 
     if (totalCabecera > 0 && (totalActual + importeNuevo) > totalCabecera) {
@@ -550,6 +550,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       monto: 0,
       recibido: 0,
       devolucion: 0,
+      statusPlanilla: ''
     };
 
     this.planillaCabService.savePlanillaMovilidad(dto)
