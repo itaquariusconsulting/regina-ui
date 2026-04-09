@@ -2,10 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Observable } from 'rxjs';
-import { WrapperRequestOrdenPago } from '../models/wrappers/wrapper-request-orden-pago';
 import { Response } from '../models/response';
-import { WrapperRequestOrdenPagoDet } from '../models/wrappers/wrapper-request-orden-pago-det';
-import { OrdenPagoDetDTO } from '../models/orden-pago-det';
 import { WrapperRequestPlanillaMovilidadCab } from '../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { OrdenPagoCabPlanilla } from '../models/orden-pago-planilla-movilidad-cab';
 
@@ -20,25 +17,29 @@ export class OrdenPagoPlanillaMovilidadCabService {
     private apiUrlProcess: string = environment.apiUrlProcess;
 
     getPlanillaMovilidad(wrapper: WrapperRequestPlanillaMovilidadCab): Observable<Response> {
-        const headers = new HttpHeaders({
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json'
-        });
         return this.http.get<Response>
-        (`${this.apiUrlProcess}orden-pago-planilla/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.anioPeriodo}/${wrapper.codPeriodo}/${wrapper.numOrden}`, {
-            headers,
-            responseType: 'json'
-        });
+            (`${this.apiUrlProcess}orden-pago-planilla/listar/${wrapper.codEmpresa}/${wrapper.codSucursal}/${wrapper.anioPeriodo}/${wrapper.codPeriodo}/${wrapper.numOrden}`, {
+                headers: this.getHeaders()
+            });
     }
 
     savePlanillaMovilidad(dto: OrdenPagoCabPlanilla): Observable<Response> {
-        const headers = new HttpHeaders({
+        return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-planilla/insertar`, dto, {
+            headers: this.getHeaders()
+
+        });
+    }
+
+    updatePlanillaMovilidad(dto: OrdenPagoCabPlanilla): Observable<Response> {
+        return this.http.patch<Response>(`${this.apiUrlProcess}orden-pago-planilla/actualizar`, dto, {
+            headers: this.getHeaders()
+        });
+    }
+
+    private getHeaders(): HttpHeaders {
+        return new HttpHeaders({
             'Authorization': `Bearer ${this.token}`,
             'Content-Type': 'application/json'
-        });
-        return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-planilla/insertar`, dto, {
-            headers,
-            responseType: 'json'
         });
     }
 }

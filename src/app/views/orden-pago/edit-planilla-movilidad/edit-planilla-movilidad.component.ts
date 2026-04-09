@@ -540,8 +540,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.loadingService.show();
     this.guardandoCabecera = true;
 
+    const currentCodPlanilla = this.ordenPagoPlanillaMovilidadCab.codPlanilla;
+
     const dto: OrdenPagoCabPlanilla = {
       ...this.getOrderParams(),
+      codPlanilla: currentCodPlanilla,
       fechaPlanilla: moment(this.modelPlanillaIni).toDate(),
       maxNumViajes: this.ordenPagoPlanillaMovilidadCab.maxNumViajes,
       total: this.ordenPagoPlanillaMovilidadCab.total,
@@ -555,12 +558,19 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       statusPlanilla: ''
     };
 
-    this.planillaCabService.savePlanillaMovilidad(dto)
+    const request$ = currentCodPlanilla
+      ? this.planillaCabService.updatePlanillaMovilidad(dto)
+      : this.planillaCabService.savePlanillaMovilidad(dto);
+
+    request$
       .pipe(finalize(() => this.finalizeSave()))
       .subscribe({
         next: (response) => {
           if (response?.error !== 0) {
             console.error("Error en servidor:", response?.mensaje);
+          }
+          if (!currentCodPlanilla && response.resultado) {
+            this.ordenPagoPlanillaMovilidadCab.codPlanilla = response.resultado;
           }
         },
         error: (err) => console.error("Error de conexión:", err)
