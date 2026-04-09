@@ -66,32 +66,37 @@
                 'Nuevo' : ''}}</button>
         </div>
     </div>
-    <table class="table table-striped table-hover text-center">
+    <table class="table table-striped table-hover text-center table-fixed-layout">
         <thead>
-            <th>Fecha</th>
-            <th>Tipo Documento</th>
-            <th>Nro Documento</th>
-            <th>Razón Social</th>
-            <th>Origen</th>
-            <th>Destino</th>
-            <th>Observaciones</th>
-            <th>Importe </th>
-            <th>Nro Ocupantes</th>
+            <th style="width: 10%;">Fecha</th>
+            <th style="width: 10%;">Tipo Doc.</th>
+            <th style="width: 10%;">Nro Doc.</th>
+            <th style="width: 15%;">Proveedor</th>
+            <th style="width: 12%;">Origen</th>
+            <th style="width: 12%;">Destino</th>
+            <th style="width: 15%;">Observaciones</th>
+            <th style="width: 8%;">Importe</th>
+            <th style="width: 8%;">Ocupantes</th>
         </thead>
         <tbody>
             <tr *ngFor="let traslado of pagedViajes">
                 <td>{{traslado.fecItemPlanilla | date: 'dd-MM-yyyy'}}</td>
-                <td>{{devolverDocumento(traslado.codDocumento ?? '')}}</td>
-                <td>{{traslado.numDocumento}}</td>
-                <td>{{traslado.codAuxiliarProveedor}}</td>
-                <td>{{mapUbigeoText(traslado.codOrigen)}}</td>
-                <td>{{mapUbigeoText(traslado.codDestino)}}</td>
-                <td>{{traslado.glosa}}</td>
+                <td class="text-truncate" [title]="devolverDocumento(traslado.codDocumento ?? '')">
+                    {{devolverDocumento(traslado.codDocumento ?? '')}}</td>
+                <td class="text-truncate" [title]="traslado.numDocumento">{{traslado.numDocumento}}</td>
+                <td class="text-truncate" [title]="mapAuxilarName(traslado.codAuxiliarProveedor)">
+                    {{mapAuxilarName(traslado.codAuxiliarProveedor)}}</td>
+                <td class="text-truncate" [title]="mapUbigeoText(traslado.codOrigen)">
+                    {{mapUbigeoText(traslado.codOrigen)}}</td>
+                <td class="text-truncate" [title]="mapUbigeoText(traslado.codDestino)">
+                    {{mapUbigeoText(traslado.codDestino)}}</td>
+                <td class="text-truncate" [title]="traslado.glosa">{{traslado.glosa}}</td>
                 <td>{{traslado.importe | number: '1.2-2'}}</td>
                 <td class="text-center">
                     <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
-                        <span
-                            style="font-weight: 600 !important; color: white !important">{{traslado.cantPersonas}}</span>
+                        <span style="font-weight: 600 !important; color: white !important">
+                            {{traslado.cantPersonas}}
+                        </span>
                     </button>
                 </td>
             </tr>
@@ -221,11 +226,13 @@
                 </div>
                 <div class="row mt-3">
                     <div class="col-md-6" style="font-size: 0.6rem; color: #390193;">
-                        {{origenSeleccionado ? (origenSeleccionado.desDepartamento + '-' + origenSeleccionado.desProvincia + '-' +
+                        {{origenSeleccionado ? (origenSeleccionado.desDepartamento + '-' +
+                        origenSeleccionado.desProvincia + '-' +
                         origenSeleccionado.desDistrito || ""): ''}}
                     </div>
                     <div class="col-md-6" style="font-size: 0.6rem; color: #390193;">
-                        {{destinoSeleccionado ? (destinoSeleccionado.desDepartamento + '-' + destinoSeleccionado.desProvincia + '-' +
+                        {{destinoSeleccionado ? (destinoSeleccionado.desDepartamento + '-' +
+                        destinoSeleccionado.desProvincia + '-' +
                         destinoSeleccionado.desDistrito || "") : ''}}
                     </div>
                 </div>
@@ -235,8 +242,8 @@
                     [disabled]="isFormInvalid() || guardandoDetalle"><i class="fas fa-save"></i>
                     {{guardandoDetalle ? 'Guardando...' : 'Guardar'}}
                 </button>
-                <button class="general-button btn-danger" type="button"
-                    (click)="closeDetailModal()"><i class="fas fa-times"></i>Cancelar</button>
+                <button class="general-button btn-danger" type="button" (click)="closeDetailModal()"><i
+                        class="fas fa-times"></i>Cancelar</button>
             </div>
         </div>
     </div>

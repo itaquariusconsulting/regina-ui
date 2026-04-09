@@ -259,6 +259,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       ?.desDocumento ?? '';
   }
 
+  mapAuxilarName(cod: string | undefined | null): string {
+    if (!cod) return '';
+    const aux = this.auxiliaresPR.find(x => x.codAuxiliar === cod);
+    return aux ? aux.desAuxiliar! : cod;
+  }
+
   mapUbigeoText(cod: string | undefined | null): string {
     if (!cod) return '';
     const u = this.ubigeosGeneral.find(x => x.codUbigeo === cod);

@@ -265,3 +265,16 @@
 
 #modalAuxiliares td:nth-child(1) { width: calc(100% - 48px); }
 #modalAuxiliares td:nth-child(2) { width: 48px; text-align: right; }
+
+.table-fixed-layout {
+    table-layout: fixed;
+    width: 100%; /* Or a specific px value if you want a scrollable container */
+    word-wrap: break-word;
+}
+
+/* Optional: Gracefully handle text overflow with ellipsis (...) */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
