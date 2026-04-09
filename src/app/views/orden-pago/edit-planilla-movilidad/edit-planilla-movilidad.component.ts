@@ -197,9 +197,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   getUbigeos(): void {
-    this.loadingService.show();
     this.maestrosService.getUbigeos()
-      .pipe(finalize(() => this.loadingService.hide()))
       .subscribe({
         next: (response: Response) => {
           const { resultado } = response;
@@ -346,9 +344,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   private loadPlanillaDetails(): void {
-    const params = this.getOrderParams();
-
     this.loadingService.show();
+
+    const params = this.getOrderParams();
     this.planillaDetService.listarDetalle(
       params.codEmpresa,
       params.codSucursal,
@@ -356,8 +354,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       params.codPeriodo,
       params.numOrden,
       params.codPlanilla
-    )
-      .pipe(finalize(() => this.loadingService.hide()))
+    ).pipe(finalize(() => this.loadingService.hide()))
       .subscribe({
         next: (response: any) => {
           this.listaMovilidad = response.resultado || [];
@@ -370,13 +367,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   private loadPlanillaHeader(): void {
+    this.loadingService.show();
     const params = this.getOrderParams();
-    console.log("Planilla header params: ", this.ordenPagoPlanillaMovilidadCab);
+
     if (Object.values(params).some(val => !val)) return;
 
     const wrapper: WrapperRequestPlanillaMovilidadCab = { ...params };
-
-    this.loadingService.show();
     this.planillaCabService.getPlanillaMovilidad(wrapper)
       .pipe(finalize(() => this.loadingService.hide()))
       .subscribe({
@@ -457,20 +453,19 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   saveDetails(): void {
-    if (this.guardandoDetalle) return;
-
-    if (!this.nuevoDetalleFecha) return;
+    if (this.guardandoDetalle || !this.nuevoDetalleFecha) return;
 
     const codPlanilla = this.ordenPagoPlanillaMovilidadCab.codPlanilla ?? '';
+    const commonSwalConfig: any = {
+      toast: true, position: 'top-end', showConfirmButton: false,
+      timer: 3000, timerProgressBar: true
+    };
+
     if (!codPlanilla) {
       Swal.fire({
-        toast: true,
-        position: 'top-end',
+        ...commonSwalConfig,
         icon: 'warning',
-        title: 'Debe guardar la planilla antes de agregar detalles.',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
+        title: 'Debe guardar la planilla antes de agregar detalles.'
       });
       return;
     }
@@ -481,13 +476,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
     if (totalCabecera > 0 && (totalActual + importeNuevo) > totalCabecera) {
       Swal.fire({
-        toast: true,
-        position: 'top-end',
+        ...commonSwalConfig,
         icon: 'warning',
-        title: 'La suma de los importes supera el total permitido en la cabecera.',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
+        title: 'La suma de los importes supera el total permitido en la cabecera.'
       });
       return;
     }
@@ -495,19 +486,15 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     const maxViajes = Number(this.ordenPagoPlanillaMovilidadCab.maxNumViajes ?? 0);
     if (maxViajes > 0 && (this.listaMovilidad.length + 1) > maxViajes) {
       Swal.fire({
-        toast: true,
-        position: 'top-end',
+        ...commonSwalConfig,
         icon: 'warning',
-        title: 'Has alcanzado el número máximo de viajes permitido en la cabecera.',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
+        title: 'Has alcanzado el número máximo de viajes permitido en la cabecera.'
       });
       return;
     }
 
-    this.guardandoDetalle = true;
     this.loadingService.show();
+    this.guardandoDetalle = true;
 
     const commonParams = this.getOrderParams();
     const detalleInsertado: OrdenPagoPlanillaMovilidadDet = {
@@ -517,51 +504,39 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       fecItemPlanilla: new Date(this.nuevoDetalleFecha)
     };
 
-    this.planillaDetService.insertarDetalle(detalleInsertado).subscribe({
-      next: (response: any) => {
-        if (response?.error === 0) {
-          detalleInsertado.numItemPlanilla = response.resultado;
-          this.listaMovilidad = [detalleInsertado, ...this.listaMovilidad];
-          this.currentPage = 0;
-          this.buildPagination();
-          this.closeDetailModal();
-        } else {
+    this.planillaDetService.insertarDetalle(detalleInsertado)
+      .pipe(finalize(() => this.finalizeSave()))
+      .subscribe({
+        next: (response: any) => {
+          if (response?.error === 0) {
+            detalleInsertado.numItemPlanilla = response.resultado;
+            this.listaMovilidad = [detalleInsertado, ...this.listaMovilidad];
+            this.currentPage = 0;
+            this.buildPagination();
+            this.closeDetailModal();
+          } else {
+            Swal.fire({
+              ...commonSwalConfig,
+              icon: 'error',
+              title: response?.mensaje || 'No se pudo insertar el detalle.'
+            });
+          }
+        },
+        error: () => {
           Swal.fire({
-            toast: true,
-            position: 'top-end',
+            ...commonSwalConfig,
             icon: 'error',
-            title: response?.mensaje || 'No se pudo insertar el detalle.',
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true
+            title: 'No se pudo insertar el detalle.'
           });
         }
-        this.loadingService.hide();
-        this.guardandoDetalle = false;
-      },
-      error: () => {
-        this.loadingService.hide();
-        this.guardandoDetalle = false;
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'error',
-          title: 'No se pudo insertar el detalle.',
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true
-        });
-      }
-    });
+      });
   }
 
   savePlanilla(): void {
-    if (this.guardandoCabecera) return;
+    if (this.guardandoCabecera || !this.modelPlanillaIni) return;
 
-    if (!this.modelPlanillaIni) return;
-
-    this.guardandoCabecera = true;
     this.loadingService.show();
+    this.guardandoCabecera = true;
 
     const dto: OrdenPagoCabPlanilla = {
       ...this.getOrderParams(),
@@ -578,17 +553,14 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     };
 
     this.planillaCabService.savePlanillaMovilidad(dto)
+      .pipe(finalize(() => this.finalizeSave()))
       .subscribe({
-        next: (response: any) => {
-          if (response?.error === 0) {
-            this.finalizeSave();
-          } else {
-            this.finalizeSave();
+        next: (response) => {
+          if (response?.error !== 0) {
+            console.error("Error en servidor:", response?.mensaje);
           }
         },
-        error: () => {
-          this.finalizeSave();
-        }
+        error: (err) => console.error("Error de conexión:", err)
       });
   }
 
