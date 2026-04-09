@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import * as bootstrap from 'bootstrap';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
-import { Observable, finalize, forkJoin } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
 import { OrdenPago } from '../../../models/orden-pago';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { PadronRuc } from '../../../models/padron-ruc';
@@ -27,7 +27,7 @@ import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pa
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
-import { MaeUbigeo } from '../../../models/mae-ubigeo';
+import { MaeUbigeo, TipoUbigeo } from '../../../models/mae-ubigeo';
 
 @Component({
   selector: 'app-edit-planilla-movilidad',
@@ -119,126 +119,140 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   destinoSeleccionado: MaeUbigeo | null = null;
 
   ngOnInit(): void {
-    const state = history.state;
-    if (state && state.data) {
-      this.orden = state.data;
-      this.ordenPagoPlanillaMovilidadCab = state.data.planilla;
+    this.initializeComponentData();
+    this.setupUI();
+    this.loadPlanillaData();
+  }
+
+  private initializeComponentData(): void {
+    const { data } = history.state || {};
+    if (!data) return;
+
+    this.orden = data.orden ?? data;
+    this.ordenPagoPlanillaMovilidadCab = data.planilla ?? new OrdenPagoCabPlanilla();
+
+    if (this.orden?.fecOrden) {
       this.minDate = moment(this.orden.fecOrden);
     }
+  }
+
+  private setupUI(): void {
     this.isDesktop = this.deviceService.isDesktopDevice();
     this.buildPagination();
     this.getCentroCostos();
+  }
+
+  private loadPlanillaData(): void {
+    if (this.ordenPagoPlanillaMovilidadCab?.codPlanilla) {
+      this.mapHeaderData(this.ordenPagoPlanillaMovilidadCab);
+      this.loadPlanillaDetails();
+      return;
+    }
+
     this.loadPlanillaHeader();
   }
 
-  formatDate(date: Date | null): string {
-    if (!date) return '';
-
-    const day = ('0' + date.getDate()).slice(-2);
-    const month = ('0' + (date.getMonth() + 1)).slice(-2);
-    const year = date.getFullYear();
-
-    return `${day}/${month}/${year}`;
+  private get empresaId(): string {
+    return this.orden?.codEmpresa ?? '0001';
   }
 
-  onDateChange(event: any) {
-    this.modelPlanillaIni = event.value;
-  }
-
-  getUbigeos() {
+  getCentroCostos(): void {
     this.loadingService.show();
-    this.maestrosService.getUbigeos().subscribe(
-      (response: Response) => {
-        this.ubigeos = response.resultado;
-        this.ubigeosGeneral = response.resultado;
-        this.currentPageUbigeos = 0;
-        this.buildPaginationUbigeos();
-        this.getAuxiliaresPR();
+    this.maestrosService.getCentroCostos(this.empresaId, "001").subscribe({
+      next: (response: Response) => {
+        this.centroCostos = response.resultado;
+        const foundCentro = this.centroCostos.find(cc => cc.codCCostos === this.orden.codCCostos);
+        this.centro = foundCentro ?? new MaeCentroCostrosDTO();
+        this.getBancos();
       },
-      (error) => {
-        console.log("No se pudo obtener la lista de ubigeos");
-        this.loadingService.hide();
+      error: (err) => {
+        console.error("No se pudo obtener la lista de Centros de Costos", err);
       }
-    );
+    });
   }
 
-  filterUbigeos() {
-    const searchTerm = this.searchUbigeo.toLowerCase();
-    this.ubigeos = this.ubigeosGeneral.filter(ubigeo =>
-      ubigeo.desDepartamento?.toLowerCase().includes(searchTerm) ||
-      ubigeo.desProvincia?.toLowerCase().includes(searchTerm) ||
-      ubigeo.desDistrito?.toLowerCase().includes(searchTerm)
-    );
+  getBancos(): void {
+    this.maestrosService.getBancos(this.empresaId).subscribe({
+      next: (response: Response) => {
+        this.bancos = response.resultado;
+        this.banco = this.bancos?.[0]?.codAuxiliar ?? '';
+        this.getDocumentos();
+      },
+      error: (err) => {
+        console.error("No se pudo obtener la lista de Bancos", err);
+      }
+    });
+  }
+
+  getDocumentos(): void {
+    this.maestrosService.getTiposDocumento(this.empresaId).subscribe({
+      next: (response: Response) => {
+        this.documentosGeneral = response.resultado;
+        this.getUbigeos();
+      },
+      error: (err) => {
+        console.error("No se pudo obtener la lista de Documentos", err);
+      }
+    });
+  }
+
+  getUbigeos(): void {
+    this.loadingService.show();
+    this.maestrosService.getUbigeos()
+      .pipe(finalize(() => this.loadingService.hide()))
+      .subscribe({
+        next: (response: Response) => {
+          const { resultado } = response;
+          this.ubigeos = resultado;
+          this.ubigeosGeneral = resultado;
+          this.currentPageUbigeos = 0;
+
+          this.buildPaginationUbigeos();
+          this.getAuxiliaresPR();
+        },
+        error: (err) => {
+          console.error("No se pudo obtener la lista de ubigeos", err);
+        }
+      });
+  }
+
+  filterUbigeos(): void {
+    const searchTerm = this.searchUbigeo?.toLowerCase().trim();
+    if (!searchTerm) {
+      this.ubigeos = [...this.ubigeosGeneral];
+    } else {
+      this.ubigeos = this.ubigeosGeneral.filter(u => {
+        return [u.desDepartamento, u.desProvincia, u.desDistrito].some(field =>
+          field?.toLowerCase().includes(searchTerm)
+        );
+      });
+    }
     this.buildPaginationUbigeos();
   }
 
-  selectUbigeos(ubigeo: MaeUbigeo) {
-    if (this.tipoUbigeo === 1) {
+  selectUbigeos(ubigeo: MaeUbigeo): void {
+    if (this.tipoUbigeo === TipoUbigeo.Origen) {
       this.nuevoDetalle.codOrigen = ubigeo.codUbigeo ?? '';
       this.origenSeleccionado = ubigeo;
-    } else if (this.tipoUbigeo === 2) {
+    } else if (this.tipoUbigeo === TipoUbigeo.Destino) {
       this.nuevoDetalle.codDestino = ubigeo.codUbigeo ?? '';
       this.destinoSeleccionado = ubigeo;
     }
     this.closeUbigeosModal();
   }
 
-  getCentroCostos() {
-    this.loadingService.show();
-    this.maestrosService.getCentroCostos(this.orden.codEmpresa ?? '0001', "001").subscribe(
-      (response: Response) => {
-        this.centroCostos = response.resultado;
-        const foundCentro = this.centroCostos.find(cc => cc.codCCostos == this.orden.codCCostos);
-        this.centro = foundCentro ? foundCentro : new MaeCentroCostrosDTO();
-        this.getBancos();
-      },
-      (error) => {
-        console.log("No se pudo obtener la lista de Centros de Costos");
-        this.loadingService.hide();
-      }
-    )
-  }
-
-  getBancos() {
-    this.maestrosService.getBancos(this.orden.codEmpresa ?? '0001').subscribe(
-      (response: Response) => {
-        this.bancos = response.resultado;
-        this.banco = this.bancos[0].codAuxiliar ?? '';
-        this.getDocumentos();
-      },
-      (error) => {
-        console.log("No se pudo obtener la lista de bancos");
-        this.loadingService.hide();
-      }
-    )
-  }
-
-  getDocumentos() {
-    this.maestrosService.getTiposDocumento(this.orden.codEmpresa ?? '0001').subscribe(
-      (response: Response) => {
-        this.documentosGeneral = response.resultado;
-        this.getUbigeos();
-      },
-      (error) => {
-        console.log("No se pudo obtener la lista de documentos");
-        this.loadingService.hide();
-      }
-    );
-  }
-
-  getAuxiliaresPR() {
-    this.maestrosService.getListaAuxiliaresPR(this.orden.codEmpresa ?? '0001').subscribe(
-      (response: Response) => {
+  getAuxiliaresPR(): void {
+    this.maestrosService.getListaAuxiliaresPR(this.empresaId).subscribe({
+      next: (response: Response) => {
         this.auxiliaresPR = response.resultado;
         this.currentPageAux = 0;
         this.buildPaginationAuxiliares();
-        this.loadingService.hide();
       },
-      (error) => {
-        console.log("No se pudo obtener la lista de auxiliares PR");
-        this.loadingService.hide();
-      }
-    );
+      error: (err) => {
+        console.error("No se pudo obtener la lista de Auxiliares PR", err);
+      },
+      complete: () => this.loadingService.hide()
+    });
   }
 
   onBack(): void {
@@ -442,7 +456,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modalUbigeos?.hide();
   }
 
-  appendDetails(): void {
+  saveDetails(): void {
     if (this.guardandoDetalle) return;
 
     if (!this.nuevoDetalleFecha) return;

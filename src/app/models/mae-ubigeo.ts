@@ -4,3 +4,8 @@ export class MaeUbigeo {
     desProvincia?: string;
     desDistrito?: string;
 }
+
+export enum TipoUbigeo {
+    Origen = 1,
+    Destino = 2
+}
