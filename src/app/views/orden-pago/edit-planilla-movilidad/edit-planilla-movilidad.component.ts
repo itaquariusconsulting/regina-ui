@@ -68,8 +68,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   isLoading$: Observable<boolean>;
   orden: OrdenPago = new OrdenPago();
   isDesktop: boolean = false;
-  validate: boolean = false;
-  padronRuc: PadronRuc = new PadronRuc();
   centroCostos: MaeCentroCostrosDTO[] = [];
   centro: MaeCentroCostrosDTO = new MaeCentroCostrosDTO();
   bancos: MaeBanco[] = [];
@@ -93,7 +91,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = [];
   documentosGeneral: MaeDocumento[] = [];
-  newDate: Date = new Date();
   modelPlanillaIni: moment.Moment | null = moment();
   minDate = moment('2020-01-01');
   maxDate = moment('2030-12-31');
@@ -514,6 +511,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
             this.currentPage = 0;
             this.buildPagination();
             this.closeDetailModal();
+            Swal.fire({
+              ...commonSwalConfig,
+              icon: 'success',
+              title: '¡Registro Exitoso!',
+              text: 'El detalle de la planilla ha sido guardado correctamente.',
+            });
           } else {
             Swal.fire({
               ...commonSwalConfig,
@@ -580,5 +583,20 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       || !this.ordenPagoPlanillaMovilidadCab.total
       || !this.ordenPagoPlanillaMovilidadCab.maxNumViajes
       || !this.ordenPagoPlanillaMovilidadCab.glosa;
+  }
+
+  isFormInvalid(): boolean {
+    return (
+      !this.nuevoDetalleFecha ||
+      !this.nuevoDetalle.codDocumento ||
+      !this.nuevoDetalle.serDocumento?.trim() ||
+      !this.nuevoDetalle.numDocumento?.trim() ||
+      !this.nuevoDetalle.codAuxiliarProveedor ||
+      !this.nuevoDetalle.glosa?.trim() ||
+      !this.nuevoDetalle.importe || this.nuevoDetalle.importe <= 0 ||
+      !this.nuevoDetalle.cantPersonas ||
+      !this.nuevoDetalle.codOrigen ||
+      !this.nuevoDetalle.codDestino
+    );
   }
 }

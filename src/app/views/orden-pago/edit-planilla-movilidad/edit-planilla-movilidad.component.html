@@ -45,7 +45,7 @@
             <label class="form-label fw-semibold mb-2 d-block">Importe Máximo</label>
             <input type="text" name="importe" id="importe" class="general-input form-control text-end"
                 [(ngModel)]="ordenPagoPlanillaMovilidadCab.total" currencyMask
-                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2 }" />
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Número Máximo de Viajes</label>
@@ -192,7 +192,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Importe</label>
                         <input type="text" class="form-control text-end" [(ngModel)]="nuevoDetalle.importe" currencyMask
-                            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+                            [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2 }" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Nro Ocupantes</label>
@@ -232,7 +232,7 @@
             </div>
             <div class="modal-footer">
                 <button class="general-button btn-primary" type="button" (click)="saveDetails()"
-                    [disabled]="guardandoDetalle"><i class="fas fa-save"></i>
+                    [disabled]="isFormInvalid() || guardandoDetalle"><i class="fas fa-save"></i>
                     {{guardandoDetalle ? 'Guardando...' : 'Guardar'}}
                 </button>
                 <button class="general-button btn-danger" type="button"
