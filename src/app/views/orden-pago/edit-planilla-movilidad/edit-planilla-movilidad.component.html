@@ -62,7 +62,8 @@
         <h6 class="h6-header">DETALLE DE TRASLADOS ASOCIADOS A LA PLANILLA</h6>
         <div class="d-flex gap-2">
             <button title="Nuevo Traslado" class="general-button btn-primary btn-sm" type="button"
-                (click)="openDetailModal()"[disabled]="isGuardarDisabled()"><i class="fas fa-plus"></i> {{isDesktop ? 'Nuevo' : ''}}</button>
+                (click)="openDetailModal()" [disabled]="isGuardarDisabled()"><i class="fas fa-plus"></i> {{isDesktop ?
+                'Nuevo' : ''}}</button>
         </div>
     </div>
     <table class="table table-striped table-hover text-center">
@@ -179,6 +180,9 @@
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
+                        <div style="font-size: 0.6rem; color: #390193;">
+                            {{auxiliarSeleccionado ? auxiliarSeleccionado.desAuxiliar : ''}}
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Observaciones</label>
@@ -197,26 +201,42 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Origen</label>
                         <div class="datepicker-container">
-                            <input readonly type="text" class="form-control"
-                                [(ngModel)]="nuevoDetalle.codOrigen" maxlength="6" />
-                            <button class="calendar-btn" (click)="openUbigeosModal()" type="button">
+                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codOrigen"
+                                maxlength="6" />
+                            <button class="calendar-btn" (click)="openUbigeosModal(1)" type="button">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Destino</label>
-                        <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.codDestino" maxlength="6" />
+                        <div class="datepicker-container">
+                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codDestino"
+                                maxlength="6" />
+                            <button class="calendar-btn" (click)="openUbigeosModal(2)" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6" style="font-size: 0.6rem; color: #390193;">
+                        {{origenSeleccionado ? (origenSeleccionado.desDepartamento + '-' + origenSeleccionado.desProvincia + '-' +
+                        origenSeleccionado.desDistrito || ""): ''}}
+                    </div>
+                    <div class="col-md-6" style="font-size: 0.6rem; color: #390193;">
+                        {{destinoSeleccionado ? (destinoSeleccionado.desDepartamento + '-' + destinoSeleccionado.desProvincia + '-' +
+                        destinoSeleccionado.desDistrito || "") : ''}}
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="general-button btn-secondary" type="button"
-                    (click)="closeDetailModal()">Cancelar</button>
                 <button class="general-button btn-primary" type="button" (click)="appendDetails()"
-                    [disabled]="guardandoDetalle">
+                    [disabled]="guardandoDetalle"><i class="fas fa-save"></i>
                     {{guardandoDetalle ? 'Guardando...' : 'Guardar'}}
                 </button>
+                <button class="general-button btn-danger" type="button"
+                    (click)="closeDetailModal()"><i class="fas fa-times"></i>Cancelar</button>
             </div>
         </div>
     </div>
@@ -236,7 +256,7 @@
                         <tr *ngFor="let auxiliar of pagedViajesAux">
                             <td class="text-start">{{ auxiliar.desAuxiliar }}</td>
                             <td class="text-start">
-                                <button class="btn btn-small">
+                                <button class="btn btn-small" (click)="selectAuxiliar(auxiliar)">
                                     <i class="fas fa-check"></i>
                                 </button>
                             </td>
@@ -252,7 +272,8 @@
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item" [class.disabled]="currentPageAux === 0">
-                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux - 1)" aria-label="Previous">
+                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux - 1)"
+                                    aria-label="Previous">
                                     <span aria-hidden="true">&laquo; Anterior</span>
                                 </button>
                             </li>
@@ -264,7 +285,8 @@
                             </li>
 
                             <li class="page-item" [class.disabled]="currentPageAux >= totalPagesAux - 1">
-                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux + 1)" aria-label="Next">
+                                <button class="page-link" (click)="changePageAuxiliares(currentPageAux + 1)"
+                                    aria-label="Next">
                                     <span aria-hidden="true">Siguente &raquo;</span>
                                 </button>
                             </li>
@@ -306,7 +328,7 @@
                             <td class="text-start">{{ ubigeo.desDistrito }}</td>
                             <td class="text-start">
                                 <button class="btn btn-small">
-                                    <i class="fas fa-check"></i>
+                                    <i class="fas fa-check" (click)="selectUbigeos(ubigeo)"></i>
                                 </button>
                             </td>
                         </tr>
@@ -321,7 +343,8 @@
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm mb-0">
                             <li class="page-item" [class.disabled]="currentPageUbigeos === 0">
-                                <button class="page-link" (click)="changePageUbigeos(currentPageUbigeos - 1)" aria-label="Previous">
+                                <button class="page-link" (click)="changePageUbigeos(currentPageUbigeos - 1)"
+                                    aria-label="Previous">
                                     <span aria-hidden="true">&laquo; Anterior</span>
                                 </button>
                             </li>
@@ -333,7 +356,8 @@
                             </li>
 
                             <li class="page-item" [class.disabled]="currentPageUbigeos >= totalPagesUbigeos - 1">
-                                <button class="page-link" (click)="changePageUbigeos(currentPageUbigeos + 1)" aria-label="Next">
+                                <button class="page-link" (click)="changePageUbigeos(currentPageUbigeos + 1)"
+                                    aria-label="Next">
                                     <span aria-hidden="true">Siguente &raquo;</span>
                                 </button>
                             </li>

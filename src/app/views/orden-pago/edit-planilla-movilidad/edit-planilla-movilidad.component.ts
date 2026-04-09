@@ -110,9 +110,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   ubigeos: MaeUbigeo[] = [];
   ubigeosGeneral: MaeUbigeo[] = [];
-  pagedUbigeos: MaeUbigeo[] = [];
 
   searchUbigeo: string = '';
+  pagedUbigeos: MaeUbigeo[] = [];
+  tipoUbigeo: number = -1;
+
+  origenSeleccionado: MaeUbigeo | null = null;
+  destinoSeleccionado: MaeUbigeo | null = null;
 
   ngOnInit(): void {
     const state = history.state;
@@ -166,6 +170,17 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       ubigeo.desDistrito?.toLowerCase().includes(searchTerm)
     );
     this.buildPaginationUbigeos();
+  }
+
+  selectUbigeos(ubigeo: MaeUbigeo) {
+    if (this.tipoUbigeo === 1) {
+      this.nuevoDetalle.codOrigen = ubigeo.codUbigeo ?? '';
+      this.origenSeleccionado = ubigeo;
+    } else if (this.tipoUbigeo === 2) {
+      this.nuevoDetalle.codDestino = ubigeo.codUbigeo ?? '';
+      this.destinoSeleccionado = ubigeo;
+    }
+    this.closeUbigeosModal();
   }
 
   getCentroCostos() {
@@ -402,7 +417,14 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modalAuxiliares?.hide();
   }
 
-  openUbigeosModal(): void {
+  selectAuxiliar(auxiliar: MaeAuxiliarDTO): void {
+    this.auxiliarSeleccionado = auxiliar;
+    this.nuevoDetalle.codAuxiliarProveedor = auxiliar.codAuxiliar ?? '';
+    this.closeAuxiliaresModal();
+  }
+
+  openUbigeosModal(tipoUbigeo: number): void {
+    this.tipoUbigeo = tipoUbigeo;
     const modalElement = document.getElementById('modalUbigeos');
     if (modalElement) {
       this.modalUbigeos = new bootstrap.Modal(modalElement);
