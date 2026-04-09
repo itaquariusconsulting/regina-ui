@@ -441,6 +441,20 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
     if (!this.nuevoDetalleFecha) return;
 
+    const codPlanilla = this.ordenPagoPlanillaMovilidadCab.codPlanilla ?? '';
+    if (!codPlanilla) {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: 'Debe guardar la planilla antes de agregar detalles.',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      return;
+    }
+
     const importeNuevo = Number(this.nuevoDetalle.importe ?? 0);
     const totalCabecera = Number(this.ordenPagoPlanillaMovilidadCab.monto ?? 0);
     const totalActual = this.getTotalImporteDetalles();
@@ -472,15 +486,53 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       return;
     }
 
+    this.guardandoDetalle = true;
+    this.loadingService.show();
+
+    const commonParams = this.getOrderParams();
     const detalleInsertado: OrdenPagoPlanillaMovilidadDet = {
       ...this.nuevoDetalle,
+      ...commonParams,
+      codPlanilla,
       fecItemPlanilla: new Date(this.nuevoDetalleFecha)
     };
 
-    this.listaMovilidad = [detalleInsertado, ...this.listaMovilidad];
-    this.currentPage = 0;
-    this.buildPagination();
-    this.closeDetailModal();
+    this.planillaDetService.insertarDetalle(detalleInsertado).subscribe({
+      next: (response: any) => {
+        if (response?.error === 0) {
+          detalleInsertado.numItemPlanilla = response.resultado;
+          this.listaMovilidad = [detalleInsertado, ...this.listaMovilidad];
+          this.currentPage = 0;
+          this.buildPagination();
+          this.closeDetailModal();
+        } else {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: response?.mensaje || 'No se pudo insertar el detalle.',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+          });
+        }
+        this.loadingService.hide();
+        this.guardandoDetalle = false;
+      },
+      error: () => {
+        this.loadingService.hide();
+        this.guardandoDetalle = false;
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'error',
+          title: 'No se pudo insertar el detalle.',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+    });
   }
 
   savePlanilla(): void {
@@ -495,7 +547,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       ...this.getOrderParams(),
       fechaPlanilla: moment(this.modelPlanillaIni).toDate(),
       maxNumViajes: this.ordenPagoPlanillaMovilidadCab.maxNumViajes,
-      total: this.ordenPagoPlanillaMovilidadCab.monto,
+      total: this.ordenPagoPlanillaMovilidadCab.total,
       glosa: this.ordenPagoPlanillaMovilidadCab.glosa,
       codAuxiliarBanco: '',
       codAuxiliarPersonal: '',
@@ -509,7 +561,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response?.error === 0) {
-            this.saveDetails(response.resultado);
+            this.finalizeSave();
           } else {
             this.finalizeSave();
           }
@@ -517,29 +569,6 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         error: () => {
           this.finalizeSave();
         }
-      });
-  }
-
-  private saveDetails(codPlanilla: string): void {
-    if (this.listaMovilidad.length === 0) {
-      this.finalizeSave();
-      return;
-    }
-
-    const commonParams = this.getOrderParams();
-    const requests = this.listaMovilidad.map(det => {
-      const dto: OrdenPagoPlanillaMovilidadDet = {
-        ...det,
-        ...commonParams,
-        codPlanilla
-      };
-      return this.planillaDetService.insertarDetalle(dto);
-    });
-
-    forkJoin(requests)
-      .pipe(finalize(() => this.finalizeSave()))
-      .subscribe({
-        error: (err) => (console.error('Error al guardar detalles:', err))
       });
   }
 
@@ -555,7 +584,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   isGuardarDisabled(): boolean {
     return !this.modelPlanillaIni
-      || !this.ordenPagoPlanillaMovilidadCab.monto
+      || !this.ordenPagoPlanillaMovilidadCab.total
       || !this.ordenPagoPlanillaMovilidadCab.maxNumViajes
       || !this.ordenPagoPlanillaMovilidadCab.glosa;
   }
