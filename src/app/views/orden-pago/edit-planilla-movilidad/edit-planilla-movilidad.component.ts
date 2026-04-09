@@ -9,7 +9,6 @@ import { LoadingDancingSquaresComponent } from '../../../components/loading-danc
 import { Observable, finalize } from 'rxjs';
 import { OrdenPago } from '../../../models/orden-pago';
 import { DeviceService } from '../../../services/core-service/device.service';
-import { PadronRuc } from '../../../models/padron-ruc';
 import { Response } from '../../../models/response';
 import { MaeCentroCostrosDTO } from '../../../models/mae-centro-costos';
 import { MaestrosService } from '../../../services/maestros.service';
