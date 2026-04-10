@@ -561,7 +561,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       monto: 0,
       recibido: 0,
       devolucion: 0,
-      statusPlanilla: ''
+      statusPlanilla: 'PE'
     };
 
     const request$ = currentCodPlanilla
