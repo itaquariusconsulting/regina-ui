@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import * as bootstrap from 'bootstrap';
 import { LoadingService } from '../../../services/loading.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
-import { Observable, finalize } from 'rxjs';
+import { Observable, finalize, forkJoin } from 'rxjs';
 import { OrdenPago } from '../../../models/orden-pago';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { Response } from '../../../models/response';
@@ -117,7 +117,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   ngOnInit(): void {
     this.initializeComponentData();
     this.setupUI();
-    this.loadPlanillaData();
+    this.loadRequiredCatalogs();
   }
 
   private initializeComponentData(): void {
@@ -138,14 +138,49 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.getCentroCostos();
   }
 
+  private loadRequiredCatalogs(): void {
+    this.loadingService.show();
+
+    forkJoin({
+      centros: this.maestrosService.getCentroCostos(this.empresaId, "001"),
+      bancos: this.maestrosService.getBancos(this.empresaId),
+      documentos: this.maestrosService.getTiposDocumento(this.empresaId),
+      ubigeos: this.maestrosService.getUbigeos(),
+      auxiliares: this.maestrosService.getListaAuxiliaresPR(this.empresaId)
+    }).subscribe({
+      next: (res:any) => {
+        this.centroCostos = res.centros.resultado;
+        this.centro = this.centroCostos.find(cc => cc.codCCostos === this.orden.codCCostos) ?? new MaeCentroCostrosDTO();
+        this.bancos = res.bancos.resultado;
+        this.banco = this.bancos?.[0]?.codAuxiliar ?? '';
+        this.documentosGeneral = res.documentos.resultado;
+        this.ubigeos = res.ubigeos.resultado;
+        this.ubigeosGeneral = [...this.ubigeos];
+        this.auxiliaresPR = res.auxiliares.resultado;
+
+        this.buildPaginationUbigeos();
+        this.buildPaginationAuxiliares();
+
+        this.loadPlanillaData();
+      },
+      error: () => this.loadingService.hide()
+    });
+  }
+
   private loadPlanillaData(): void {
     if (this.ordenPagoPlanillaMovilidadCab?.codPlanilla) {
       this.mapHeaderData(this.ordenPagoPlanillaMovilidadCab);
       this.loadPlanillaDetails();
-      return;
-    }
+    } else {
+      const params = this.getOrderParams();
+      const hasParams = Object.values(params).every(val => !!val);
 
-    this.loadPlanillaHeader();
+      if (hasParams) {
+        this.loadPlanillaHeader();
+      } else {
+        this.loadingService.hide();
+      }
+    }
   }
 
   private get empresaId(): string {
