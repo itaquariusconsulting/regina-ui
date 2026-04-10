@@ -256,6 +256,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         );
       });
     }
+    this.currentPageUbigeos = 0;
     this.buildPaginationUbigeos();
   }
 
