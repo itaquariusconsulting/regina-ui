@@ -14,7 +14,7 @@ import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pa
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { Router } from '@angular/router';
 import { MaeDocumento } from '../../../models/mae-documento';
-import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
+import { OrdenPagoCabPlanilla, ViewMode } from '../../../models/orden-pago-planilla-movilidad-cab';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { HttpStatusCode } from '@angular/common/http';
@@ -54,6 +54,30 @@ export class PlanillaMovilidadComponent implements OnInit {
   isDesktop: boolean = false;
 
   documentosGeneral: MaeDocumento[] = [];
+
+  public ViewMode = ViewMode;
+
+  static createDefault(orden: any): OrdenPagoCabPlanilla {
+    const item = new OrdenPagoCabPlanilla();
+    item.codEmpresa = orden.codEmpresa;
+    item.codSucursal = orden.codSucursal;
+    item.anioPeriodo = orden.anoPeriodo;
+    item.codPeriodo = orden.codPeriodo;
+    item.numOrden = orden.numOrden;
+    item.cCentroCostos = orden.codCCostos;
+    item.total = 0;
+    item.recibido = 0;
+    item.devolucion = 0;
+    item.maxNumViajes = 0;
+    item.glosa = '';
+    item.statusPlanilla = 'PE';
+    item.fechaPlanilla = new Date();
+    item.codAuxiliarBanco = '';
+    item.codAuxiliarPersonal = '';
+    item.codPlanilla = '';
+    item.monto = 0;
+    return item;
+  }
 
   ngOnInit(): void {
     const state = history.state;
@@ -144,28 +168,14 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
-  onEditPlanillaMovilidad(planilla: OrdenPagoCabPlanilla, edit: number): void {
-    if (edit == 1) {
-      planilla = new OrdenPagoCabPlanilla();
-      planilla.codEmpresa = this.orden.codEmpresa;
-      planilla.codSucursal = this.orden.codSucursal;
-      planilla.anioPeriodo = this.orden.anoPeriodo;
-      planilla.codPeriodo = this.orden.codPeriodo;
-      planilla.numOrden = this.orden.numOrden;
-      planilla.cCentroCostos = this.orden.codCCostos;
-      planilla.total = 0;
-      planilla.recibido = 0;
-      planilla.devolucion = 0;
-      planilla.maxNumViajes = 0;
-      planilla.glosa = '';
-      planilla.statusPlanilla = 'PE';
-      planilla.fechaPlanilla = new Date();
-      planilla.codAuxiliarBanco = '';
-      planilla.codAuxiliarPersonal = '';
-      planilla.codPlanilla = '';
-      planilla.monto = 0;
-    }
-    this.router.navigate(['/edit-planilla-movilidad'], { state: { data: { orden: this.orden, planilla: planilla } } });
+  onEditPlanillaMovilidad(planilla: OrdenPagoCabPlanilla, mode: ViewMode): void {
+    const dataToPass = (mode === ViewMode.New)
+      ? PlanillaMovilidadComponent.createDefault(this.orden)
+      : planilla;
+
+    this.router.navigate(['/edit-planilla-movilidad'], {
+      state: { data: { orden: this.orden, planilla: dataToPass } }
+    });
   }
 
   onDeletePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {

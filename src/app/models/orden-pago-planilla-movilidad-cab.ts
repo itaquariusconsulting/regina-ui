@@ -1,4 +1,3 @@
-
 export class OrdenPagoCabPlanilla {
     codEmpresa?: string;
     codSucursal?: string;
@@ -17,4 +16,9 @@ export class OrdenPagoCabPlanilla {
     maxNumViajes?: number;
     glosa?: string;
     statusPlanilla?: string;
+}
+
+export enum ViewMode {
+  New = 1,
+  Edit = 2
 }
