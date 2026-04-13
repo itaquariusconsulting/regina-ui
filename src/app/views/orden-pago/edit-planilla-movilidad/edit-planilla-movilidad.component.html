@@ -71,7 +71,7 @@
             <th style="width: 10%;">Fecha</th>
             <th style="width: 10%;">Tipo Doc.</th>
             <th style="width: 10%;">Nro Doc.</th>
-            <th style="width: 15%;">Proveedor</th>
+            <th style="width: 15%;">Auxiliar</th>
             <th style="width: 12%;">Origen</th>
             <th style="width: 12%;">Destino</th>
             <th style="width: 15%;">Observaciones</th>
@@ -93,10 +93,10 @@
                 <td class="text-truncate" [title]="traslado.glosa">{{traslado.glosa}}</td>
                 <td>{{traslado.importe | number: '1.2-2'}}</td>
                 <td class="text-center">
-                    <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
-                        <span style="font-weight: 600 !important; color: white !important">
-                            {{traslado.ocupantes}}
-                        </span>
+                    <button type="button" class="ocupantes-pill"
+                        [class.is-empty]="getOcupantesCount(traslado.ocupantes) === 0"
+                        (click)="openOcupantesModal(traslado.ocupantes)">
+                        {{getOcupantesCount(traslado.ocupantes)}}
                     </button>
                 </td>
             </tr>
@@ -132,7 +132,6 @@
         </nav>
     </div>
 </div>
-
 
 <!-- Modal Nuevo Detalle -->
 <div class="modal fade" id="modalNuevoDetalle" tabindex="-1">
@@ -177,7 +176,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Proveedor / Auxiliar</label>
+                        <label class="form-label fw-semibold">Auxiliar</label>
                         <div class="datepicker-container">
                             <input readonly type="text" class="form-control"
                                 [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" />
@@ -201,7 +200,12 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Ocupantes</label>
-                        <input type="number" class="form-control" [(ngModel)]="nuevoDetalle.ocupantes" />
+                        <div class="datepicker-container">
+                            <input readonly type="text" class="form-control" [value]="ocupantesTexto"/>
+                            <button class="calendar-btn" (click)="openUsuariosModal()" type="button">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Origen</label>
@@ -247,12 +251,12 @@
     </div>
 </div>
 
-
+<!-- Modal Auxiliares -->
 <div class="modal fade" id="modalAuxiliares" tabindex="-2">
     <div class="modal-dialog modal-dialog-centered modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Auxiliares - Proveedores</h5>
+                <h5 class="modal-title">Auxiliares</h5>
                 <button type="button" class="btn-close" (click)="closeAuxiliaresModal()"></button>
             </div>
             <div class="modal-body">
@@ -310,6 +314,70 @@
     </div>
 </div>
 
+<!-- Modal Ocupantes (Usuarios) -->
+<div class="modal fade" id="modalUsuarios" tabindex="-2">
+    <div class="modal-dialog modal-dialog-centered modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ocupantes</h5>
+                <button type="button" class="btn-close" (click)="closeUsuariosModal()"></button>
+            </div>
+            <div class="modal-body">
+                <table>
+                    <tbody>
+                        <tr *ngFor="let user of pagedUsuariosModal">
+                            <td class="text-start">{{ getUserDisplayName(user) }}</td>
+                            <td class="text-start">
+                                <input type="checkbox" class="form-check-input"
+                                    [checked]="isOcupanteSelected(user)"
+                                    (change)="toggleOcupante(user)" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small" style="font-family: var(--app-font-family) !important;">
+                        Mostrando Página <strong>{{ currentPageUsers + 1 }}</strong> de
+                        <strong>{{ totalPagesUsers }}</strong> (Total: {{ totalItemsUsers }})
+                    </span>
+
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" [class.disabled]="currentPageUsers === 0">
+                                <button class="page-link" (click)="changePageUsuarios(currentPageUsers - 1)"
+                                    aria-label="Previous">
+                                    <span aria-hidden="true">&laquo; Anterior</span>
+                                </button>
+                            </li>
+
+                            <li class="page-item disabled">
+                                <span class="page-link border-0 text-dark fw-bold">{{
+                                    currentPageUsers + 1
+                                    }}</span>
+                            </li>
+
+                            <li class="page-item" [class.disabled]="currentPageUsers >= totalPagesUsers - 1">
+                                <button class="page-link" (click)="changePageUsuarios(currentPageUsers + 1)"
+                                    aria-label="Next">
+                                    <span aria-hidden="true">Siguente &raquo;</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="general-button btn-primary" type="button" (click)="closeUsuariosModal()">
+                    Seleccionar
+                </button>
+                <button class="general-button btn-secondary" type="button"
+                    (click)="closeUsuariosModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ubigeos -->
 <div class="modal fade" id="modalUbigeos" tabindex="-2">
     <div class="modal-dialog modal-dialog-centered modal">
         <div class="modal-content">
@@ -376,6 +444,26 @@
                 </button>
                 <button class="general-button btn-secondary" type="button"
                     (click)="closeUbigeosModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mini-Modal List of Ocupantes (Usuarios) -->
+<div class="modal fade" id="modalOcupantes" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-ocupantes">
+        <div class="modal-content">
+            <div class="modal-header modal-header-compact">
+                <h6 class="modal-title">Ocupantes</h6>
+                <button type="button" class="btn-close" (click)="closeOcupantesModal()"></button>
+            </div>
+            <div class="modal-body modal-body-compact">
+                <div *ngIf="ocupantesModalNombres.length === 0" class="ocupantes-empty">
+                    Sin ocupantes registrados
+                </div>
+                <ul *ngIf="ocupantesModalNombres.length > 0" class="ocupantes-list">
+                    <li *ngFor="let nombre of ocupantesModalNombres">{{ nombre }}</li>
+                </ul>
             </div>
         </div>
     </div>

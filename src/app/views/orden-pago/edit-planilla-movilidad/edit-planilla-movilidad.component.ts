@@ -27,6 +27,9 @@ import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pa
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { MaeUbigeo, TipoUbigeo } from '../../../models/mae-ubigeo';
+import { RegSecUserService } from '../../../services/reg-sec-user.service';
+import { WrapperRequestUsuario } from '../../../models/wrappers/wrapper-request-usuario';
+import { RegSecUser } from '../../../models/reg-sec-user';
 
 @Component({
   selector: 'app-edit-planilla-movilidad',
@@ -59,7 +62,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     private loadingService: LoadingService,
     private maestrosService: MaestrosService,
     private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
-    private planillaCabService: OrdenPagoPlanillaMovilidadCabService
+    private planillaCabService: OrdenPagoPlanillaMovilidadCabService,
+    private regSecUserService: RegSecUserService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -87,6 +91,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   currentPageUbigeos = 0;
   totalItemsUbigeos = 0;
   totalPagesUbigeos = 0;
+  
+  pageSizeUsers = 7;
+  currentPageUsers = 0;
+  totalItemsUsers = 0;
+  totalPagesUsers = 0;
 
   listaMovilidad: OrdenPagoPlanillaMovilidadDet[] = [];
   documentosGeneral: MaeDocumento[] = [];
@@ -96,6 +105,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   modal: any;
   modalAuxiliares: any;
   modalUbigeos: any;
+  modalOcupantes: any;
+  modalUsuarios: any;
   nuevoDetalle: OrdenPagoPlanillaMovilidadDet = new OrdenPagoPlanillaMovilidadDet();
   nuevoDetalleFecha: string = '';
   guardandoDetalle: boolean = false;
@@ -103,9 +114,15 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   auxiliaresPR: MaeAuxiliarDTO[] = [];
   auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
   pagedViajesAux: MaeAuxiliarDTO[] = [];
+  ocupantesSeleccionados: RegSecUser[] = [];
+  ocupantesModalNombres: string[] = [];
 
   ubigeos: MaeUbigeo[] = [];
   ubigeosGeneral: MaeUbigeo[] = [];
+
+  usuarios: RegSecUser[] = [];
+  pagedUsuariosModal: RegSecUser[] = [];
+  wrapperRequestUsuario: WrapperRequestUsuario = new WrapperRequestUsuario();
 
   searchUbigeo: string = '';
   pagedUbigeos: MaeUbigeo[] = [];
@@ -117,6 +134,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   ngOnInit(): void {
     this.initializeComponentData();
     this.setupUI();
+    this.initUsuarioWrapper();
     this.loadRequiredCatalogs();
   }
 
@@ -138,6 +156,26 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.getCentroCostos();
   }
 
+  private initUsuarioWrapper(): void {
+    const userString = sessionStorage.getItem('user');
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);
+        this.wrapperRequestUsuario.codEmpresa = user.codEmpresa || '';
+        this.wrapperRequestUsuario.codSucursal = user.codSucursal || '';
+      } catch (e) {
+        console.error('Error al parsear User desde sessionStorage', e);
+      }
+    }
+
+    if (!this.wrapperRequestUsuario.codEmpresa) {
+      this.wrapperRequestUsuario.codEmpresa = this.empresaId;
+    }
+    if (!this.wrapperRequestUsuario.codSucursal) {
+      this.wrapperRequestUsuario.codSucursal = this.orden?.codSucursal ?? '001';
+    }
+  }
+
   private loadRequiredCatalogs(): void {
     this.loadingService.show();
 
@@ -146,7 +184,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       bancos: this.maestrosService.getBancos(this.empresaId),
       documentos: this.maestrosService.getTiposDocumento(this.empresaId),
       ubigeos: this.maestrosService.getUbigeos(),
-      auxiliares: this.maestrosService.getListaAuxiliaresPR(this.empresaId)
+      auxiliares: this.maestrosService.getListaAuxiliaresPR(this.empresaId),
+      usuarios: this.regSecUserService.getRegSecUsers(this.wrapperRequestUsuario)
     }).subscribe({
       next: (res:any) => {
         this.centroCostos = res.centros.resultado;
@@ -157,9 +196,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         this.ubigeos = res.ubigeos.resultado;
         this.ubigeosGeneral = [...this.ubigeos];
         this.auxiliaresPR = res.auxiliares.resultado;
+        this.usuarios = res.usuarios.resultado || [];
 
         this.buildPaginationUbigeos();
         this.buildPaginationAuxiliares();
+        this.buildPaginationUsuarios();
 
         this.loadPlanillaData();
       },
@@ -327,6 +368,16 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.pagedViajesAux = this.auxiliaresPR.slice(start, end);
   }
 
+  private buildPaginationUsuarios(): void {
+    this.totalItemsUsers = this.usuarios.length;
+    this.totalPagesUsers = Math.ceil(this.totalItemsUsers / this.pageSizeUsers);
+
+    const start = this.currentPageUsers * this.pageSizeUsers;
+    const end = start + this.pageSizeUsers;
+
+    this.pagedUsuariosModal = this.usuarios.slice(start, end);
+  }
+
   private buildPaginationUbigeos(): void {
     this.totalItemsUbigeos = this.ubigeos.length;
     this.totalPagesUbigeos = Math.ceil(this.totalItemsUbigeos / this.pageSizeUbigeos);
@@ -353,6 +404,15 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
     this.currentPageAux = page;
     this.buildPaginationAuxiliares();
+  }
+
+  changePageUsuarios(page: number): void {
+    if (page < 0 || page >= this.totalPagesUsers) {
+      return;
+    }
+
+    this.currentPageUsers = page;
+    this.buildPaginationUsuarios();
   }
 
   changePageUbigeos(page: number): void {
@@ -443,6 +503,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   openDetailModal(): void {
     this.nuevoDetalle = new OrdenPagoPlanillaMovilidadDet();
     this.nuevoDetalleFecha = new Date().toISOString().slice(0, 10);
+    this.resetOcupantes();
 
     Object.assign(this.nuevoDetalle, this.getOrderParams(), {
       codPlanilla: this.ordenPagoPlanillaMovilidadCab.codPlanilla ?? ''
@@ -460,9 +521,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.auxiliarSeleccionado = null;
     this.origenSeleccionado = null;
     this.destinoSeleccionado = null;
+    this.resetOcupantes();
   }
 
   openAuxiliaresModal(): void {
+    this.currentPageAux = 0;
+    this.buildPaginationAuxiliares();
     const modalElement = document.getElementById('modalAuxiliares');
     if (modalElement) {
       this.modalAuxiliares = new bootstrap.Modal(modalElement);
@@ -480,6 +544,94 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.closeAuxiliaresModal();
   }
 
+  openUsuariosModal(): void {
+    this.currentPageUsers = 0;
+    this.buildPaginationUsuarios();
+    const modalElement = document.getElementById('modalUsuarios');
+    if (modalElement) {
+      this.modalUsuarios = new bootstrap.Modal(modalElement);
+      this.modalUsuarios.show();
+    }
+  }
+
+  closeUsuariosModal(): void {
+    this.modalUsuarios?.hide();
+  }
+
+  isOcupanteSelected(user: RegSecUser): boolean {
+    const key = this.getUserKey(user);
+    return this.ocupantesSeleccionados.some(x => this.getUserKey(x) === key);
+  }
+
+  toggleOcupante(user: RegSecUser): void {
+    const key = this.getUserKey(user);
+    const index = this.ocupantesSeleccionados.findIndex(x => this.getUserKey(x) === key);
+    if (index >= 0) {
+      this.ocupantesSeleccionados.splice(index, 1);
+      this.syncOcupantes();
+      return;
+    }
+    this.ocupantesSeleccionados.push(user);
+    this.syncOcupantes();
+  }
+
+  private syncOcupantes(): void {
+    const nombres = this.ocupantesSeleccionados
+      .map(x => this.getUserDisplayName(x))
+      .filter(nombre => !!nombre);
+    this.nuevoDetalle.ocupantes = nombres.length > 0 ? JSON.stringify(nombres) : '';
+  }
+
+  private parseOcupantes(value: string | undefined | null): string[] {
+    if (!value) return [];
+    const raw = value.trim();
+    if (!raw) return [];
+    if (/^\d+$/.test(raw)) return [];
+
+    try {
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      return list.map(x => String(x).trim()).filter(x => !!x);
+    } catch {
+      return raw
+        .split(',')
+        .map(x => x.trim())
+        .filter(x => !!x);
+    }
+  }
+
+  getOcupantesCount(value: string | undefined | null): number {
+    const list = this.parseOcupantes(value);
+    if (list.length > 0) return list.length;
+    const raw = (value ?? '').trim();
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : 0;
+  }
+
+  get ocupantesTexto(): string {
+    return this.ocupantesSeleccionados
+      .map(x => this.getUserDisplayName(x))
+      .filter(nombre => !!nombre)
+      .join(', ');
+  }
+
+  private resetOcupantes(): void {
+    this.ocupantesSeleccionados = [];
+    this.nuevoDetalle.ocupantes = '';
+  }
+
+  private getUserKey(user: RegSecUser): string {
+    return String(user.userId ?? user.userUsername ?? user.userEmail ?? user.userName ?? '');
+  }
+
+  getUserDisplayName(user: RegSecUser): string {
+    const fullName = [user.userLastName, user.userMiddleName, user.userName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return fullName || user.userUsername || user.userEmail || `Usuario ${user.userId ?? ''}`.trim();
+  }
+
   openUbigeosModal(tipoUbigeo: number): void {
     this.tipoUbigeo = tipoUbigeo;
     const modalElement = document.getElementById('modalUbigeos');
@@ -491,6 +643,23 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   closeUbigeosModal(): void {
     this.modalUbigeos?.hide();
+  }
+
+  openOcupantesModal(value: string | undefined | null): void {
+    const nombres = this.parseOcupantes(value);
+    const raw = (value ?? '').trim();
+    this.ocupantesModalNombres = nombres.length > 0 ? nombres : (raw ? [raw] : []);
+
+    const modalElement = document.getElementById('modalOcupantes');
+    if (modalElement) {
+      this.modalOcupantes = new bootstrap.Modal(modalElement);
+      this.modalOcupantes.show();
+    }
+  }
+
+  closeOcupantesModal(): void {
+    this.modalOcupantes?.hide();
+    this.ocupantesModalNombres = [];
   }
 
   saveDetails(): void {
