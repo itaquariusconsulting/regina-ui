@@ -36,6 +36,12 @@ export class OrdenPagoPlanillaMovilidadCabService {
         });
     }
 
+    deletePlanillaMovilidad(codPlanilla: string): Observable<Response> {
+        return this.http.delete<Response>(`${this.apiUrlProcess}orden-pago-planilla/eliminar/${codPlanilla}`, {
+            headers: this.getHeaders()
+        });
+    }
+
     private getHeaders(): HttpHeaders {
         return new HttpHeaders({
             'Authorization': `Bearer ${this.token}`,

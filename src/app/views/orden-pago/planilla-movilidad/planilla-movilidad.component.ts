@@ -6,6 +6,7 @@ import { Observable } from 'rxjs/internal/Observable';
 import { LoadingService } from '../../../services/loading.service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import Swal from 'sweetalert2';
 import { OrdenPago } from '../../../models/orden-pago';
 import { Response } from '../../../models/response';
 import { DeviceService } from '../../../services/core-service/device.service';
@@ -14,6 +15,10 @@ import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wra
 import { Router } from '@angular/router';
 import { MaeDocumento } from '../../../models/mae-documento';
 import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { HttpStatusCode } from '@angular/common/http';
+
 @Component({
   selector: 'app-planilla-movilidad',
   imports: [CommonModule, FormsModule, LoadingDancingSquaresComponent],
@@ -22,11 +27,14 @@ import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movili
 })
 export class PlanillaMovilidadComponent implements OnInit {
 
-  constructor(private location: Location,
+  constructor(
+    private location: Location,
     private loadingService: LoadingService,
     private planillaService: OrdenPagoPlanillaMovilidadCabService,
     private deviceService: DeviceService,
-    private router: Router) {
+    private router: Router,
+    private dialog: MatDialog,
+  ) {
     this.isLoading$ = this.loadingService.loading$;
   }
 
@@ -62,14 +70,12 @@ export class PlanillaMovilidadComponent implements OnInit {
     this.getPlanillaMovilidad();
 
   }
-
   
   devolverDocumento(tipoDoc: string): string {
     return this.documentosGeneral
       .find(doc => doc.codDocumento == tipoDoc)
       ?.desDocumento ?? '';
   }
-
 
   getPlanillaMovilidad() {
     this.loadingService.show();
@@ -139,7 +145,7 @@ export class PlanillaMovilidadComponent implements OnInit {
   }
 
   onEditPlanillaMovilidad(planilla: OrdenPagoCabPlanilla, edit: number): void {
-    if(edit==1) {
+    if (edit == 1) {
       planilla = new OrdenPagoCabPlanilla();
       planilla.codEmpresa = this.orden.codEmpresa;
       planilla.codSucursal = this.orden.codSucursal;
@@ -159,6 +165,64 @@ export class PlanillaMovilidadComponent implements OnInit {
       planilla.codPlanilla = '';
       planilla.monto = 0;
     }
-    this.router.navigate(['/edit-planilla-movilidad'], { state: { data: {orden: this.orden, planilla: planilla } }});
+    this.router.navigate(['/edit-planilla-movilidad'], { state: { data: { orden: this.orden, planilla: planilla } } });
+  }
+
+  onDeletePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
+    if (!planilla.codPlanilla) return;
+
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Confirmar Eliminación',
+        message: `¿Estás seguro de que deseas eliminar la planilla ${planilla.codPlanilla}?`,
+        type: 'confirm'
+      }
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.loadingService.show();
+      this.planillaService.deletePlanillaMovilidad(planilla.codPlanilla!).subscribe({
+        next: (res: Response) => {
+          this.loadingService.hide();
+          if (res.error === 0) {
+            this.planillas = this.planillas.filter(p => p.codPlanilla !== planilla.codPlanilla);
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'success',
+              title: '¡Eliminado!',
+              text: 'La planilla ha sido eliminada correctamente.',
+            });
+          } else {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'error',
+              title: 'Error',
+              text: res.mensaje || 'No se pudo eliminar la planilla.',
+            });
+          }
+        },
+        error: (err) => {
+          this.loadingService.hide();
+          const isFkConstraint = err?.status === HttpStatusCode.Conflict;
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '280px',
+            data: {
+              title: isFkConstraint ? 'No permitido' : 'Error de Conexión',
+              type: 'alert',
+              message: err?.error?.mensaje || 'No se pudo eliminar la planilla.'
+            }
+          });
+        }
+      });
+    });
   }
 }
