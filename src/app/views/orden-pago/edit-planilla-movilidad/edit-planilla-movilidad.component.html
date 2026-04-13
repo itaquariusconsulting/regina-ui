@@ -95,7 +95,7 @@
                 <td class="text-center">
                     <button title="Ocupantes de Traslado" type="button" class="general-button btn-success btn-sm">
                         <span style="font-weight: 600 !important; color: white !important">
-                            {{traslado.cantPersonas}}
+                            {{traslado.ocupantes}}
                         </span>
                     </button>
                 </td>
@@ -200,8 +200,8 @@
                             [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2 }" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Nro Ocupantes</label>
-                        <input type="number" class="form-control" [(ngModel)]="nuevoDetalle.cantPersonas" />
+                        <label class="form-label fw-semibold">Ocupantes</label>
+                        <input type="number" class="form-control" [(ngModel)]="nuevoDetalle.ocupantes" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Origen</label>

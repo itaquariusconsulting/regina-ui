@@ -648,7 +648,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       !this.nuevoDetalle.codAuxiliarProveedor ||
       !this.nuevoDetalle.glosa?.trim() ||
       !this.nuevoDetalle.importe || this.nuevoDetalle.importe <= 0 ||
-      !this.nuevoDetalle.cantPersonas ||
+      !this.nuevoDetalle.ocupantes ||
       !this.nuevoDetalle.codOrigen ||
       !this.nuevoDetalle.codDestino
     );

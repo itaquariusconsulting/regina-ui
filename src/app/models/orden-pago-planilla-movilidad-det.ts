@@ -13,7 +13,7 @@ export class OrdenPagoPlanillaMovilidadDet {
     codAuxiliarProveedor?: string;
     glosa?: string;
     importe?: number;
-    cantPersonas?: number;
+    ocupantes?: string;
     codOrigen?: string;
     codDestino?: string;
 }
