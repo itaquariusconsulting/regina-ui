@@ -49,7 +49,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     private themeService: ThemeService
   ) {
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/home']);
     } else {
       this.router.navigate(['/login']);
     }
