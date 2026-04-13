@@ -457,6 +457,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   closeDetailModal(): void {
     this.modal?.hide();
+    this.auxiliarSeleccionado = null;
+    this.origenSeleccionado = null;
+    this.destinoSeleccionado = null;
   }
 
   openAuxiliaresModal(): void {

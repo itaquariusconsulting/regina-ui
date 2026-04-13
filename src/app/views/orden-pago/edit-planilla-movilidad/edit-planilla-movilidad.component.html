@@ -180,7 +180,7 @@
                         <label class="form-label fw-semibold">Proveedor / Auxiliar</label>
                         <div class="datepicker-container">
                             <input readonly type="text" class="form-control"
-                                [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" maxlength="6" />
+                                [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" />
                             <button class="calendar-btn" (click)="openAuxiliaresModal()" type="button">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -206,8 +206,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Origen</label>
                         <div class="datepicker-container">
-                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codOrigen"
-                                maxlength="6" />
+                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codOrigen" />
                             <button class="calendar-btn" (click)="openUbigeosModal(1)" type="button">
                                 <i class="fas fa-search"></i>
                             </button>
@@ -216,8 +215,7 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Destino</label>
                         <div class="datepicker-container">
-                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codDestino"
-                                maxlength="6" />
+                            <input readonly type="text" class="form-control" [(ngModel)]="nuevoDetalle.codDestino" />
                             <button class="calendar-btn" (click)="openUbigeosModal(2)" type="button">
                                 <i class="fas fa-search"></i>
                             </button>
