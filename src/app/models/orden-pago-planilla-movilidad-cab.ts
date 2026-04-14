@@ -8,6 +8,7 @@ export class OrdenPagoCabPlanilla {
     codAuxiliarBanco?: string;
     codAuxiliarPersonal?: string;
     fechaPlanilla?: Date;
+    fechaPlanillaClose?: Date;
     cCentroCostos?: string;
     monto?: number;
     total?: number;

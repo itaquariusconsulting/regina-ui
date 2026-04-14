@@ -60,8 +60,12 @@
                     </td>
                     <td class="text-center">
                         <button title="Editar Planilla de Movilidad" (click)="onEditPlanillaMovilidad(planilla, ViewMode.Edit)"
-                            class="btn btn-warning btn-sm me-1">
+                            class="btn btn-success btn-sm me-1">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button title="Cerrar Planilla" (click)="onClosePlanillaMovilidad(planilla)"
+                            class="btn btn-warning btn-sm me-1" [disabled]="planilla.statusPlanilla === 'CE'">
+                            <i class="fas fa-lock"></i>
                         </button>
                         <button title="Eliminar Planilla de Movilidad" (click)="onDeletePlanillaMovilidad(planilla)"
                             class="btn btn-danger btn-sm">

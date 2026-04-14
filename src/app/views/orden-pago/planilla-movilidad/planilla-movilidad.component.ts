@@ -235,4 +235,68 @@ export class PlanillaMovilidadComponent implements OnInit {
       });
     });
   }
+
+  onClosePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
+    if (!planilla.codPlanilla || planilla.statusPlanilla === 'CE') return;
+
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Cerrar Planilla',
+        message: `¿Deseas cerrar la planilla ${planilla.codPlanilla}?`,
+        type: 'confirm'
+      }
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.loadingService.show();
+      const payload: OrdenPagoCabPlanilla = {
+        ...planilla,
+        statusPlanilla: 'CE',
+        fechaPlanillaClose: new Date()
+      };
+
+      this.planillaService.updatePlanillaMovilidad(payload).subscribe({
+        next: (res: Response) => {
+          this.loadingService.hide();
+          if (res.error === 0) {
+            planilla.statusPlanilla = 'CE';
+            planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'success',
+              title: 'Planilla cerrada',
+              text: 'La planilla se marcó como cerrada correctamente.',
+            });
+          } else {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              icon: 'error',
+              title: 'Error',
+              text: res.mensaje || 'No se pudo cerrar la planilla.',
+            });
+          }
+        },
+        error: (err) => {
+          this.loadingService.hide();
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '280px',
+            data: {
+              title: 'Error de Conexión',
+              type: 'alert',
+              message: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
+            }
+          });
+        }
+      });
+    });
+  }
 }
