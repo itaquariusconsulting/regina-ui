@@ -228,4 +228,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
       });
   }
 
+  hasExpandableRows(): boolean {
+    return this.pagedDetalles.some(det => det.codDocumento);
+  }
 }
