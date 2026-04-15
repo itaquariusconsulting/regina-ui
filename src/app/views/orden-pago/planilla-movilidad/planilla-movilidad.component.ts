@@ -11,6 +11,7 @@ import { OrdenPago } from '../../../models/orden-pago';
 import { Response } from '../../../models/response';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
+import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pago-planilla-movilidad-det.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { Router } from '@angular/router';
 import { MaeDocumento } from '../../../models/mae-documento';
@@ -31,6 +32,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     private location: Location,
     private loadingService: LoadingService,
     private planillaService: OrdenPagoPlanillaMovilidadCabService,
+    private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
     private deviceService: DeviceService,
     private router: Router,
     private dialog: MatDialog,
@@ -239,6 +241,44 @@ export class PlanillaMovilidadComponent implements OnInit {
   onClosePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
     if (!planilla.codPlanilla || planilla.statusPlanilla === 'CE') return;
 
+    this.loadingService.show();
+
+    this.planillaDetService.listarDetalle(
+      planilla.codEmpresa!,
+      planilla.codSucursal!,
+      planilla.anioPeriodo!,
+      planilla.codPeriodo!,
+      planilla.numOrden!,
+      planilla.codPlanilla
+    ).subscribe({
+      next: (response: any) => {
+        this.loadingService.hide();
+
+        const detalles = response.resultado || [];
+        if (detalles.length === 0) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showCloseButton: true,
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+            icon: 'warning',
+            title: 'Planilla vacía',
+            text: 'No se puede cerrar una planilla que no tiene detalles de movilidad.',
+          });
+          return;
+        }
+        this.openConfirmationDialog(planilla);
+      },
+      error: (err) => {
+        this.loadingService.hide();
+        console.error("Error fetching details", err);
+      }
+    });
+  }
+
+  private openConfirmationDialog(planilla: OrdenPagoCabPlanilla): void {
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
       data: {
@@ -249,54 +289,50 @@ export class PlanillaMovilidadComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if (!result) return;
 
-      this.loadingService.show();
-      const payload: OrdenPagoCabPlanilla = {
-        ...planilla,
-        statusPlanilla: 'CE',
-        fechaPlanillaClose: new Date()
-      };
+      this.processClosePlanilla(planilla);
+    });
+  }
 
-      this.planillaService.updatePlanillaMovilidad(payload).subscribe({
-        next: (res: Response) => {
-          this.loadingService.hide();
-          if (res.error === 0) {
-            planilla.statusPlanilla = 'CE';
-            planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              showConfirmButton: false,
-              timer: 3000,
-              timerProgressBar: true,
-              icon: 'success',
-              title: 'Planilla cerrada',
-              text: 'La planilla se marcó como cerrada correctamente.',
-            });
-          } else {
-            Swal.fire({
-              toast: true,
-              position: 'top-end',
-              showConfirmButton: false,
-              timer: 3000,
-              timerProgressBar: true,
-              icon: 'error',
-              title: 'Error',
-              text: res.mensaje || 'No se pudo cerrar la planilla.',
-            });
-          }
-        },
-        error: (err) => {
-          this.loadingService.hide();
-          this.dialog.open(ConfirmDialogComponent, {
-            width: '280px',
-            data: {
-              title: 'Error de Conexión',
-              type: 'alert',
-              message: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
-            }
+  private processClosePlanilla(planilla: OrdenPagoCabPlanilla): void {
+    this.loadingService.show();
+    const payload: OrdenPagoCabPlanilla = {
+      ...planilla,
+      statusPlanilla: 'CE',
+      fechaPlanillaClose: new Date()
+    };
+
+    this.planillaService.updatePlanillaMovilidad(payload).subscribe({
+      next: (res: Response) => {
+        this.loadingService.hide();
+        if (res.error === 0) {
+          planilla.statusPlanilla = 'CE';
+          planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            showCloseButton: true,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            icon: 'success',
+            title: 'Planilla cerrada',
+            text: 'La planilla se marcó como cerrada correctamente.',
           });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
         }
-      });
+      },
+      error: (err) => {
+        this.loadingService.hide();
+        this.dialog.open(ConfirmDialogComponent, {
+          width: '280px',
+          data: {
+            title: 'Error de Conexión',
+            type: 'alert',
+            message: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
+          }
+        });
+      }
     });
   }
 }
