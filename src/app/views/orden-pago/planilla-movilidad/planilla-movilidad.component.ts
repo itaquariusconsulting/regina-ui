@@ -173,6 +173,12 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
+  onViewPlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
+    this.router.navigate(['/edit-planilla-movilidad'], {
+      state: { data: { orden: this.orden, planilla: planilla, viewOnly: true } }
+    });
+  }
+
   onEditPlanillaMovilidad(planilla: OrdenPagoCabPlanilla, mode: ViewMode): void {
     const dataToPass = (mode === ViewMode.New)
       ? PlanillaMovilidadComponent.createDefault(this.orden)
@@ -244,8 +250,6 @@ export class PlanillaMovilidadComponent implements OnInit {
   onClosePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
     if (!planilla.codPlanilla || planilla.statusPlanilla === 'CE') return;
 
-    this.loadingService.show();
-
     this.planillaDetService.listarDetalle(
       planilla.codEmpresa!,
       planilla.codSucursal!,
@@ -255,8 +259,6 @@ export class PlanillaMovilidadComponent implements OnInit {
       planilla.codPlanilla
     ).subscribe({
       next: (response: any) => {
-        this.loadingService.hide();
-
         const detalles = response.resultado || [];
         if (detalles.length === 0) {
           Swal.fire({
@@ -369,7 +371,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     ordenPagoDet.numDocumento = detalle.numDocumento;
     ordenPagoDet.codAuxiliar = detalle.codAuxiliarProveedor;
     ordenPagoDet.impSoles = detalle.importe || 0;
-    ordenPagoDet.fecDocumento = planilla.fechaPlanillaClose; 
+    ordenPagoDet.fecDocumento = new Date(detalle.fecItemPlanilla);
     ordenPagoDet.codMoneda = '01';
 
     return ordenPagoDet;

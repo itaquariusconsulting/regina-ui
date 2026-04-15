@@ -14,7 +14,7 @@
         </div>
         <div class="col-md-4 d-flex justify-content-end">
             <button class="general-button btn-primary btn-sm me-2" (click)="savePlanilla()"
-                [disabled]="isGuardarDisabled()">
+                [disabled]="isGuardarDisabled() || viewOnly">
                 <i class="fas fa-save"></i>
                 {{isDesktop ? (guardandoCabecera ? 'Guardando...' : 'Guardar') : ''}}
             </button>
@@ -33,9 +33,9 @@
             <div class="input-group">
                 <div class="datepicker-container">
                     <input matInput [matDatepicker]="picker" placeholder="dd/MM/yyyy" [(ngModel)]="modelPlanillaIni"
-                        [min]="minDate" [max]="maxDate" />
+                        [min]="minDate" [max]="maxDate" [readonly]="viewOnly"/>
                     <mat-datepicker #picker startView="multi-year"></mat-datepicker>
-                    <button class="btn boton-fecha btn-sm" (click)="picker.open()">
+                    <button class="btn boton-fecha btn-sm" (click)="picker.open()" [disabled]="viewOnly">
                         <i class="fas fa-calendar"></i>
                     </button>
                 </div>
@@ -45,15 +45,15 @@
             <label class="form-label fw-semibold mb-2 d-block">Importe Máximo</label>
             <input type="text" name="importe" id="importe" class="general-input form-control text-end"
                 [(ngModel)]="ordenPagoPlanillaMovilidadCab.total" currencyMask
-                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2 }" />
+                [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2 }" [readonly]="viewOnly">
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Número Máximo de Viajes</label>
-            <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.maxNumViajes" />
+            <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.maxNumViajes" [readonly]="viewOnly"/>
         </div>
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">Glosa</label>
-            <input type="text" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.glosa" />
+            <input type="text" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.glosa" [readonly]="viewOnly"/>
         </div>
     </div>
 
@@ -62,7 +62,7 @@
         <h6 class="h6-header">DETALLE DE TRASLADOS ASOCIADOS A LA PLANILLA</h6>
         <div class="d-flex gap-2">
             <button title="Nuevo Traslado" class="general-button btn-primary btn-sm" type="button"
-                (click)="openDetailModal()" [disabled]="isGuardarDisabled()"><i class="fas fa-plus"></i> {{isDesktop ?
+                (click)="openDetailModal()" [disabled]="isGuardarDisabled() || viewOnly"><i class="fas fa-plus"></i> {{isDesktop ?
                 'Nuevo' : ''}}</button>
         </div>
     </div>

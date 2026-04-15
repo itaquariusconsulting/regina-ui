@@ -131,6 +131,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   origenSeleccionado: MaeUbigeo | null = null;
   destinoSeleccionado: MaeUbigeo | null = null;
 
+  viewOnly: boolean = false;
+
   ngOnInit(): void {
     this.initializeComponentData();
     this.setupUI();
@@ -144,6 +146,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
     this.orden = data.orden ?? data;
     this.ordenPagoPlanillaMovilidadCab = data.planilla ?? new OrdenPagoCabPlanilla();
+    this.viewOnly = !!data.viewOnly;
 
     if (this.orden?.fecOrden) {
       this.minDate = moment(this.orden.fecOrden);
