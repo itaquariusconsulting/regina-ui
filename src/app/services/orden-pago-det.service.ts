@@ -39,8 +39,18 @@ export class OrdenPagoDetService {
     });
   }
 
+  saveOrdenPagoDetBatch(dtos: OrdenPagoDetDTO[]): Observable<Response> {
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.token}`,
+      'Content-Type': 'application/json'
+    });
+    return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-det/insert-batch`, dtos, {
+      headers,
+      responseType: 'json'
+    });
+  }
+
   onBuscarDocumento(wrapper: WrapperRequestDocumebtoExistente): Observable<Response> {
-    console.log("Wrapper en Servicio : ", wrapper);
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'

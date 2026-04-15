@@ -9,7 +9,9 @@ import html2canvas from 'html2canvas';
 import Swal from 'sweetalert2';
 import { OrdenPago } from '../../../models/orden-pago';
 import { Response } from '../../../models/response';
+import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { DeviceService } from '../../../services/core-service/device.service';
+import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pago-planilla-movilidad-det.service';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
@@ -33,6 +35,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     private loadingService: LoadingService,
     private planillaService: OrdenPagoPlanillaMovilidadCabService,
     private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
+    private ordenPagoDetService: OrdenPagoDetService,
     private deviceService: DeviceService,
     private router: Router,
     private dialog: MatDialog,
@@ -269,7 +272,7 @@ export class PlanillaMovilidadComponent implements OnInit {
           });
           return;
         }
-        this.openConfirmationDialog(planilla);
+        this.openConfirmationDialog(planilla, detalles);
       },
       error: (err) => {
         this.loadingService.hide();
@@ -278,7 +281,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
-  private openConfirmationDialog(planilla: OrdenPagoCabPlanilla): void {
+  private openConfirmationDialog(planilla: OrdenPagoCabPlanilla, detalles: any[]): void {
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
       data: {
@@ -289,12 +292,13 @@ export class PlanillaMovilidadComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if (!result) return;
 
-      this.processClosePlanilla(planilla);
+      this.processClosePlanilla(planilla, detalles);
     });
   }
 
-  private processClosePlanilla(planilla: OrdenPagoCabPlanilla): void {
+  private processClosePlanilla(planilla: OrdenPagoCabPlanilla, detalles: any[]): void {
     this.loadingService.show();
+
     const payload: OrdenPagoCabPlanilla = {
       ...planilla,
       statusPlanilla: 'CE',
@@ -303,36 +307,71 @@ export class PlanillaMovilidadComponent implements OnInit {
 
     this.planillaService.updatePlanillaMovilidad(payload).subscribe({
       next: (res: Response) => {
-        this.loadingService.hide();
-        if (res.error === 0) {
-          planilla.statusPlanilla = 'CE';
-          planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
-          Swal.fire({
-            toast: true,
-            position: 'top-end',
-            showCloseButton: true,
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-            icon: 'success',
-            title: 'Planilla cerrada',
-            text: 'La planilla se marcó como cerrada correctamente.',
-          });
-        } else {
+        if (res.error !== 0) {
+          this.loadingService.hide();
           Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
+          return;
         }
+
+        planilla.statusPlanilla = 'CE';
+        planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          showCloseButton: true,
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          icon: 'success',
+          title: 'Planilla cerrada',
+          text: 'La planilla se marcó como cerrada correctamente.',
+        });
+
+        const ordenPagoDetalles: OrdenPagoDetDTO[] =
+          detalles.map(det => this.mapToOrdenPagoDet(planilla, det));
+
+        this.ordenPagoDetService.saveOrdenPagoDetBatch(ordenPagoDetalles)
+          .subscribe({
+            next: (response: Response) => {
+              if ((response.error ?? 0) === 1) {
+                Swal.fire({ icon: 'error', title: 'Error', text: response.mensaje });
+              }
+              this.loadingService.hide();
+            },
+            error: () => {
+              this.loadingService.hide();
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron guardar los detalles de la orden de pago.'
+              });
+            }
+          });
       },
       error: (err) => {
         this.loadingService.hide();
-        this.dialog.open(ConfirmDialogComponent, {
-          width: '280px',
-          data: {
-            title: 'Error de Conexión',
-            type: 'alert',
-            message: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
-          }
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de Conexión',
+          text: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
         });
       }
     });
+  }
+
+  private mapToOrdenPagoDet(planilla: OrdenPagoCabPlanilla, detalle: any): OrdenPagoDetDTO {
+    const ordenPagoDet = new OrdenPagoDetDTO();
+
+    ordenPagoDet.codEmpresa = planilla.codEmpresa;
+    ordenPagoDet.codSucursal = planilla.codSucursal;
+    ordenPagoDet.numOrden = planilla.numOrden;
+    ordenPagoDet.numSerieDoc = detalle.serDocumento;
+    ordenPagoDet.numDocumento = detalle.numDocumento;
+    ordenPagoDet.codAuxiliar = detalle.codAuxiliarProveedor;
+    ordenPagoDet.impSoles = detalle.importe || 0;
+    ordenPagoDet.fecDocumento = planilla.fechaPlanillaClose; 
+    ordenPagoDet.codMoneda = '01';
+
+    return ordenPagoDet;
   }
 }

@@ -1,8 +1,8 @@
 <div class="loading-overlay" *ngIf="isLoading$ | async">
   <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
 </div>
-<div class="container mt-2">
-  <div class="bar-buttons-top">
+<div class="container-fluid mt-2">
+  <div class="bar-buttons-top w-100">
     <div class="title-f6">Detalle de Rendición - Orden de Pago: {{orden.numOrden}} del {{orden.fecOrden | date:
       'dd/MM/yyyy'}}</div>
   </div>
@@ -20,7 +20,6 @@
   <div class="table-container table-responsive">
     <table class="table global-table table-striped table-hover">
       <thead>
-        <th></th>
         <th class="text-center">Orden</th>
         <th class="text-center">Item</th>
         <th class="text-center">RUC</th>
@@ -94,14 +93,14 @@
                   <div>
                     <button (click)="abrirModalDoc(reg)" title="Ver Documento" type="button"
                     *hasPermission="{ route: '/list-orders', action: 'permitView' }"
-                      class="general-button btn-success btn-sm me-2"><i class="fa-solid fa-image"></i></button>
+                      class="accion-button btn-success btn-sm me-2"><i class="fa-solid fa-image"></i></button>
                     <button title="Editar" type="button" 
-                      class="general-button btn-primary btn-sm me-2"
+                      class="accion-button btn-primary btn-sm me-2"
                       *hasPermission="{ route: '/list-orders', action: 'permitEdit' }">
                       <i class="fas fa-edit"></i>
                     </button>
                     <button title="Eliminar" type="button" 
-                      class="general-button btn-danger btn-sm"
+                      class="accion-button btn-danger btn-sm"
                       *hasPermission="{ route: '/list-orders', action: 'permitDelete' }">
                       <i class="fas fa-trash"></i>
                     </button>
@@ -166,7 +165,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="general-button btn-danger" (click)="cerrarModalDoc()">Cerrar</button>
+        <button class="accion-button btn-danger" (click)="cerrarModalDoc()">Cerrar</button>
       </div>
 
     </div>
