@@ -301,64 +301,67 @@ export class PlanillaMovilidadComponent implements OnInit {
   private processClosePlanilla(planilla: OrdenPagoCabPlanilla, detalles: any[]): void {
     this.loadingService.show();
 
-    const payload: OrdenPagoCabPlanilla = {
-      ...planilla,
-      statusPlanilla: 'CE',
-      fechaPlanillaClose: new Date()
-    };
+    const ordenPagoDetalles: OrdenPagoDetDTO[] =
+      detalles.map(det => this.mapToOrdenPagoDet(planilla, det));
 
-    this.planillaService.updatePlanillaMovilidad(payload).subscribe({
-      next: (res: Response) => {
-        if (res.error !== 0) {
-          this.loadingService.hide();
-          Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
-          return;
-        }
+    this.ordenPagoDetService.saveOrdenPagoDetBatch(ordenPagoDetalles)
+      .subscribe({
+        next: (response: Response) => {
+          if ((response.error ?? 0) === 1) {
+            this.loadingService.hide();
+            Swal.fire({ icon: 'error', title: 'Error', text: response.mensaje });
+            return;
+          }
 
-        planilla.statusPlanilla = 'CE';
-        planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          showCloseButton: true,
-          showConfirmButton: false,
-          timer: 3000,
-          timerProgressBar: true,
-          icon: 'success',
-          title: 'Planilla cerrada',
-          text: 'La planilla se marcó como cerrada correctamente.',
-        });
+          const payload: OrdenPagoCabPlanilla = {
+            ...planilla,
+            statusPlanilla: 'CE',
+            fechaPlanillaClose: new Date()
+          };
 
-        const ordenPagoDetalles: OrdenPagoDetDTO[] =
-          detalles.map(det => this.mapToOrdenPagoDet(planilla, det));
-
-        this.ordenPagoDetService.saveOrdenPagoDetBatch(ordenPagoDetalles)
-          .subscribe({
-            next: (response: Response) => {
-              if ((response.error ?? 0) === 1) {
-                Swal.fire({ icon: 'error', title: 'Error', text: response.mensaje });
-              }
+          this.planillaService.updatePlanillaMovilidad(payload).subscribe({
+            next: (res: Response) => {
               this.loadingService.hide();
+
+              if (res.error !== 0) {
+                Swal.fire({ icon: 'error', title: 'Error', text: res.mensaje });
+                return;
+              }
+
+              planilla.statusPlanilla = 'CE';
+              planilla.fechaPlanillaClose = payload.fechaPlanillaClose;
+
+              Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showCloseButton: true,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                icon: 'success',
+                title: 'Planilla cerrada',
+                text: 'La planilla y sus detalles se guardaron correctamente.',
+              });
             },
-            error: () => {
+            error: (err) => {
               this.loadingService.hide();
               Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'No se pudieron guardar los detalles de la orden de pago.'
+                text: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
               });
             }
           });
-      },
-      error: (err) => {
-        this.loadingService.hide();
-        Swal.fire({
-          icon: 'error',
-          title: 'Error de Conexión',
-          text: err?.error?.mensaje || 'No se pudo cerrar la planilla.'
-        });
-      }
-    });
+        },
+        error: () => {
+          this.loadingService.hide();
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudieron guardar los detalles de la orden de pago.'
+          });
+        }
+      });
   }
 
   private mapToOrdenPagoDet(planilla: OrdenPagoCabPlanilla, detalle: any): OrdenPagoDetDTO {
