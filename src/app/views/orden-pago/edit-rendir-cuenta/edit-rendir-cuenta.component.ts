@@ -663,9 +663,9 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    // if (!this.changeDate()) {
-    //   return false;
-    // }
+    if (!this.changeDate()) {
+      return false;
+    }
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
