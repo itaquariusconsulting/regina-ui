@@ -143,7 +143,7 @@ export class LoginComponent implements OnInit, OnDestroy {
               const theme = this.dtoUser.userTheme as ThemeKey | null;
               if (theme) {
                 this.selectedTheme = theme;
-                this.themeService.applyTheme(theme);
+                this.themeService.setTheme(theme);
               }
 
 
