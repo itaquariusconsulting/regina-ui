@@ -114,12 +114,15 @@ export class DefaultHeaderComponent implements OnInit {
 
   @HostListener('document:click', ['$event'])
   closeDropdown(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    const userArea = document.querySelector('.user-area') as HTMLElement;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
 
-    // Cierra el dropdown si el clic está fuera del área de usuario
-    if (userArea && !userArea.contains(target)) {
+    if (!target.closest('.user-area')) {
       this.showDropdown = false;
+    }
+
+    if (!target.closest('.theme-area')) {
+      this.showThemeDropdown = false;
     }
   }
 
