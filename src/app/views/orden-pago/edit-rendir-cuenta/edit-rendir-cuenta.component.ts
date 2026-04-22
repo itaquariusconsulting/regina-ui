@@ -315,14 +315,6 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDetService.onBuscarDocumento(wrapper).subscribe(
         (response: Response) => {
           if (response.error == 1) {
-            this.dialog.open(ConfirmDialogComponent, {
-              width: '280px',
-              data: {
-                title: 'Error',
-                message: 'El documento ya existe',
-                type: 'alert'
-              }
-            });
             resolve(1);
           } else if (response.error == 2) {
             this.dialog.open(ConfirmDialogComponent, {
@@ -664,9 +656,9 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    if (!this.changeDate()) {
-      return false;
-    }
+    // if (!this.changeDate()) {
+    //   return false;
+    // }
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
