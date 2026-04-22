@@ -322,7 +322,7 @@ export class EditRendirCuentaComponent implements OnInit {
                 type: 'alert'
               }
             });
-            resolve(0);
+            resolve(1);
           } else if (response.error == 2) {
             this.dialog.open(ConfirmDialogComponent, {
               width: '280px',
@@ -332,9 +332,9 @@ export class EditRendirCuentaComponent implements OnInit {
                 type: 'alert'
               }
             });
-            resolve(0);
-          } else {
             resolve(1);
+          } else {
+            resolve(0);
           }
         },
         (error) => {
@@ -346,7 +346,7 @@ export class EditRendirCuentaComponent implements OnInit {
               type: 'alert'
             }
           });
-          resolve(0);
+          resolve(1);
         }
       );
     });
@@ -1036,7 +1036,6 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.ordenPagoDetProvService.saveOrdenPagoDetProv(this.ordenPagoDetProvs).subscribe(
       (response: any) => {
-
         this.onBack();
       }
     )
@@ -1082,7 +1081,7 @@ export class EditRendirCuentaComponent implements OnInit {
     const total = Number(this.total);
     const isDocNumValid = this.isDocumentNumberValid(docNum);
 
-    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || impuesto === 0 || total === 0;
+    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
 
   changeImporte(importe: Event) {

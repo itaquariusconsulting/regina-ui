@@ -19,7 +19,7 @@ export class OrdenPagoDetProvService {
       'Authorization': `Bearer ${this.token}`,
       'Content-Type': 'application/json'
     });
-    return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-det/insert`, listDTO, {
+    return this.http.post<Response>(`${this.apiUrlProcess}orden-pago-det-prov/insertar`, listDTO, {
       headers,
       responseType: 'json'
     });

@@ -13,7 +13,7 @@
         [(ngModel)]="filtrarDetalle" />
     </div>
     <button (click)="onBack()" class="general-button btn-secondary">
-      <i class="fas fa-arrow-left"></i>
+      <i class="fas fa-arrow-left"></i>Regresar
     </button>
   </div>
   <div class="table-container table-responsive">
@@ -94,19 +94,11 @@
                   <div>{{reg.codCuentaConcepto}}</div>
                 </div>
                 <div class="col-md-2 text-center">
-                  <label class="form-label"><strong>Acciones:</strong></label>
+                  <label class="form-label"><strong>Documento:</strong></label>
                   <div>
                     <button (click)="abrirModalDoc(reg)" title="Ver Documento" type="button"
                       *hasPermission="{ route: '/list-orders', action: 'permitView' }"
-                      class="general-button btn-success btn-sm me-2"><i class="fa-solid fa-image"></i></button>
-                    <button title="Editar" type="button" class="general-button btn-primary btn-sm me-2"
-                      *hasPermission="{ route: '/list-orders', action: 'permitEdit' }">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button title="Eliminar" type="button" class="general-button btn-danger btn-sm"
-                      *hasPermission="{ route: '/list-orders', action: 'permitDelete' }">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                      class="general-button btn-success btn-sm"><i class="fa-solid fa-file"></i></button>
                   </div>
                 </div>
               </div>
