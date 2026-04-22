@@ -147,7 +147,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
   }
 
   getTipoDocumento(tipoDocumento: string): MaeDocumento {
-    const doc = this.listaTiposDocumento.find(doc => doc.desCorta == tipoDocumento) ?? new MaeDocumento();
+    const doc = this.listaTiposDocumento.find(doc => doc.codDocumento == tipoDocumento) ?? new MaeDocumento();
     return doc;
   }
 
