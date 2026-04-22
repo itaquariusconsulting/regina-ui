@@ -154,6 +154,7 @@
         <div *ngIf="detail" class="contenedor-scroll">
 
           <img *ngIf="imagenDocumento" [src]="imagenDocumento" class="imagen-doc">
+          <iframe *ngIf="pdfDocumentoUrl" [src]="pdfDocumentoUrl" class="pdf-doc" title="Documento PDF"></iframe>
 
         </div>
 

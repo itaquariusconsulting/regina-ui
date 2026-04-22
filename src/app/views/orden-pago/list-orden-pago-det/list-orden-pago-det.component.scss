@@ -69,6 +69,13 @@
     height: auto;
 }
 
+.pdf-doc {
+    width: 100%;
+    min-height: 70vh;
+    border: 0;
+    display: block;
+}
+
 .modal-header {
     background-color: var(--primary-color);
 }
