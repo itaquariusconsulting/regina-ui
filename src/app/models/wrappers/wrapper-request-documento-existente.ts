@@ -5,4 +5,5 @@ export class WrapperRequestDocumebtoExistente {
     codDocumento?: string;
     numDocumento?: string;
     numSerieDoc?: string;
+    numOrden?: string;
 }

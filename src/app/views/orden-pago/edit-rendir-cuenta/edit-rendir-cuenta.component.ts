@@ -296,6 +296,7 @@ export class EditRendirCuentaComponent implements OnInit {
     wrapper.codDocumento = this.ordenPagoDet.codDocumento;
     wrapper.codEmpresa = this.orden.codEmpresa;
     wrapper.codSucursal = this.orden.codSucursal;
+    wrapper.numOrden = this.orden.numOrden;
 
     let serie = '';
     let numero = '';
