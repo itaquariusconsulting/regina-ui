@@ -68,10 +68,12 @@ export class HelpManualComponent implements OnInit {
       id: 'interfaz',
       title: 'Interfaz Principal',
       icon: 'fas fa-th-large',
-      description: 'Conoce el header, sidebar y áreas de trabajo.',
+      description: 'Conoce el header, sidebar, chat de Regina y áreas de trabajo.',
       subsections: [
         { id: 'header', title: 'Barra de Cabecera', icon: 'fas fa-window-maximize' },
         { id: 'sidebar', title: 'Menú Lateral con Iconos', icon: 'fas fa-bars' },
+        { id: 'sidebar-flecha', title: 'Flechas de Expansión Inteligentes', icon: 'fas fa-chevron-down' },
+        { id: 'chat-regina', title: 'Chat de Regina (esquina izquierda)', icon: 'fas fa-comments' },
         { id: 'temas', title: 'Personalización de Temas', icon: 'fas fa-palette' },
         { id: 'tipo-cambio', title: 'Tipo de Cambio', icon: 'fas fa-dollar-sign' },
         { id: 'periodo', title: 'Periodo Activo', icon: 'fas fa-calendar-alt' },
@@ -127,12 +129,18 @@ export class HelpManualComponent implements OnInit {
       id: 'rendir-cuenta',
       title: 'Rendir Cuenta',
       icon: 'fas fa-receipt',
-      description: 'Rendición digital con OCR y validación SUNAT.',
+      description: 'Rendición digital con OCR avanzado y validación SUNAT.',
       subsections: [
         { id: 'rc-ocr', title: 'Captura por OCR', icon: 'fas fa-camera' },
         { id: 'rc-recorte', title: 'Recorte de Imagen', icon: 'fas fa-crop' },
         { id: 'rc-sunat', title: 'Validación SUNAT (RUC)', icon: 'fas fa-check-double' },
         { id: 'rc-detalle', title: 'Datos del Comprobante', icon: 'fas fa-edit' },
+        { id: 'rc-comercial', title: 'Nombre Comercial vs Razón Social', icon: 'fas fa-store' },
+        { id: 'rc-duplicado', title: 'Validación de Documento Duplicado', icon: 'fas fa-copy' },
+        { id: 'rc-legibilidad', title: 'Documento No Legible', icon: 'fas fa-eye-slash' },
+        { id: 'rc-mejorar-imagen', title: 'Mejorar Imagen (Doble Pasada)', icon: 'fas fa-camera-rotate' },
+        { id: 'rc-periodo', title: 'Mes / Año de Declaración', icon: 'fas fa-calendar-alt' },
+        { id: 'rc-igv', title: '% IGV Editable', icon: 'fas fa-percentage' },
         { id: 'rc-fecha-rendicion', title: 'Fecha de Rendición', icon: 'fas fa-calendar-day' },
         { id: 'rc-guardar', title: 'Guardar y Validar', icon: 'fas fa-save' }
       ]
@@ -141,10 +149,13 @@ export class HelpManualComponent implements OnInit {
       id: 'planilla-movilidad',
       title: 'Planilla de Movilidad',
       icon: 'fas fa-route',
-      description: 'Registro de viajes y exportación a PDF.',
+      description: 'Registro de viajes, ocupantes y exportación a PDF.',
       subsections: [
         { id: 'pm-cabecera', title: 'Cabecera de Planilla', icon: 'fas fa-heading' },
         { id: 'pm-detalle', title: 'Detalle de Viajes', icon: 'fas fa-map-marker-alt' },
+        { id: 'pm-direcciones', title: 'Dirección Origen / Destino', icon: 'fas fa-map' },
+        { id: 'pm-ocupantes', title: 'Ocupantes (con Buscador)', icon: 'fas fa-users' },
+        { id: 'pm-importe-max', title: 'Importe Máximo por Día', icon: 'fas fa-shield-alt' },
         { id: 'pm-totales', title: 'Totales y Devolución', icon: 'fas fa-coins' },
         { id: 'pm-pdf', title: 'Exportar a PDF', icon: 'fas fa-file-pdf' }
       ]

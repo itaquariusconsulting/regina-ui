@@ -283,6 +283,44 @@
             </div>
           </article>
 
+          <article id="hm-sub-sidebar-flecha" class="hm-article">
+            <h4><i class="fas fa-chevron-down"></i> Flechas de Expansión Inteligentes</h4>
+            <p>
+              La flecha (▸) al lado de un item del menú lateral solo aparece cuando ese item
+              <strong>realmente tiene subitems</strong> para expandir. Esto evita la confusión
+              de tener flechas en items que en realidad son enlaces directos.
+            </p>
+            <ul class="hm-list">
+              <li><strong>Item con subitems:</strong> muestra ▸ que rota a ▾ al expandir.</li>
+              <li><strong>Item de enlace directo (sin hijos):</strong> no muestra flecha, navega
+                directo al hacer clic.</li>
+              <li>El menú funciona en <strong>modo acordeón</strong>: al abrir uno, los demás se
+                colapsan automáticamente.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-chat-regina" class="hm-article">
+            <h4><i class="fas fa-comments"></i> Chat de Regina (esquina inferior izquierda)</h4>
+            <p>
+              El botón flotante para conversar con <strong>Regina IA</strong> está siempre visible
+              en la <strong>esquina inferior izquierda</strong> de la pantalla. Al hacer clic, se
+              despliega un panel de chat también en la izquierda.
+            </p>
+            <ul class="hm-list">
+              <li>Botón circular azul con el icono de Regina.</li>
+              <li>Panel del chat de 320×420 px que se abre justo encima del botón.</li>
+              <li>Soporta entrada por <strong>texto y voz</strong> (micrófono).</li>
+              <li>Cierra el panel con la X o haciendo clic fuera.</li>
+            </ul>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                Si necesitas ayuda contextual sobre un módulo, puedes pulsar el botón
+                <em>"?"</em> del header en lugar del chat: ese abre este manual de usuario.
+              </div>
+            </div>
+          </article>
+
           <article id="hm-sub-pantalla-inicio" class="hm-article">
             <h4><i class="fas fa-home"></i> Pantalla por Defecto</h4>
             <p>
@@ -702,11 +740,129 @@
             <h4><i class="fas fa-edit"></i> Datos del Comprobante</h4>
             <ul class="hm-list">
               <li><strong>Tipo de documento:</strong> Boleta, Factura, Ticket, Recibo.</li>
-              <li><strong>Número de documento:</strong> con serie y correlativo.</li>
+              <li><strong>Número de documento:</strong> con serie y correlativo (ej: F001-137).</li>
               <li><strong>RUC y razón social</strong> del emisor.</li>
+              <li><strong>Nombre comercial</strong> del emisor (cuando se detecta).</li>
               <li><strong>Fecha de emisión</strong> y moneda.</li>
               <li><strong>Importe total</strong>, base imponible e IGV.</li>
               <li><strong>Rubro</strong> y <strong>tipo de gasto</strong> contable.</li>
+              <li><strong>Mes y Año de declaración tributaria</strong> (obligatorios).</li>
+              <li><strong>Centro de Costos</strong> heredado de la OP.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rc-comercial" class="hm-article">
+            <h4><i class="fas fa-store"></i> Nombre Comercial vs Razón Social</h4>
+            <p>
+              El OCR identifica por separado el <strong>nombre comercial</strong> (el branding del
+              local, ej: <em>"HOSTAL SHALOM"</em>) y la <strong>razón social</strong>
+              (nombre legal, ej: <em>"DIAZ ZULOAGA DE CASTRO KATIA MERCEDES"</em>).
+            </p>
+            <ul class="hm-list">
+              <li>El campo <strong>Proveedor</strong> muestra el <strong>nombre comercial</strong> si existe; si no, cae a la razón social.</li>
+              <li>Al lado del label aparece un badge gris
+                <em>(nombre comercial)</em> cuando ambos están y son distintos.</li>
+              <li>Pasando el cursor sobre el campo aparece la <strong>razón social completa</strong> como tooltip.</li>
+            </ul>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>¿Por qué importa?</strong> Esto te ayuda a reconocer al proveedor por la
+                marca que usa en el local, no solo por el nombre fiscal que aparece en la factura.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-rc-duplicado" class="hm-article">
+            <h4><i class="fas fa-copy"></i> Validación de Documento Duplicado</h4>
+            <p>
+              El sistema impide rendir el mismo documento más de una vez. La verificación se hace
+              automáticamente por <strong>RUC + tipo de documento + serie + número</strong>.
+            </p>
+            <ul class="hm-list">
+              <li>Después de procesar el OCR.</li>
+              <li>Cada vez que modificas manualmente RUC, tipo o serie/número (con debounce de 350ms).</li>
+              <li>Si el documento ya existe, verás un mensaje
+                <em>"EL DOCUMENTO YA EXISTE"</em> y no podrás guardarlo.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rc-legibilidad" class="hm-article">
+            <h4><i class="fas fa-eye-slash"></i> Documento No Legible</h4>
+            <p>
+              Si la calidad del OCR cae por debajo del umbral configurado (regla
+              <code>OCR_MIN_LEGIBILIDAD</code> en BD), aparece un diálogo con dos botones:
+            </p>
+            <div class="hm-callout warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                <strong>¿Qué desea hacer?</strong>
+                <ul class="hm-list" style="margin-top:6px;">
+                  <li><strong>Mejorar la imagen:</strong> reenvía el archivo al backend con
+                    procesamiento OpenCV agresivo (doble pasada).</li>
+                  <li><strong>Registrar manualmente:</strong> activa el modo manual; tú llenas
+                    los campos a mano.</li>
+                  <li><strong>Cancelar:</strong> limpia el archivo y permite empezar de cero.</li>
+                </ul>
+              </div>
+            </div>
+            <p>
+              La validación también considera <strong>3 de 4 campos críticos</strong> presentes
+              (RUC válido, número con serie, fecha y monto &gt; 0): si los tienes, no se bloquea
+              aunque el score sea bajo.
+            </p>
+          </article>
+
+          <article id="hm-sub-rc-mejorar-imagen" class="hm-article">
+            <h4><i class="fas fa-camera-rotate"></i> Mejora de Imagen (Doble Pasada OCR)</h4>
+            <p>
+              Cuando eliges <strong>"Mejorar la imagen"</strong> en el diálogo anterior, el backend
+              ejecuta una pipeline OpenCV completa antes del OCR:
+            </p>
+            <ol class="hm-steps">
+              <li>Conversión a <strong>escala de grises</strong>.</li>
+              <li><strong>Reducción de ruido</strong> preservando bordes (Non-Local Means).</li>
+              <li><strong>Binarización adaptativa</strong> (mejor para iluminación irregular).</li>
+              <li><strong>Deskew</strong>: corrige rotaciones leves (0.5° a 15°).</li>
+              <li><strong>Upscale</strong> a 2500px de ancho (Tesseract trabaja mejor con 300+ DPI).</li>
+              <li>Ejecuta OCR sobre la versión <em>basic</em> y la <em>full</em>,
+                devuelve la de <strong>mejor score</strong>.</li>
+            </ol>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                Para documentos normales, el backend siempre aplica una mejora ligera (escala
+                de grises + resize). La pipeline pesada solo corre cuando eliges "Mejorar la imagen".
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-rc-periodo" class="hm-article">
+            <h4><i class="fas fa-calendar-alt"></i> Mes / Año de Declaración Tributaria</h4>
+            <p>
+              Son <strong>campos obligatorios</strong> que definen el periodo contable donde se
+              declarará el comprobante. Por defecto vienen con el mes y año actuales.
+            </p>
+            <ul class="hm-list">
+              <li>Lista desplegable con los <strong>12 meses</strong>.</li>
+              <li>Año declaración: el año actual y los <strong>3 anteriores + 1 siguiente</strong>.</li>
+              <li>El sistema valida que la <strong>distancia en meses</strong> entre la fecha del
+                documento y el periodo declarado no supere el máximo configurado en BD
+                (regla <code>PERIODO_CONTABLE_MAX_MESES</code>).</li>
+              <li>Si supera el límite, aparece una alerta amarilla con el mensaje configurable.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rc-igv" class="hm-article">
+            <h4><i class="fas fa-percentage"></i> % IGV Editable con 2 Decimales</h4>
+            <p>
+              El campo IGV se muestra siempre con <strong>2 decimales</strong> (ej: <code>18.00</code>)
+              y al modificarlo recalcula automáticamente el subtotal e impuesto.
+            </p>
+            <ul class="hm-list">
+              <li>Acepta <strong>punto o coma</strong> como separador decimal.</li>
+              <li>Rango válido: <strong>0% a 100%</strong>.</li>
+              <li>Por defecto: <strong>18%</strong> (IGV peruano vigente).</li>
             </ul>
           </article>
 
@@ -752,9 +908,66 @@
           <article id="hm-sub-pm-detalle" class="hm-article">
             <h4><i class="fas fa-map-marker-alt"></i> Detalle de Viajes</h4>
             <p>
-              Agrega filas con: <strong>fecha del viaje</strong>, motivo, origen, destino, medio de transporte
-              e importe. El sistema calcula los totales en tiempo real.
+              Agrega filas con: <strong>fecha del viaje</strong>, motivo, origen, destino, medio
+              de transporte e importe. El sistema calcula los totales en tiempo real.
             </p>
+          </article>
+
+          <article id="hm-sub-pm-direcciones" class="hm-article">
+            <h4><i class="fas fa-map"></i> Dirección de Origen y Destino</h4>
+            <p>
+              Cada viaje tiene dos campos de dirección independientes:
+            </p>
+            <ul class="hm-list">
+              <li><strong>Dirección Origen:</strong> texto libre desde dónde inicia el viaje.</li>
+              <li><strong>Dirección Destino:</strong> texto libre hasta dónde llega.</li>
+              <li>Adicionalmente puedes seleccionar el <strong>ubigeo</strong> (departamento /
+                provincia / distrito) tanto del origen como del destino.</li>
+            </ul>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                En el PDF generado, la <strong>dirección aparece arriba</strong> y el ubigeo
+                debajo, para que se lea como una guía de remisión típica.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-pm-ocupantes" class="hm-article">
+            <h4><i class="fas fa-users"></i> Ocupantes con Buscador</h4>
+            <p>
+              Cada viaje puede tener varios <strong>ocupantes</strong> (personas que viajaron).
+              Para seleccionarlos:
+            </p>
+            <ol class="hm-steps">
+              <li>Click en el botón con número de ocupantes del viaje.</li>
+              <li>Se abre un modal con la <strong>lista paginada de usuarios</strong> (7 por página).</li>
+              <li>Usa el <strong>buscador</strong> en la parte superior del modal para filtrar
+                por <em>nombre, usuario o correo</em> en tiempo real.</li>
+              <li>Marca los checkboxes de los ocupantes correspondientes.</li>
+              <li>Pulsa <em>"Seleccionar"</em> para confirmar.</li>
+            </ol>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                El buscador se reinicia cada vez que abres el modal. La paginación se ajusta
+                automáticamente al resultado filtrado.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-pm-importe-max" class="hm-article">
+            <h4><i class="fas fa-shield-alt"></i> Importe Máximo por Día</h4>
+            <p>
+              El sistema valida que el <strong>total de movilidades por día</strong> no supere el
+              límite configurado en la regla <code>MOVILIDAD_MAX_DIA</code> de la tabla
+              <code>REG_REN_VALIDATE</code>.
+            </p>
+            <ul class="hm-list">
+              <li>Si superas el límite, no podrás guardar la planilla.</li>
+              <li>El mensaje de alerta es configurable desde la BD.</li>
+              <li>El cálculo se hace agrupando todos los viajes de la misma fecha.</li>
+            </ul>
           </article>
 
           <article id="hm-sub-pm-totales" class="hm-article">
