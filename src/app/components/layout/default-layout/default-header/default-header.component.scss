@@ -58,6 +58,69 @@
 }
 
 
+/* Botón de Ayuda Circular (?) */
+.help-button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-right: 14px;
+  padding: 0;
+  transition: transform 0.18s ease,
+              background 0.18s ease,
+              box-shadow 0.18s ease,
+              border-color 0.18s ease;
+  position: relative;
+
+  .help-button-icon {
+    font-family: var(--app-font-family, 'Segoe UI', system-ui, sans-serif);
+    font-weight: 800;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: #ffffff;
+  }
+
+  &:hover {
+    background: #ffffff;
+    border-color: #ffffff;
+    transform: translateY(-1px) scale(1.06);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+
+    .help-button-icon {
+      color: var(--primary-color);
+    }
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
+  }
+}
+
+@media (max-width: 600px) {
+  .help-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    margin-right: 8px;
+
+    .help-button-icon { font-size: 0.95rem; }
+  }
+}
+
 /* Área tema */
 .theme-area {
   position: relative;

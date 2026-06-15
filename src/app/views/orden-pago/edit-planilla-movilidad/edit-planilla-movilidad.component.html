@@ -86,10 +86,28 @@
                 <td class="text-truncate" [title]="traslado.numDocumento">{{traslado.numDocumento}}</td>
                 <td class="text-truncate" [title]="mapAuxilarName(traslado.codAuxiliarProveedor)">
                     {{mapAuxilarName(traslado.codAuxiliarProveedor)}}</td>
-                <td class="text-truncate" [title]="mapUbigeoText(traslado.codOrigen)">
-                    {{mapUbigeoText(traslado.codOrigen)}}</td>
-                <td class="text-truncate" [title]="mapUbigeoText(traslado.codDestino)">
-                    {{mapUbigeoText(traslado.codDestino)}}</td>
+                <td class="text-truncate"
+                    [title]="(traslado.dirOrigen ? traslado.dirOrigen + ' · ' : '') + mapUbigeoText(traslado.codOrigen)">
+                    <!-- 1ra línea: Dirección de origen (lo que ingresa el usuario) -->
+                    <div class="addr-line"
+                         *ngIf="traslado.dirOrigen; else fallbackOrigen">{{traslado.dirOrigen}}</div>
+                    <ng-template #fallbackOrigen>
+                        <div class="addr-line addr-line--empty">—</div>
+                    </ng-template>
+                    <!-- 2da línea: Detalle del ubigeo (departamento - provincia - distrito) -->
+                    <div class="ubigeo-line">{{mapUbigeoText(traslado.codOrigen)}}</div>
+                </td>
+                <td class="text-truncate"
+                    [title]="(traslado.dirDestino ? traslado.dirDestino + ' · ' : '') + mapUbigeoText(traslado.codDestino)">
+                    <!-- 1ra línea: Dirección de destino -->
+                    <div class="addr-line"
+                         *ngIf="traslado.dirDestino; else fallbackDestino">{{traslado.dirDestino}}</div>
+                    <ng-template #fallbackDestino>
+                        <div class="addr-line addr-line--empty">—</div>
+                    </ng-template>
+                    <!-- 2da línea: Detalle del ubigeo -->
+                    <div class="ubigeo-line">{{mapUbigeoText(traslado.codDestino)}}</div>
+                </td>
                 <td class="text-truncate" [title]="traslado.glosa">{{traslado.glosa}}</td>
                 <td>{{traslado.importe | number: '1.2-2'}}</td>
                 <td class="text-center">
@@ -176,7 +194,7 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Auxiliar</label>
+                        <label class="form-label fw-semibold">Proveedor</label>
                         <div class="datepicker-container">
                             <input readonly type="text" class="form-control"
                                 [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" />
@@ -236,6 +254,24 @@
                         {{destinoSeleccionado ? (destinoSeleccionado.desDepartamento + '-' +
                         destinoSeleccionado.desProvincia + '-' +
                         destinoSeleccionado.desDistrito || "") : ''}}
+                    </div>
+                </div>
+
+                <!-- Nuevos campos: Dirección de Origen y Destino -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Dirección de Origen</label>
+                        <input type="text" class="form-control"
+                            placeholder="Ej.: Av. Alvarez Thomas 517, Arequipa"
+                            maxlength="200"
+                            [(ngModel)]="nuevoDetalle.dirOrigen" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Dirección de Destino</label>
+                        <input type="text" class="form-control"
+                            placeholder="Ej.: Av. Jesús 1100, Paucarpata - Arequipa"
+                            maxlength="200"
+                            [(ngModel)]="nuevoDetalle.dirDestino" />
                     </div>
                 </div>
             </div>
@@ -323,6 +359,31 @@
                 <button type="button" class="btn-close" (click)="closeUsuariosModal()"></button>
             </div>
             <div class="modal-body">
+                <!-- 🔎 Buscador de ocupantes -->
+                <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white">
+                        <i class="fa fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control general-input"
+                           placeholder="Buscar por nombre, usuario o email..."
+                           [(ngModel)]="searchUsuarios"
+                           (ngModelChange)="onSearchUsuariosChange()" />
+                    <button *ngIf="searchUsuarios"
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            title="Limpiar búsqueda"
+                            (click)="searchUsuarios = ''; onSearchUsuariosChange()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <div *ngIf="pagedUsuariosModal.length === 0"
+                     class="text-center text-muted small py-3">
+                    <i class="fa fa-info-circle me-1"></i>
+                    No se encontraron ocupantes que coincidan con la búsqueda.
+                </div>
+
                 <table>
                     <tbody>
                         <tr *ngFor="let user of pagedUsuariosModal">

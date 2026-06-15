@@ -74,7 +74,9 @@
 
 .regina-chat-slot {
   position: fixed;
-  right: 20px;
+  // 📍 Movido de bottom-right a bottom-left por pedido del usuario.
+  // Para revertirlo: cambiar `left: 20px` por `right: 20px`.
+  left: 20px;
   bottom: 20px;
 
   width: 78px;
@@ -121,7 +123,9 @@
 
 .regina-chat-panel {
   position: fixed;
-  right: 24px;
+  // 📍 Movido para acompañar al botón flotante a la esquina inferior izquierda.
+  // Para revertirlo: cambiar `left: 24px` por `right: 24px`.
+  left: 24px;
   bottom: 100px;
   width: 320px;
   height: 420px;

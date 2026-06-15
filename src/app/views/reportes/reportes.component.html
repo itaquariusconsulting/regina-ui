@@ -1,0 +1,47 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="reportes-wrap">
+
+  <header class="rep-header">
+    <div class="rep-title">
+      <span class="rep-emoji">📋</span>
+      <div>
+        <h1>Centro de Reportes</h1>
+        <p>Selecciona el reporte que deseas generar o consultar. Los PDF se descargan y se abren para vista previa.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="rep-grid">
+    <div
+      class="rep-card"
+      *ngFor="let r of reportes"
+      [class.disabled]="!r.available"
+      [class.busy]="r.generating"
+      [style.--c]="r.color"
+      (click)="ejecutar(r)">
+
+      <div class="rep-card-icon">
+        <span *ngIf="!r.generating">{{ r.emoji }}</span>
+        <i *ngIf="r.generating" class="fas fa-circle-notch fa-spin"></i>
+      </div>
+
+      <div class="rep-card-body">
+        <div class="rep-card-title">
+          {{ r.title }}
+          <span class="rep-badge" *ngIf="r.available && !r.generating">Disponible</span>
+          <span class="rep-badge soon" *ngIf="!r.available">Próximamente</span>
+          <span class="rep-badge gen"  *ngIf="r.generating">Generando…</span>
+        </div>
+        <div class="rep-card-desc">{{ r.description }}</div>
+      </div>
+
+      <div class="rep-card-arrow" *ngIf="r.available && !r.generating">
+        <i class="fas fa-arrow-right"></i>
+      </div>
+    </div>
+  </section>
+
+</div>

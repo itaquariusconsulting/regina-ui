@@ -75,7 +75,13 @@
                             class="btn btn-danger btn-sm me-1" [disabled]="planilla.statusPlanilla === 'CE'">
                             <i class="fas fa-trash-alt"></i>
                         </button>
+                        <button title="Imprimir Planilla (formato oficial PDF)"
+                            (click)="generarPanillaMovilidadPDF(planilla)"
+                            class="btn btn-secondary btn-sm me-1">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
                     </td>
+                </tr>
             </tbody>
         </table>
 
@@ -111,22 +117,4 @@
 </div>
 
 
-<div id="reporte" class="pdf-hidden" style="font-family: var(--app-font-family);">
-    <div class="row">
-        <div class="col-md-3">
-            <img src="assets\images\brand\logo.png" width="160px" />
-        </div>
-        <div class="col-md-9">
-            <div class="row">
-                <div class="col-md-12">
-                    <h6>LIQUIDACIÓN Y/O REEMBOLSO DE FONDOS</h6>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <span style="font-size: 0.9rem !important;">FIN-PR-04-FO-02 / Ver.02</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Bloque #reporte eliminado: ya no se usa html2canvas, el PDF se genera 100% vectorial con jsPDF en construirPDFOficial() -->

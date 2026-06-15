@@ -49,7 +49,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     private themeService: ThemeService
   ) {
     if (sessionStorage.getItem('isLoggedIn') === 'true') {
-      this.router.navigate(['/home']);
+      this.router.navigate(['/dashboard']);
     } else {
       this.router.navigate(['/login']);
     }
@@ -229,7 +229,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.getConfiguracionSistema();
     this.service.loadUserPermissions(this.dtoUser.profileId!, this.dtoUser.codEmpresa!);
 
-    this.router.navigate(['/home']);
+    this.router.navigate(['/dashboard']);
   }
 
   moveToNext(event: Event, index: number): void {

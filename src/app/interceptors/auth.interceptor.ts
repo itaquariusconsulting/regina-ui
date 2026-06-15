@@ -11,6 +11,7 @@ import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { jwtDecode } from 'jwt-decode';
+import { environment } from '../../environments/environment';
 
 
 @Injectable()
@@ -20,13 +21,20 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private router: Router) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = sessionStorage.getItem('authToken');
-    if (token) {
-      const expirationDate = this.decodeToken(token);
+    // El token del CORE es el de la SESIÓN: con él verificamos expiración.
+    const coreToken = sessionStorage.getItem('authToken');
+    if (coreToken) {
+      const expirationDate = this.decodeToken(coreToken);
       if (expirationDate && expirationDate < new Date()) {
         this.showSessionExpiredAlert();
         return throwError(() => new Error('TOKEN_EXPIRED'));
       }
+
+      // Los servicios LEGACY (utils/IA/OCR) no confían en el token del CORE;
+      // para ellos usamos el token legacy emitido por regina-api en /auth/me.
+      const token = this.isLegacyHost(req.url)
+        ? (sessionStorage.getItem('legacyToken') || coreToken)
+        : coreToken;
 
       req = req.clone({
         setHeaders: {
@@ -64,6 +72,17 @@ export class AuthInterceptor implements HttpInterceptor {
         return throwError(() => error);
       })
     );
+  }
+
+  /**
+   * True si la URL apunta a un servicio LEGACY (sai-web-utils / IA / OCR) que
+   * valida con el validador antiguo y NO confía en el token del CORE.
+   */
+  private isLegacyHost(url: string): boolean {
+    const env = environment as any;
+    return [env.apiUrlUtils, env.apiUrlIA, env.apiUrlOcr]
+      .filter(Boolean)
+      .some((base: string) => url.startsWith(base));
   }
 
   /**
@@ -110,7 +129,10 @@ export class AuthInterceptor implements HttpInterceptor {
     }).then(() => {
       this.isAlertShown = false;
       sessionStorage.clear();
-      this.router.navigate(['/login']);
+      // En LOCAL (sin CORE) volvemos al login tradicional;
+      // en PRODUCCIÓN mostramos la pantalla de bloqueo del CORE.
+      const target = environment.production ? '/no-core' : '/login';
+      this.router.navigate([target]);
     });
   }
 

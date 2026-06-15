@@ -1,0 +1,1195 @@
+<div class="hm-overlay" *ngIf="visible" (click)="close()">
+  <div class="hm-modal" (click)="$event.stopPropagation()">
+
+    <!-- ========== HEADER ========== -->
+    <header class="hm-header">
+      <div class="hm-brand">
+        <button class="hm-mobile-toggle" (click)="toggleMobileSidebar()" title="Menú">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="hm-logo">
+          <i class="fas fa-book-open"></i>
+        </div>
+        <div class="hm-titles">
+          <h1>Manual de Usuario</h1>
+          <p>Sistema Regina · Aquarius Consulting</p>
+        </div>
+      </div>
+
+      <div class="hm-search">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Buscar en el manual…"
+          autocomplete="off"
+        />
+        <button class="hm-search-clear" *ngIf="searchQuery" (click)="searchQuery = ''" title="Limpiar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="hm-actions">
+        <button class="hm-action-btn" (click)="printManual()" title="Imprimir">
+          <i class="fas fa-print"></i>
+        </button>
+        <button class="hm-close" (click)="close()" title="Cerrar (ESC)">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========== BODY ========== -->
+    <div class="hm-body">
+
+      <!-- SIDEBAR -->
+      <aside class="hm-sidebar" [class.open]="showSidebarMobile">
+        <div class="hm-sidebar-header">
+          <i class="fas fa-list-ul"></i>
+          <span>Contenido</span>
+        </div>
+
+        <nav class="hm-nav">
+          <ng-container *ngFor="let section of filteredSections; let i = index">
+            <div class="hm-nav-section">
+              <button
+                class="hm-nav-section-btn"
+                [class.active]="activeSectionId === section.id"
+                (click)="selectSection(section.id); toggleSection(section.id)"
+              >
+                <span class="hm-nav-icon"><i [ngClass]="section.icon"></i></span>
+                <span class="hm-nav-text">{{ i + 1 }}. {{ section.title }}</span>
+                <span class="hm-nav-arrow" *ngIf="section.subsections?.length">
+                  <i class="fas fa-chevron-down" [class.rotated]="expandedSections[section.id]"></i>
+                </span>
+              </button>
+
+              <ul class="hm-nav-subs" *ngIf="section.subsections?.length && expandedSections[section.id]">
+                <li
+                  *ngFor="let sub of section.subsections"
+                  [class.active]="activeSubsectionId === sub.id"
+                  (click)="selectSection(section.id, sub.id)"
+                >
+                  <i [ngClass]="sub.icon || 'fas fa-circle'"></i>
+                  <span>{{ sub.title }}</span>
+                </li>
+              </ul>
+            </div>
+          </ng-container>
+
+          <div class="hm-nav-empty" *ngIf="filteredSections.length === 0">
+            <i class="fas fa-search-minus"></i>
+            <p>No se encontraron resultados</p>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- BACKDROP MOBILE -->
+      <div
+        class="hm-backdrop"
+        *ngIf="showSidebarMobile"
+        (click)="showSidebarMobile = false"
+      ></div>
+
+      <!-- CONTENT -->
+      <main class="hm-content">
+
+        <!-- HERO -->
+        <div class="hm-hero">
+          <div class="hm-hero-text">
+            <span class="hm-hero-tag"><i class="fas fa-bookmark"></i> Documentación oficial</span>
+            <h2>Bienvenido al Manual Avanzado de Regina</h2>
+            <p>
+              Una guía profesional, paso a paso, con todas las funcionalidades del sistema.
+              Navega por los capítulos, busca información específica e imprime las secciones que necesites.
+            </p>
+            <div class="hm-hero-stats">
+              <div class="hm-stat">
+                <i class="fas fa-layer-group"></i>
+                <strong>{{ sections.length }}</strong>
+                <span>Capítulos</span>
+              </div>
+              <div class="hm-stat">
+                <i class="fas fa-shield-alt"></i>
+                <strong>Seguro</strong>
+                <span>Acceso por permisos</span>
+              </div>
+              <div class="hm-stat">
+                <i class="fas fa-mobile-alt"></i>
+                <strong>Responsive</strong>
+                <span>Desktop y móvil</span>
+              </div>
+            </div>
+          </div>
+          <div class="hm-hero-icon">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+        </div>
+
+        <!-- ===== SECCIÓN 1: INTRODUCCIÓN ===== -->
+        <section class="hm-section" id="hm-sec-introduccion">
+          <div class="hm-section-head">
+            <div class="hm-section-num">01</div>
+            <div>
+              <h3><i class="fas fa-rocket"></i> Introducción</h3>
+              <p>Visión general, requisitos y conceptos clave del sistema Regina.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-que-es-regina" class="hm-article">
+            <h4><i class="fas fa-star"></i> ¿Qué es Regina?</h4>
+            <p>
+              <strong>Regina</strong> es una plataforma corporativa de Aquarius Consulting diseñada para gestionar el
+              ciclo completo de las <strong>órdenes de pago</strong>, la <strong>rendición de cuentas</strong>,
+              las <strong>planillas de movilidad</strong> y la <strong>administración de usuarios y permisos</strong>.
+              Incluye un asistente inteligente <strong>Regina IA</strong> con reconocimiento de voz y un módulo de
+              OCR para procesar comprobantes electrónicos validados ante SUNAT.
+            </p>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>Pensado para tu rol:</strong> el sistema muestra solo los módulos y acciones a las que tu
+                <em>perfil</em> tiene permitido acceder.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-requisitos" class="hm-article">
+            <h4><i class="fas fa-laptop"></i> Requisitos del Sistema</h4>
+            <ul class="hm-list">
+              <li><strong>Navegador:</strong> Chrome, Edge o Firefox actualizados (versión 110+).</li>
+              <li><strong>Conexión:</strong> Internet estable, mínimo 5 Mbps.</li>
+              <li><strong>Resolución:</strong> 1366×768 o superior recomendado para escritorio.</li>
+              <li><strong>Cámara/Micrófono:</strong> opcionales para OCR y Regina IA por voz.</li>
+              <li><strong>Permisos:</strong> usuario activo con perfil asignado por el administrador.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-glosario" class="hm-article">
+            <h4><i class="fas fa-book"></i> Glosario de Términos</h4>
+            <div class="hm-glossary">
+              <div class="hm-glossary-item">
+                <span class="term">Orden de Pago (OP)</span>
+                <span class="def">Documento que autoriza un desembolso de dinero a un colaborador o proveedor.</span>
+              </div>
+              <div class="hm-glossary-item">
+                <span class="term">Rendir Cuenta</span>
+                <span class="def">Proceso de sustentar con comprobantes los gastos asociados a una OP.</span>
+              </div>
+              <div class="hm-glossary-item">
+                <span class="term">Planilla de Movilidad</span>
+                <span class="def">Registro de gastos de movilidad (taxis, transporte) sin comprobante formal.</span>
+              </div>
+              <div class="hm-glossary-item">
+                <span class="term">OCR</span>
+                <span class="def">Reconocimiento óptico de caracteres aplicado a fotos de comprobantes.</span>
+              </div>
+              <div class="hm-glossary-item">
+                <span class="term">SUNAT</span>
+                <span class="def">Administración tributaria peruana usada para validar el RUC del emisor.</span>
+              </div>
+              <div class="hm-glossary-item">
+                <span class="term">Perfil</span>
+                <span class="def">Conjunto de permisos que define qué puede ver y hacer un grupo de usuarios.</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 2: INICIO DE SESIÓN ===== -->
+        <section class="hm-section" id="hm-sec-inicio-sesion">
+          <div class="hm-section-head">
+            <div class="hm-section-num">02</div>
+            <div>
+              <h3><i class="fas fa-key"></i> Inicio de Sesión</h3>
+              <p>Acceso seguro al sistema con credenciales y código OTP.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-login-credenciales" class="hm-article">
+            <h4><i class="fas fa-user-lock"></i> Credenciales</h4>
+            <ol class="hm-steps">
+              <li>Abre la URL del sistema en tu navegador.</li>
+              <li>Ingresa tu <strong>usuario</strong> y <strong>contraseña</strong>.</li>
+              <li>Pulsa <em>"Ingresar"</em>. El sistema valida tu cuenta y carga tu sesión.</li>
+              <li>Si tu cuenta está <strong>inactiva</strong>, contacta al administrador.</li>
+            </ol>
+            <div class="hm-callout warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                Tras varios intentos fallidos, la cuenta podría bloquearse. Usa la opción de cambio de contraseña
+                ante cualquier sospecha.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-login-otp" class="hm-article">
+            <h4><i class="fas fa-shield-alt"></i> Verificación OTP</h4>
+            <p>
+              Si tu cuenta requiere doble verificación, el sistema te enviará un código de 4 dígitos a tu correo
+              corporativo. Ingresa los dígitos en los 4 cuadros del formulario y presiona <em>"Validar"</em>.
+            </p>
+            <div class="hm-callout success">
+              <i class="fas fa-check-circle"></i>
+              <div>El código tiene una vigencia limitada por seguridad. Solicita uno nuevo si caducó.</div>
+            </div>
+          </article>
+
+          <article id="hm-sub-login-cambio-password" class="hm-article">
+            <h4><i class="fas fa-redo"></i> Cambio de Contraseña</h4>
+            <p>
+              Una vez dentro del sistema, puedes cambiar tu contraseña desde el menú del usuario en la barra
+              superior. Selecciona <strong>"Cambiar Contraseña"</strong>, ingresa la actual y la nueva dos veces.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 3: INTERFAZ ===== -->
+        <section class="hm-section" id="hm-sec-interfaz">
+          <div class="hm-section-head">
+            <div class="hm-section-num">03</div>
+            <div>
+              <h3><i class="fas fa-th-large"></i> Interfaz Principal</h3>
+              <p>Cómo está organizada la aplicación y qué hace cada componente.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-header" class="hm-article">
+            <h4><i class="fas fa-window-maximize"></i> Barra de Cabecera</h4>
+            <p>La barra superior contiene, de izquierda a derecha:</p>
+            <ul class="hm-list">
+              <li><strong>Botón Toggle:</strong> muestra u oculta el menú lateral.</li>
+              <li><strong>Tipo de Cambio:</strong> cotización del dólar a soles del día.</li>
+              <li><strong>Fecha actual:</strong> formato largo en escritorio, corto en móvil.</li>
+              <li><strong>Botón de Tema:</strong> permite cambiar la paleta de colores.</li>
+              <li><strong>Botón de Ayuda (?):</strong> abre este manual de usuario.</li>
+              <li><strong>Perfil de Usuario:</strong> datos, cambio de contraseña y cerrar sesión.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-sidebar" class="hm-article">
+            <h4><i class="fas fa-bars"></i> Menú Lateral con Iconos a Color</h4>
+            <p>
+              El menú lateral combina entradas <strong>fijas</strong> (Dashboard 📊 y Reportes 📋) con módulos
+              <strong>dinámicos</strong> que vienen de la base de datos según los permisos de tu perfil. Todos
+              los iconos son emojis a color renderizados nativamente para una experiencia visual moderna.
+            </p>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                Los items dinámicos con <em>submenús</em> se expanden al hacer clic. En dispositivos móviles,
+                el menú se oculta para maximizar el área de trabajo y aparece como barra inferior.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-pantalla-inicio" class="hm-article">
+            <h4><i class="fas fa-home"></i> Pantalla por Defecto</h4>
+            <p>
+              Tras iniciar sesión, el sistema te lleva directamente al <strong>Dashboard Ejecutivo</strong>.
+              Allí encontrarás un resumen visual de toda tu operación con KPIs, gráficos y métricas clave.
+              Esto te permite tomar decisiones desde el primer segundo que accedes a Regina.
+            </p>
+          </article>
+
+          <article id="hm-sub-temas" class="hm-article">
+            <h4><i class="fas fa-palette"></i> Personalización de Temas</h4>
+            <p>Regina permite seis temas para adaptarse a tu preferencia visual:</p>
+            <div class="hm-themes">
+              <div class="hm-theme-chip" style="--c:#1976d2;">Azul</div>
+              <div class="hm-theme-chip" style="--c:#2e7d32;">Verde</div>
+              <div class="hm-theme-chip" style="--c:#c62828;">Rojo</div>
+              <div class="hm-theme-chip" style="--c:#ef6c00;">Naranja</div>
+              <div class="hm-theme-chip" style="--c:#6a1b9a;">Violeta</div>
+              <div class="hm-theme-chip" style="--c:#455a64;">Gris</div>
+            </div>
+            <p class="hm-mini">
+              Selecciona el tema desde el ícono <i class="fas fa-brush"></i> y presiona el botón de guardar
+              para que se aplique en futuras sesiones.
+            </p>
+          </article>
+
+          <article id="hm-sub-tipo-cambio" class="hm-article">
+            <h4><i class="fas fa-dollar-sign"></i> Tipo de Cambio</h4>
+            <p>
+              El tipo de cambio se carga automáticamente al iniciar sesión y se muestra en la cabecera. Es
+              utilizado por los módulos de rendición y planilla de movilidad para los cálculos en moneda extranjera.
+            </p>
+          </article>
+
+          <article id="hm-sub-periodo" class="hm-article">
+            <h4><i class="fas fa-calendar-alt"></i> Periodo Activo</h4>
+            <p>
+              El sistema trabaja con un <strong>mes y año contable</strong> activo, que se establece al inicio
+              de sesión. Todas las operaciones (consultas, registros, reportes) se realizan en ese periodo.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN: DASHBOARD ===== -->
+        <section class="hm-section" id="hm-sec-dashboard">
+          <div class="hm-section-head">
+            <div class="hm-section-num">04</div>
+            <div>
+              <h3><i class="fas fa-chart-line"></i> Dashboard Ejecutivo</h3>
+              <p>Pantalla por defecto. KPIs, gráficos y métricas en tiempo real de tu operación.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-dash-overview" class="hm-article">
+            <h4><i class="fas fa-eye"></i> Vista General</h4>
+            <p>
+              El Dashboard es la <strong>primera pantalla</strong> que verás al iniciar sesión. Contiene
+              <strong>12 KPI Cards</strong> con métricas clave y <strong>13 gráficos interactivos</strong>
+              que te permiten analizar tu operación al instante. Toda la información se calcula a partir de
+              tus órdenes de pago según tu rol.
+            </p>
+          </article>
+
+          <article id="hm-sub-dash-filtros" class="hm-article">
+            <h4><i class="fas fa-filter"></i> Filtros Inteligentes</h4>
+            <p>El Dashboard cuenta con cuatro filtros que afectan KPIs y gráficos en tiempo real:</p>
+            <ul class="hm-list">
+              <li><strong>Año:</strong> los años disponibles se extraen automáticamente de tus órdenes.</li>
+              <li><strong>Mes:</strong> Enero a Diciembre, o "Todos" para ver el año completo.</li>
+              <li><strong>Estado:</strong> filtra por EM, PE, LQ o PR.</li>
+              <li><strong>Moneda:</strong> Soles, Dólares u "Todas".</li>
+            </ul>
+            <p>Pulsa <em>"Limpiar"</em> para restablecer todos los filtros y <em>"Actualizar"</em> para refrescar los datos.</p>
+          </article>
+
+          <article id="hm-sub-dash-kpis" class="hm-article">
+            <h4><i class="fas fa-th"></i> KPI Cards</h4>
+            <div class="hm-table-wrap">
+              <table class="hm-table">
+                <thead>
+                  <tr>
+                    <th>KPI</th>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>Total Órdenes</strong></td><td>Conteo total filtrado</td></tr>
+                  <tr><td><strong>Emitidas / Pendientes / Liquidadas / Procesadas</strong></td><td>Cantidad por estado</td></tr>
+                  <tr><td><strong>Vencidas</strong></td><td>OPs con fecha de rendición pasada</td></tr>
+                  <tr><td><strong>Importe S/ y US$</strong></td><td>Totales por moneda</td></tr>
+                  <tr><td><strong>Rendido S/</strong></td><td>Sustentado en soles</td></tr>
+                  <tr><td><strong>Por Rendir S/</strong></td><td>Pendiente de sustentar</td></tr>
+                  <tr><td><strong>% Cumplimiento</strong></td><td>Rendido vs Importe</td></tr>
+                  <tr><td><strong>Promedio OP</strong></td><td>Ticket promedio por orden</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article id="hm-sub-dash-charts" class="hm-article">
+            <h4><i class="fas fa-chart-pie"></i> Tipos de Gráficos</h4>
+            <ul class="hm-list">
+              <li><strong>Gauge semicircular</strong>: % cumplimiento global con color dinámico (verde/ámbar/rojo).</li>
+              <li><strong>Doughnut</strong>: distribución por Estado, por Moneda y de Vencidas vs Vigentes.</li>
+              <li><strong>Pie</strong>: cantidad por Tipo de Gasto (Top 8).</li>
+              <li><strong>Line con área</strong>: Importe vs Rendido por mes (12 meses).</li>
+              <li><strong>Bar vertical</strong>: Importe Mensual, Cantidad Mensual y Comparativa Anual.</li>
+              <li><strong>Bar horizontal</strong>: Top Tipos de Gasto, Top Centros de Costo y Top Beneficiarios.</li>
+              <li><strong>Stacked Bar</strong>: Estado por mes (apilado).</li>
+              <li><strong>Card especial</strong>: OP de Mayor Importe con todos sus detalles.</li>
+            </ul>
+            <div class="hm-callout success">
+              <i class="fas fa-check-circle"></i>
+              <div>Todos los gráficos son interactivos: al pasar el cursor verás tooltips con cifras exactas.</div>
+            </div>
+          </article>
+
+          <article id="hm-sub-dash-admin-vs-user" class="hm-article">
+            <h4><i class="fas fa-user-shield"></i> Vista Admin vs Usuario</h4>
+            <p>
+              Si eres <strong>administrador</strong>, ves información de todas las órdenes de la empresa
+              y aparece el gráfico extra <em>"Top Beneficiarios"</em>. Si eres <strong>usuario regular</strong>,
+              solo ves tus órdenes y el gráfico de beneficiarios queda oculto. El sistema lo decide
+              automáticamente según el flag <code>userAdmin</code> de tu perfil.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN: CENTRO DE REPORTES ===== -->
+        <section class="hm-section" id="hm-sec-reportes">
+          <div class="hm-section-head">
+            <div class="hm-section-num">05</div>
+            <div>
+              <h3><i class="fas fa-file-pdf"></i> Centro de Reportes</h3>
+              <p>Genera PDFs profesionales con todos los datos de tu operación.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-rep-acceso" class="hm-article">
+            <h4><i class="fas fa-mouse-pointer"></i> Cómo acceder</h4>
+            <p>
+              Pulsa <strong>"Reportes"</strong> en el menú lateral (segundo item, icono 📋). Verás un
+              <strong>centro de tarjetas</strong> con todos los reportes disponibles. Cada tarjeta muestra
+              su emoji a color, título descriptivo, descripción y badge de estado:
+            </p>
+            <ul class="hm-list">
+              <li><strong>Disponible</strong>: el reporte está activo, listo para generar.</li>
+              <li><strong>Generando…</strong>: se está construyendo el PDF (animación de pulso).</li>
+            </ul>
+            <p>Al hacer clic en una tarjeta disponible, el PDF se <strong>descarga automáticamente</strong> y se abre en una <strong>nueva pestaña</strong> para vista previa inmediata.</p>
+          </article>
+
+          <article id="hm-sub-rep-rendicion" class="hm-article">
+            <h4><i class="fas fa-receipt"></i> Reporte de Rendición</h4>
+            <p>
+              Es un PDF <strong>por orden de pago específica</strong>. Te lleva a la lista de OPs donde
+              encontrarás un <strong>botón rojo con icono PDF</strong> en cada fila (solo activo para OPs en
+              estado LQ). Incluye datos de la OP, comprobantes rendidos, planillas de movilidad asociadas,
+              resumen general con saldo y espacio para firmas.
+            </p>
+          </article>
+
+          <article id="hm-sub-rep-planillas" class="hm-article">
+            <h4><i class="fas fa-route"></i> Reporte de Planillas de Movilidad</h4>
+            <p>
+              Detalle consolidado de <strong>todas las planillas y viajes</strong> asociados a tus OPs.
+              Incluye:
+            </p>
+            <ul class="hm-list">
+              <li>KPIs: Total planillas, total viajes, recibido, gastado.</li>
+              <li>Cabecera por planilla con su OP, fecha y beneficiario.</li>
+              <li>Tabla detallada de viajes (origen, destino, ocupantes, glosa, importe).</li>
+              <li>Sub-total por planilla y firma del responsable.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rep-cumplimiento" class="hm-article">
+            <h4><i class="fas fa-chart-line"></i> Reporte de Cumplimiento</h4>
+            <p>
+              Análisis profundo de <strong>% de rendición vs importe</strong>:
+            </p>
+            <ul class="hm-list">
+              <li>Indicadores globales: importe total, rendido, por rendir, % cumplimiento.</li>
+              <li>Tabla de cumplimiento por estado (EM/PE/LQ/PR).</li>
+              <li>Top 20 beneficiarios con su % de cumplimiento (solo admin).</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rep-cc" class="hm-article">
+            <h4><i class="fas fa-building"></i> Reporte por Centro de Costos</h4>
+            <p>
+              Distribución del gasto por centro de costos. Muestra cantidad de OPs, importe acumulado,
+              monto rendido y % del total de cada CC, ordenados de mayor a menor importe.
+            </p>
+          </article>
+
+          <article id="hm-sub-rep-beneficiarios" class="hm-article">
+            <h4><i class="fas fa-users"></i> Reporte por Beneficiario</h4>
+            <p>
+              PDF en formato <strong>horizontal</strong> con el histórico agrupado por beneficiario:
+              cantidad de OPs por estado (EM/PE/LQ/PR), importe total, rendido, % cumplimiento y
+              cantidad de OPs vencidas.
+            </p>
+          </article>
+
+          <article id="hm-sub-rep-vencimientos" class="hm-article">
+            <h4><i class="fas fa-exclamation-triangle"></i> Reporte de Vencimientos</h4>
+            <p>
+              Crítico para gestión de riesgo. Incluye:
+            </p>
+            <ul class="hm-list">
+              <li><strong>Vencidas:</strong> OPs con fecha de rendición pasada (ordenadas por mayor atraso).</li>
+              <li><strong>Vencen ≤ 7 días:</strong> alerta inmediata.</li>
+              <li><strong>Vencen 8-30 días:</strong> seguimiento próximo.</li>
+              <li>KPIs visuales del riesgo total y atraso/días faltantes en la tabla.</li>
+            </ul>
+            <div class="hm-callout warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>Recomendado generar este reporte al menos una vez por semana para anticiparse a vencimientos.</div>
+            </div>
+          </article>
+
+          <article id="hm-sub-rep-sunat" class="hm-article">
+            <h4><i class="fas fa-check-double"></i> Reporte SUNAT</h4>
+            <p>
+              Consolidado de comprobantes en formato horizontal:
+            </p>
+            <ul class="hm-list">
+              <li>Resumen: total comprobantes, total proveedores, totales en S/ y US$.</li>
+              <li>Top 30 proveedores ordenados por importe.</li>
+              <li>Detalle completo: OP, fecha, tipo y serie del documento, RUC, glosa, moneda e importe.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rep-comportamiento" class="hm-article">
+            <h4><i class="fas fa-download"></i> Descarga + Vista Previa</h4>
+            <p>Cada PDF generado tiene <strong>doble comportamiento</strong>:</p>
+            <ol class="hm-steps">
+              <li>Se <strong>descarga</strong> automáticamente a tu carpeta de descargas.</li>
+              <li>Se <strong>abre en una nueva pestaña</strong> para vista previa con el visor PDF nativo del navegador.</li>
+              <li>Si el navegador bloquea el popup, se aplica un <em>fallback</em> con un enlace clickeable.</li>
+            </ol>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>Todos los reportes incluyen header corporativo, footer con paginación, espacio de firmas y filtros aplicados al momento de la generación.</div>
+            </div>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 6: ÓRDENES DE PAGO ===== -->
+        <section class="hm-section" id="hm-sec-ordenes-pago">
+          <div class="hm-section-head">
+            <div class="hm-section-num">06</div>
+            <div>
+              <h3><i class="fas fa-file-invoice-dollar"></i> Órdenes de Pago</h3>
+              <p>Consulta, sigue el estado y opera sobre las OP de tu organización.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-op-listar" class="hm-article">
+            <h4><i class="fas fa-list"></i> Listar Órdenes</h4>
+            <p>
+              Desde el menú <strong>"Órdenes de Pago"</strong> accedes al listado paginado. Cada fila muestra el
+              número, fecha, beneficiario, monto, moneda y estado. La tabla soporta paginación
+              (6 registros por página) y búsqueda por cualquier columna.
+            </p>
+          </article>
+
+          <article id="hm-sub-op-estados" class="hm-article">
+            <h4><i class="fas fa-tags"></i> Estados de la Orden</h4>
+            <div class="hm-table-wrap">
+              <table class="hm-table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Estado</th>
+                    <th>Acciones permitidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="hm-badge em">EM</span></td>
+                    <td>Emitida</td>
+                    <td>Planilla de Movilidad</td>
+                  </tr>
+                  <tr>
+                    <td><span class="hm-badge pe">PE</span></td>
+                    <td>Pendiente</td>
+                    <td>Rendir Cuenta · Detalle · Planilla</td>
+                  </tr>
+                  <tr>
+                    <td><span class="hm-badge lq">LQ</span></td>
+                    <td>Liquidada</td>
+                    <td>Asiento Contable · Detalle · Planilla</td>
+                  </tr>
+                  <tr>
+                    <td><span class="hm-badge pr">PR</span></td>
+                    <td>Procesada</td>
+                    <td>Solo lectura</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article id="hm-sub-op-acciones" class="hm-article">
+            <h4><i class="fas fa-mouse-pointer"></i> Botones de Acción por Fila</h4>
+            <p>
+              Cada fila de la lista de OPs tiene <strong>5 botones compactos</strong> (36×36 px) con iconos
+              y colores distintivos. Cada botón se habilita o deshabilita según el estado de la OP.
+            </p>
+            <div class="hm-table-wrap">
+              <table class="hm-table">
+                <thead>
+                  <tr>
+                    <th>Botón</th>
+                    <th>Acción</th>
+                    <th>Disponible en</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>📒 Naranja</td><td>Ver Asiento Contable</td><td>LQ</td></tr>
+                  <tr><td>➕ Azul</td><td>Rendir Cuenta</td><td>PE</td></tr>
+                  <tr><td>ℹ️ Verde</td><td>Ver Detalle</td><td>PE, LQ</td></tr>
+                  <tr><td>🚗 Celeste</td><td>Planilla de Movilidad</td><td>EM, PE, LQ</td></tr>
+                  <tr><td>📕 Rojo</td><td>Reporte de Rendición (PDF)</td><td>Solo LQ</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article id="hm-sub-op-pdf" class="hm-article">
+            <h4><i class="fas fa-file-pdf"></i> Botón PDF (solo LQ)</h4>
+            <p>
+              El <strong>botón rojo con icono PDF</strong> genera un reporte profesional de rendición
+              <em>específico</em> para esa orden de pago. Características:
+            </p>
+            <ul class="hm-list">
+              <li><strong>Habilitado únicamente</strong> cuando la OP está en estado <strong>LQ (Liquidada)</strong>.</li>
+              <li>Si la OP está en otro estado, el botón aparece <em>deshabilitado</em> con un tooltip explicativo.</li>
+              <li>Al hacer clic: <strong>descarga el PDF</strong> y lo <strong>abre en nueva pestaña</strong> simultáneamente.</li>
+              <li>El PDF incluye: datos de la OP, comprobantes rendidos, planillas de movilidad asociadas, resumen general con saldo, espacio para firma del responsable y V° B° del supervisor.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-op-detalle" class="hm-article">
+            <h4><i class="fas fa-eye"></i> Detalle de Orden</h4>
+            <p>
+              Haz clic en el ícono de <em>ojo</em> (botón verde) para ver el detalle completo: cabecera,
+              líneas asociadas y comprobantes adjuntos. Es de solo lectura.
+            </p>
+          </article>
+
+          <article id="hm-sub-op-asiento" class="hm-article">
+            <h4><i class="fas fa-balance-scale"></i> Asiento Contable</h4>
+            <p>
+              Para órdenes <strong>liquidadas (LQ)</strong>, puedes consultar el asiento contable generado.
+              El sistema muestra los movimientos al <em>debe</em> y al <em>haber</em>, con totales en soles
+              y dólares.
+            </p>
+          </article>
+
+          <article id="hm-sub-op-filtros" class="hm-article">
+            <h4><i class="fas fa-filter"></i> Búsqueda y Paginación</h4>
+            <p>
+              Usa el campo de búsqueda superior para filtrar por número, beneficiario, periodo, estado o monto.
+              La paginación se reinicia al primer registro tras aplicar un filtro.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 7: RENDIR CUENTA ===== -->
+        <section class="hm-section" id="hm-sec-rendir-cuenta">
+          <div class="hm-section-head">
+            <div class="hm-section-num">07</div>
+            <div>
+              <h3><i class="fas fa-receipt"></i> Rendir Cuenta</h3>
+              <p>Sustenta los gastos de una OP usando OCR y validación SUNAT.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-rc-ocr" class="hm-article">
+            <h4><i class="fas fa-camera"></i> Captura por OCR</h4>
+            <ol class="hm-steps">
+              <li>Selecciona la OP en estado <strong>Pendiente</strong> y pulsa <em>"Rendir cuenta"</em>.</li>
+              <li>Adjunta la <strong>foto del comprobante</strong> (boleta, factura, ticket).</li>
+              <li>El motor OCR extrae automáticamente RUC, fecha, importe e IGV.</li>
+              <li>Revisa los campos y complete los faltantes manualmente si es necesario.</li>
+            </ol>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>Tip de calidad:</strong> usa imágenes nítidas, con buena iluminación y sin sombras
+                sobre el documento.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-rc-recorte" class="hm-article">
+            <h4><i class="fas fa-crop"></i> Recorte de Imagen</h4>
+            <p>
+              Si la foto contiene áreas no relevantes, utiliza el <strong>recortador integrado</strong> para
+              quedarte solo con el comprobante. Esto mejora la precisión del OCR.
+            </p>
+          </article>
+
+          <article id="hm-sub-rc-sunat" class="hm-article">
+            <h4><i class="fas fa-check-double"></i> Validación SUNAT (RUC)</h4>
+            <p>
+              El sistema consulta el padrón de SUNAT en línea para validar el <strong>RUC del emisor</strong>.
+              Si el RUC existe, completa automáticamente la razón social y dirección. Si no, te lo notifica
+              para corrección.
+            </p>
+          </article>
+
+          <article id="hm-sub-rc-detalle" class="hm-article">
+            <h4><i class="fas fa-edit"></i> Datos del Comprobante</h4>
+            <ul class="hm-list">
+              <li><strong>Tipo de documento:</strong> Boleta, Factura, Ticket, Recibo.</li>
+              <li><strong>Número de documento:</strong> con serie y correlativo.</li>
+              <li><strong>RUC y razón social</strong> del emisor.</li>
+              <li><strong>Fecha de emisión</strong> y moneda.</li>
+              <li><strong>Importe total</strong>, base imponible e IGV.</li>
+              <li><strong>Rubro</strong> y <strong>tipo de gasto</strong> contable.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-rc-fecha-rendicion" class="hm-article">
+            <h4><i class="fas fa-calendar-day"></i> Fecha de Rendición</h4>
+            <div class="hm-callout warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                Si la <strong>fecha límite de rendición</strong> de la OP ya venció, el sistema mostrará un
+                aviso pero permitirá registrar el gasto para revisión administrativa.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-rc-guardar" class="hm-article">
+            <h4><i class="fas fa-save"></i> Guardar y Validar</h4>
+            <p>
+              Al pulsar <em>"Guardar"</em>, el motor de validaciones revisa que no exista un comprobante
+              duplicado, que los importes cuadren y que las palabras clave aparezcan en el documento.
+              Si todo es correcto, el comprobante se asocia a la OP.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 8: PLANILLA MOVILIDAD ===== -->
+        <section class="hm-section" id="hm-sec-planilla-movilidad">
+          <div class="hm-section-head">
+            <div class="hm-section-num">08</div>
+            <div>
+              <h3><i class="fas fa-route"></i> Planilla de Movilidad</h3>
+              <p>Sustenta gastos de transporte sin comprobante formal.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-pm-cabecera" class="hm-article">
+            <h4><i class="fas fa-heading"></i> Cabecera de Planilla</h4>
+            <p>
+              Indica fecha, glosa, centro de costos y banco del cargo. La cabecera identifica unívocamente
+              la planilla y se vincula a la OP origen.
+            </p>
+          </article>
+
+          <article id="hm-sub-pm-detalle" class="hm-article">
+            <h4><i class="fas fa-map-marker-alt"></i> Detalle de Viajes</h4>
+            <p>
+              Agrega filas con: <strong>fecha del viaje</strong>, motivo, origen, destino, medio de transporte
+              e importe. El sistema calcula los totales en tiempo real.
+            </p>
+          </article>
+
+          <article id="hm-sub-pm-totales" class="hm-article">
+            <h4><i class="fas fa-coins"></i> Totales y Devolución</h4>
+            <ul class="hm-list">
+              <li><strong>Total recibido:</strong> monto entregado al colaborador.</li>
+              <li><strong>Total gastado:</strong> sumatoria de viajes registrados.</li>
+              <li><strong>Devolución:</strong> diferencia a reintegrar a caja, calculada automáticamente.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-pm-pdf" class="hm-article">
+            <h4><i class="fas fa-file-pdf"></i> Exportar a PDF</h4>
+            <p>
+              Pulsa <em>"Generar PDF"</em> para descargar la planilla con el formato oficial. El documento
+              incluye cabecera, líneas y totales listos para imprimir y firmar.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 9: USUARIOS ===== -->
+        <section class="hm-section" id="hm-sec-usuarios">
+          <div class="hm-section-head">
+            <div class="hm-section-num">09</div>
+            <div>
+              <h3><i class="fas fa-users"></i> Usuarios</h3>
+              <p>Administración del directorio de usuarios.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-us-listar" class="hm-article">
+            <h4><i class="fas fa-list-ul"></i> Listar Usuarios</h4>
+            <p>
+              Listado con paginación de 8 registros que muestra usuario, nombres, correo, perfil y estado.
+              Incluye acciones rápidas para editar y eliminar.
+            </p>
+          </article>
+
+          <article id="hm-sub-us-nuevo" class="hm-article">
+            <h4><i class="fas fa-user-plus"></i> Nuevo Usuario</h4>
+            <ol class="hm-steps">
+              <li>Pulsa <em>"Nuevo Usuario"</em>.</li>
+              <li>Completa nombre, apellidos, correo, usuario y perfil.</li>
+              <li>Selecciona la <strong>empresa</strong> y <strong>sucursal</strong>.</li>
+              <li>Asigna un <strong>perfil</strong> existente.</li>
+              <li>Guarda. El sistema enviará una contraseña temporal por correo.</li>
+            </ol>
+          </article>
+
+          <article id="hm-sub-us-editar" class="hm-article">
+            <h4><i class="fas fa-user-edit"></i> Editar Usuario</h4>
+            <p>
+              Modifica datos personales, perfil asignado y estado. Los cambios se reflejan en el siguiente
+              inicio de sesión del usuario.
+            </p>
+          </article>
+
+          <article id="hm-sub-us-eliminar" class="hm-article">
+            <h4><i class="fas fa-user-minus"></i> Eliminar Usuario</h4>
+            <div class="hm-callout danger">
+              <i class="fas fa-exclamation-circle"></i>
+              <div>
+                Eliminar es una acción <strong>irreversible</strong>. Si el usuario tiene operaciones
+                históricas, considera <em>desactivarlo</em> en su lugar.
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-us-estado" class="hm-article">
+            <h4><i class="fas fa-toggle-on"></i> Estado (Activo / Inactivo)</h4>
+            <p>
+              Un usuario <strong>inactivo</strong> no puede iniciar sesión. Reactivar al usuario restablece
+              el acceso sin perder su histórico.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 10: PERFILES ===== -->
+        <section class="hm-section" id="hm-sec-perfiles">
+          <div class="hm-section-head">
+            <div class="hm-section-num">10</div>
+            <div>
+              <h3><i class="fas fa-id-card"></i> Perfiles</h3>
+              <p>Plantillas reutilizables de permisos.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-pf-listar" class="hm-article">
+            <h4><i class="fas fa-list"></i> Listar Perfiles</h4>
+            <p>Listado con código, nombre corto, descripción y acciones de edición y eliminación.</p>
+          </article>
+
+          <article id="hm-sub-pf-nuevo" class="hm-article">
+            <h4><i class="fas fa-plus"></i> Crear Perfil</h4>
+            <ol class="hm-steps">
+              <li>Pulsa <em>"Nuevo Perfil"</em>.</li>
+              <li>Asigna un <strong>nombre corto</strong> y una <strong>descripción</strong>.</li>
+              <li>Guarda. Luego asigna permisos en <em>Matriz de Permisos</em>.</li>
+            </ol>
+          </article>
+
+          <article id="hm-sub-pf-editar" class="hm-article">
+            <h4><i class="fas fa-pen"></i> Editar Perfil</h4>
+            <p>Cambia nombre o descripción. Los permisos se administran en su módulo dedicado.</p>
+          </article>
+
+          <article id="hm-sub-pf-eliminar" class="hm-article">
+            <h4><i class="fas fa-trash"></i> Eliminar Perfil</h4>
+            <div class="hm-callout warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div>
+                No es posible eliminar un perfil si hay usuarios asignados. Reasigna primero los usuarios
+                a otro perfil.
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 11: PERMISOS ===== -->
+        <section class="hm-section" id="hm-sec-permisos">
+          <div class="hm-section-head">
+            <div class="hm-section-num">11</div>
+            <div>
+              <h3><i class="fas fa-lock"></i> Matriz de Permisos</h3>
+              <p>Configuración granular de qué puede hacer cada perfil.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-pm-seleccion" class="hm-article">
+            <h4><i class="fas fa-mouse-pointer"></i> Selección de Perfil</h4>
+            <p>Selecciona el perfil cuyos permisos deseas configurar. Se carga la matriz jerárquica del menú.</p>
+          </article>
+
+          <article id="hm-sub-pm-acciones" class="hm-article">
+            <h4><i class="fas fa-tasks"></i> Acciones por Permiso</h4>
+            <ul class="hm-list">
+              <li><strong>Ver:</strong> habilita la opción del menú y la consulta del listado.</li>
+              <li><strong>Crear:</strong> permite crear nuevos registros (implica Ver).</li>
+              <li><strong>Editar:</strong> permite modificar registros existentes (implica Ver).</li>
+              <li><strong>Eliminar:</strong> permite borrar registros (implica Ver).</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-pm-jerarquia" class="hm-article">
+            <h4><i class="fas fa-sitemap"></i> Jerarquía Padre-Hijo</h4>
+            <p>
+              Si activas un permiso en un menú padre, todos sus hijos lo heredan. Si desactivas un permiso de
+              "Ver", el sistema desactiva automáticamente las acciones dependientes para mantener la coherencia.
+            </p>
+          </article>
+
+          <article id="hm-sub-pm-guardar" class="hm-article">
+            <h4><i class="fas fa-sync-alt"></i> Sincronizar Cambios</h4>
+            <p>
+              Pulsa <em>"Guardar"</em>. Los usuarios con ese perfil verán los cambios al volver a iniciar
+              sesión o tras refrescar.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 12: VALIDACIONES ===== -->
+        <section class="hm-section" id="hm-sec-validaciones">
+          <div class="hm-section-head">
+            <div class="hm-section-num">12</div>
+            <div>
+              <h3><i class="fas fa-clipboard-check"></i> Validaciones OCR</h3>
+              <p>Define las reglas para reconocer comprobantes correctamente.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-vl-listar" class="hm-article">
+            <h4><i class="fas fa-list-alt"></i> Listar Reglas</h4>
+            <p>Visualiza las reglas existentes con su nombre, tipo de documento y estado.</p>
+          </article>
+
+          <article id="hm-sub-vl-nueva" class="hm-article">
+            <h4><i class="fas fa-plus-circle"></i> Crear Regla</h4>
+            <ol class="hm-steps">
+              <li>Define el <strong>tipo de documento</strong> (Boleta, Factura, etc.).</li>
+              <li>Indica las <strong>palabras clave</strong> que deben aparecer en el OCR.</li>
+              <li>Asocia la regla a una <strong>sección</strong> del documento (cabecera, detalle, totales).</li>
+              <li>Guarda y prueba con una imagen real.</li>
+            </ol>
+          </article>
+
+          <article id="hm-sub-vl-keywords" class="hm-article">
+            <h4><i class="fas fa-tag"></i> Palabras Clave</h4>
+            <p>
+              Cada regla puede contener varias palabras clave (ej: "RUC", "TOTAL", "IGV"). El motor de OCR
+              busca estas palabras de manera <em>insensible a mayúsculas y acentos</em>.
+            </p>
+          </article>
+
+          <article id="hm-sub-vl-secciones" class="hm-article">
+            <h4><i class="fas fa-puzzle-piece"></i> Secciones del Documento</h4>
+            <p>
+              Las reglas pueden aplicarse a distintas zonas del comprobante: encabezado del emisor, detalle
+              de productos, totales o pie. Esto evita falsos positivos.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 13: REGINA IA ===== -->
+        <section class="hm-section" id="hm-sec-regina-ia">
+          <div class="hm-section-head">
+            <div class="hm-section-num">13</div>
+            <div>
+              <h3><i class="fas fa-robot"></i> Asistente Regina IA</h3>
+              <p>Tu asistente conversacional con voz integrada.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-ia-chat" class="hm-article">
+            <h4><i class="fas fa-comment"></i> Chat por Texto</h4>
+            <p>
+              Abre el chat desde el ícono flotante de Regina. Escribe tu pregunta o instrucción y pulsa enviar.
+              Regina interpretará la intención y, si corresponde, te llevará al módulo adecuado.
+            </p>
+          </article>
+
+          <article id="hm-sub-ia-voz" class="hm-article">
+            <h4><i class="fas fa-microphone"></i> Reconocimiento de Voz</h4>
+            <p>
+              Pulsa el ícono de micrófono y habla en español. El sistema usa la API de reconocimiento de voz
+              del navegador (es-PE). Pulsa nuevamente para detener.
+            </p>
+            <div class="hm-callout info">
+              <i class="fas fa-info-circle"></i>
+              <div>Algunos navegadores requieren permitir el uso del micrófono la primera vez.</div>
+            </div>
+          </article>
+
+          <article id="hm-sub-ia-comandos" class="hm-article">
+            <h4><i class="fas fa-terminal"></i> Comandos Útiles</h4>
+            <ul class="hm-list">
+              <li>"Muéstrame las órdenes" → abre el listado de OP.</li>
+              <li>"Listar usuarios" → abre el módulo de usuarios.</li>
+              <li>"Crear usuario" → te lleva al formulario de nuevo usuario.</li>
+              <li>"Hola" / "Buenos días" → saludo personalizado según la hora.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-ia-respuestas" class="hm-article">
+            <h4><i class="fas fa-volume-up"></i> Respuestas Habladas</h4>
+            <p>
+              Regina responde por voz utilizando la síntesis de voz del navegador. Puedes silenciar tu equipo
+              en cualquier momento para detener el audio.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 14: CONFIGURACIÓN ===== -->
+        <section class="hm-section" id="hm-sec-configuracion">
+          <div class="hm-section-head">
+            <div class="hm-section-num">14</div>
+            <div>
+              <h3><i class="fas fa-cog"></i> Configuración Personal</h3>
+              <p>Preferencias y datos de tu cuenta.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-cf-perfil" class="hm-article">
+            <h4><i class="fas fa-user-circle"></i> Mi Perfil</h4>
+            <p>
+              Desde el dropdown de usuario en la cabecera puedes ver tu nombre completo, correo, empresa,
+              perfil y área asignada.
+            </p>
+          </article>
+
+          <article id="hm-sub-cf-tema" class="hm-article">
+            <h4><i class="fas fa-paint-roller"></i> Cambiar Tema</h4>
+            <p>
+              Elige una de las seis paletas predefinidas y guárdala. El tema se almacena por usuario en el
+              servidor para conservarse entre dispositivos.
+            </p>
+          </article>
+
+          <article id="hm-sub-cf-password" class="hm-article">
+            <h4><i class="fas fa-lock"></i> Cambiar Contraseña</h4>
+            <p>
+              Mantén tu cuenta segura cambiando la contraseña periódicamente. Usa al menos 8 caracteres,
+              combina mayúsculas, minúsculas, números y un símbolo.
+            </p>
+          </article>
+
+          <article id="hm-sub-cf-cerrar" class="hm-article">
+            <h4><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</h4>
+            <p>
+              Pulsa <em>"Cerrar sesión"</em> al finalizar tu jornada, especialmente si compartes el equipo.
+              El sistema limpia los datos de sesión y te redirige al login.
+            </p>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 15: BUENAS PRÁCTICAS ===== -->
+        <section class="hm-section" id="hm-sec-consejos">
+          <div class="hm-section-head">
+            <div class="hm-section-num">15</div>
+            <div>
+              <h3><i class="fas fa-lightbulb"></i> Buenas Prácticas</h3>
+              <p>Tips, recomendaciones y solución de problemas.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-tips-seguridad" class="hm-article">
+            <h4><i class="fas fa-user-shield"></i> Seguridad</h4>
+            <ul class="hm-list">
+              <li>Nunca compartas tus credenciales.</li>
+              <li>Cierra sesión al alejarte del equipo.</li>
+              <li>Cambia tu contraseña al menos cada 90 días.</li>
+              <li>Reporta accesos sospechosos a soporte.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-tips-rendimiento" class="hm-article">
+            <h4><i class="fas fa-tachometer-alt"></i> Rendimiento</h4>
+            <ul class="hm-list">
+              <li>Mantén el navegador actualizado.</li>
+              <li>Cierra pestañas innecesarias para liberar memoria.</li>
+              <li>Limpia la caché si notas comportamientos extraños.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-tips-ocr" class="hm-article">
+            <h4><i class="fas fa-image"></i> OCR de Calidad</h4>
+            <ul class="hm-list">
+              <li>Buena iluminación, sin reflejos directos.</li>
+              <li>Comprobante completo y plano (sin pliegues).</li>
+              <li>Resolución mínima sugerida: 1200×1600 px.</li>
+              <li>Usa el recortador para eliminar fondo.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-tips-faq" class="hm-article">
+            <h4><i class="fas fa-question-circle"></i> Preguntas Frecuentes</h4>
+
+            <div class="hm-faq">
+              <div class="hm-faq-item">
+                <div class="q"><i class="fas fa-question"></i> No veo un módulo en el menú</div>
+                <div class="a">Tu perfil no tiene permisos. Solicita acceso al administrador.</div>
+              </div>
+              <div class="hm-faq-item">
+                <div class="q"><i class="fas fa-question"></i> El OCR detectó datos incorrectos</div>
+                <div class="a">Edita los campos manualmente y guarda. La precisión depende de la calidad de la foto.</div>
+              </div>
+              <div class="hm-faq-item">
+                <div class="q"><i class="fas fa-question"></i> No puedo eliminar un perfil</div>
+                <div class="a">Probablemente tiene usuarios asignados. Reasígnalos a otro perfil primero.</div>
+              </div>
+              <div class="hm-faq-item">
+                <div class="q"><i class="fas fa-question"></i> Olvidé mi contraseña</div>
+                <div class="a">Solicita restablecimiento al administrador del sistema.</div>
+              </div>
+              <div class="hm-faq-item">
+                <div class="q"><i class="fas fa-question"></i> El tipo de cambio no aparece</div>
+                <div class="a">Cierra sesión y vuelve a entrar. Si persiste, comunícate con soporte.</div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <!-- ===== SECCIÓN 16: SOPORTE ===== -->
+        <section class="hm-section" id="hm-sec-soporte">
+          <div class="hm-section-head">
+            <div class="hm-section-num">16</div>
+            <div>
+              <h3><i class="fas fa-life-ring"></i> Soporte y Contacto</h3>
+              <p>Estamos contigo para resolver cualquier duda o incidencia.</p>
+            </div>
+          </div>
+
+          <article id="hm-sub-sp-canales" class="hm-article">
+            <h4><i class="fas fa-headset"></i> Canales de Atención</h4>
+            <div class="hm-contact">
+              <div class="hm-contact-card">
+                <i class="fas fa-envelope"></i>
+                <div>
+                  <strong>Correo</strong>
+                  <span>soporte&#64;aquariusconsulting.pe</span>
+                </div>
+              </div>
+              <div class="hm-contact-card">
+                <i class="fas fa-phone"></i>
+                <div>
+                  <strong>Teléfono</strong>
+                  <span>(+51) 01 000-0000</span>
+                </div>
+              </div>
+              <div class="hm-contact-card">
+                <i class="fab fa-whatsapp"></i>
+                <div>
+                  <strong>WhatsApp</strong>
+                  <span>(+51) 999 999 999</span>
+                </div>
+              </div>
+              <div class="hm-contact-card">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <strong>Horario</strong>
+                  <span>Lun – Vie · 08:00 a 18:00</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article id="hm-sub-sp-incidencias" class="hm-article">
+            <h4><i class="fas fa-bug"></i> Reportar Incidencias</h4>
+            <p>Al contactar a soporte, incluye:</p>
+            <ul class="hm-list">
+              <li>Usuario y módulo donde ocurre el problema.</li>
+              <li>Pasos para reproducir el error.</li>
+              <li>Capturas de pantalla o videos cortos.</li>
+              <li>Mensaje de error mostrado por el sistema.</li>
+            </ul>
+          </article>
+
+          <article id="hm-sub-sp-version" class="hm-article">
+            <h4><i class="fas fa-code-branch"></i> Versión del Sistema</h4>
+            <div class="hm-version">
+              <div><strong>Aplicación</strong><span>Regina UI</span></div>
+              <div><strong>Empresa</strong><span>Aquarius Consulting</span></div>
+              <div><strong>Manual</strong><span>v1.0 · 2026</span></div>
+            </div>
+          </article>
+        </section>
+
+        <!-- FOOTER del manual -->
+        <div class="hm-foot">
+          <button class="hm-foot-btn" (click)="scrollContentTop()">
+            <i class="fas fa-arrow-up"></i> Volver al inicio
+          </button>
+          <p>© Aquarius Consulting · Sistema Regina · Manual de Usuario</p>
+        </div>
+
+      </main>
+    </div>
+  </div>
+</div>

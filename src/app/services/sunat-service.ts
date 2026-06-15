@@ -9,7 +9,10 @@ import { Response } from '../models/response';
 })
 
 export class SunatService {
-    token = sessionStorage.getItem('authToken');
+    // Lee el token FRESCO en cada llamada. Antes se capturaba una sola vez al
+    // crear el servicio (singleton): si se instanciaba antes del login SSO,
+    // mandaba "Bearer null" y el utils respondía "falta el token".
+    private get token(): string | null { return sessionStorage.getItem('authToken'); }
     private apiUrlUtils: string = environment.apiUrlUtils;
     constructor(private http: HttpClient) { }
 

@@ -124,6 +124,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   pagedUsuariosModal: RegSecUser[] = [];
   wrapperRequestUsuario: WrapperRequestUsuario = new WrapperRequestUsuario();
 
+  /** Texto del buscador del modal de ocupantes (filtra por nombre, username o email). */
+  searchUsuarios: string = '';
+  /** Subconjunto de `usuarios` que cumple el filtro actual (sobre este se pagina). */
+  private filteredUsuarios: RegSecUser[] = [];
+
   searchUbigeo: string = '';
   pagedUbigeos: MaeUbigeo[] = [];
   tipoUbigeo: number = -1;
@@ -140,6 +145,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.loadRequiredCatalogs();
   }
 
+  /** Importe máximo permitido por día (regla MOVILIDAD_MAX_DIA en REG_REN_VALIDATE) */
+  importeMaxDia: number = 45.20;
+  /** Mensaje configurado en la regla para mostrar al usuario al exceder el tope */
+  importeMaxDiaErrorMsg: string = '';
+
   private initializeComponentData(): void {
     const { data } = history.state || {};
     if (!data) return;
@@ -147,6 +157,14 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.orden = data.orden ?? data;
     this.ordenPagoPlanillaMovilidadCab = data.planilla ?? new OrdenPagoCabPlanilla();
     this.viewOnly = !!data.viewOnly;
+
+    // Regla de importe máximo por día (viene desde el listado de planillas)
+    if (typeof data.importeMaxDia === 'number' && data.importeMaxDia > 0) {
+      this.importeMaxDia = data.importeMaxDia;
+    }
+    if (typeof data.importeMaxDiaErrorMsg === 'string' && data.importeMaxDiaErrorMsg.trim()) {
+      this.importeMaxDiaErrorMsg = data.importeMaxDiaErrorMsg;
+    }
 
     if (this.orden?.fecOrden) {
       this.minDate = moment(this.orden.fecOrden);
@@ -372,13 +390,37 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   private buildPaginationUsuarios(): void {
-    this.totalItemsUsers = this.usuarios.length;
-    this.totalPagesUsers = Math.ceil(this.totalItemsUsers / this.pageSizeUsers);
+    // 1. Filtrar primero según el texto del buscador
+    const term = (this.searchUsuarios || '').trim().toLowerCase();
+    if (!term) {
+      this.filteredUsuarios = [...this.usuarios];
+    } else {
+      this.filteredUsuarios = this.usuarios.filter(user => {
+        const display = this.getUserDisplayName(user).toLowerCase();
+        const username = (user.userUsername || '').toLowerCase();
+        const email = (user.userEmail || '').toLowerCase();
+        return display.includes(term) || username.includes(term) || email.includes(term);
+      });
+    }
+
+    // 2. Paginar el resultado filtrado
+    this.totalItemsUsers = this.filteredUsuarios.length;
+    this.totalPagesUsers = Math.max(1, Math.ceil(this.totalItemsUsers / this.pageSizeUsers));
+
+    // Si el filtro redujo la lista por debajo de la página actual, retrocedemos
+    if (this.currentPageUsers >= this.totalPagesUsers) {
+      this.currentPageUsers = 0;
+    }
 
     const start = this.currentPageUsers * this.pageSizeUsers;
     const end = start + this.pageSizeUsers;
+    this.pagedUsuariosModal = this.filteredUsuarios.slice(start, end);
+  }
 
-    this.pagedUsuariosModal = this.usuarios.slice(start, end);
+  /** Se dispara cuando el usuario escribe en el buscador del modal de ocupantes. */
+  onSearchUsuariosChange(): void {
+    this.currentPageUsers = 0;
+    this.buildPaginationUsuarios();
   }
 
   private buildPaginationUbigeos(): void {
@@ -549,6 +591,7 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   openUsuariosModal(): void {
     this.currentPageUsers = 0;
+    this.searchUsuarios = '';   // reset del buscador al abrir
     this.buildPaginationUsuarios();
     const modalElement = document.getElementById('modalUsuarios');
     if (modalElement) {
@@ -753,6 +796,36 @@ export class EditPlanillaMovilidadComponent implements OnInit {
 
   savePlanilla(): void {
     if (this.guardandoCabecera || !this.modelPlanillaIni) return;
+
+    // ====== VALIDACIÓN: importe máximo por día (regla configurable) ======
+    const maxNum   = Number(this.ordenPagoPlanillaMovilidadCab.maxNumViajes ?? 0);
+    const total    = Number(this.ordenPagoPlanillaMovilidadCab.total ?? 0);
+    const maxPlan  = maxNum > 0 ? maxNum * this.importeMaxDia : this.importeMaxDia;
+
+    if (total > maxPlan + 0.001) {
+      // Usar el mensaje definido en la regla REG_REN_VALIDATE si existe;
+      // si no, generar uno genérico con los valores calculados.
+      const detalle = `Ingresado: <strong>S/ ${total.toFixed(2)}</strong> · ` +
+                      `Permitido: <strong>S/ ${maxPlan.toFixed(2)}</strong> ` +
+                      `(S/ ${this.importeMaxDia.toFixed(2)}/día` +
+                      `${maxNum > 0 ? ` × ${maxNum} día(s)` : ''})`;
+
+      const mensajeRegla = (this.importeMaxDiaErrorMsg || '').trim();
+      const htmlBody = mensajeRegla
+        ? `${mensajeRegla}<br><br><span style="color:#666;font-size:0.9em;">${detalle}</span>`
+        : `El importe ingresado <strong>S/ ${total.toFixed(2)}</strong> supera el ` +
+          `máximo permitido <strong>S/ ${maxPlan.toFixed(2)}</strong> ` +
+          `(S/ ${this.importeMaxDia.toFixed(2)} por día${maxNum > 0 ? ` × ${maxNum} día(s)` : ''}).<br><br>` +
+          `Ajuste el importe máximo de la planilla.`;
+
+      Swal.fire({
+        title: 'Importe excede el tope permitido',
+        html: htmlBody,
+        icon: 'warning',
+        confirmButtonText: 'Entendido'
+      });
+      return;
+    }
 
     this.loadingService.show();
     this.guardandoCabecera = true;

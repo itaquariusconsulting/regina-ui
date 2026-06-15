@@ -33,7 +33,7 @@ export class DefaultFooterMobileComponent implements OnInit {
   }
 
   home(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate(['/dashboard']);
   }
 
   toggle(item: NavItem): void {

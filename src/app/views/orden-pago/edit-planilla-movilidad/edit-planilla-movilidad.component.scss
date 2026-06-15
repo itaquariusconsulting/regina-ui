@@ -349,3 +349,47 @@
     text-align: center;
     padding: 6px 0;
 }
+
+/* ============================================================
+   Origen/Destino · 2 líneas en la tabla de viajes
+   Línea 1 (.addr-line):   Dirección textual (lo que ingresa el usuario)
+   Línea 2 (.ubigeo-line): Detalle del ubigeo (Departamento - Provincia - Distrito)
+============================================================ */
+.addr-line {
+    font-size: 0.82rem;
+    color: #212529;
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.addr-line--empty {
+    color: #adb5bd;
+    font-weight: 400;
+    font-style: italic;
+}
+
+.ubigeo-line {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 1px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compatibilidad con clase anterior */
+.dir-line {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 1px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

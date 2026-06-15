@@ -8,16 +8,20 @@ import { DeviceService } from '../../../../services/core-service/device.service'
 import { ExchangeRateService } from '../../../../shared/services/exchange-rate.service';
 import { ThemeKey, ThemeService } from '../../../../shared/services/theme.service';
 import { RegSecUserService } from '../../../../services/reg-sec-user.service';
+import { HelpManualComponent } from '../../../help-manual/help-manual.component';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-default-header',
   standalone: true,
   templateUrl: './default-header.component.html',
   styleUrl: './default-header.component.scss',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, HelpManualComponent],
   schemas: [NO_ERRORS_SCHEMA]
 })
 export class DefaultHeaderComponent implements OnInit {
+  showHelpManual: boolean = false;
+
   nombresCompletos: string = '';
   empresa: string = '';
   user: RegSecUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -104,6 +108,14 @@ export class DefaultHeaderComponent implements OnInit {
 
   toggleDropdown() {
     this.showDropdown = !this.showDropdown;
+  }
+
+  openHelpManual(): void {
+    this.showHelpManual = true;
+  }
+
+  closeHelpManual(): void {
+    this.showHelpManual = false;
   }
 
   @Output() toggleSidebar = new EventEmitter<void>();
@@ -217,8 +229,19 @@ export class DefaultHeaderComponent implements OnInit {
   ];
 
   onLogout() {
-    sessionStorage.clear();
-    this.router.navigate(['/login']);
+    // En LOCAL volvemos al login tradicional.
+    // En PRODUCCIÓN cerramos la pestaña (abierta por el CORE) o caemos al
+    // bloqueo /no-core como respaldo.
+    try { sessionStorage.clear(); } catch { /* noop */ }
+    try { localStorage.clear(); } catch { /* noop */ }
+
+    if (!environment.production) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    try { window.close(); } catch { /* noop */ }
+    this.router.navigate(['/no-core']);
   }
 
   cambiaPeriodo() {

@@ -1,15 +1,29 @@
 <aside class="sidebar">
-  <div class="menu-header" style="cursor: pointer;" (click)="home()">
-    <i class="fas fa-home"></i>
-    <span>Inicio</span>
+
+  <!-- DASHBOARD (entrada principal fija) -->
+  <div class="menu-header" style="cursor: pointer;" (click)="goDashboard()">
+    <span class="emoji-icon">📊</span>
+    <span>Dashboard</span>
   </div>
 
+  <!-- REPORTES (entrada principal fija) -->
+  <div class="menu-header" style="cursor: pointer;" (click)="goReportes()">
+    <span class="emoji-icon">📋</span>
+    <span>Reportes</span>
+  </div>
+
+  <!-- ITEMS DINÁMICOS DESDE BACKEND -->
   <div class="menu-item" *ngFor="let item of items">
 
     <div class="menu-header" (click)="toggle(item)">
-      <i [class]="item.icon"></i>
+      <span class="emoji-icon">{{ iconoPara(item) }}</span>
       <span>{{ item.label }}</span>
-      <i class="arrow" [class.rotate]="item.expanded">▸</i>
+      <!-- La flecha solo aparece si el item tiene subitems para expandir.
+           Antes se mostraba siempre, lo cual confundía al usuario en items
+           que eran enlaces directos sin hijos. -->
+      <i class="arrow"
+         *ngIf="item.subitems?.length"
+         [class.rotate]="item.expanded">▸</i>
     </div>
 
     <div class="submenu" *ngIf="item.expanded">
@@ -17,7 +31,7 @@
         class="submenu-item"
         *ngFor="let sub of item.subitems"
         (click)="navigate(sub, $event)">
-        <i [class]="sub.icon"></i>
+        <span class="emoji-icon-sm">{{ iconoPara(sub) }}</span>
         <span>{{ sub.label }}</span>
       </div>
     </div>

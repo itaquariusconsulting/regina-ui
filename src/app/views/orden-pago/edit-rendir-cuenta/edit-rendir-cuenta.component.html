@@ -37,7 +37,7 @@
                 style="height: 32px !important;">
                 <i class="fa fa-camera me-1"></i>
                 {{isDesktop ? 'Subir' : 'Capturar'}}
-                <input type="file" accept="image/*,application/pdf" capture="environment" (change)="onSelectFile($event)" hidden>
+                <input #fileInputRef type="file" accept="image/*,application/pdf" capture="environment" (change)="onSelectFile($event)" hidden>
             </label>
 
             <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="selectedFile"
@@ -128,9 +128,17 @@
         </div>
 
         <div class="col-md-6">
-            <label class="form-label fw-semibold mb-2 d-block">Proveedor</label>
+            <label class="form-label fw-semibold mb-2 d-block">
+                Proveedor
+                <small *ngIf="mostrarBadgeComercial"
+                       class="text-muted ms-1"
+                       [title]="tituloBadgeComercial">
+                    (nombre comercial)
+                </small>
+            </label>
             <input readonly class="form-control general-input" name="proveedor" id="proveedor"
-                [(ngModel)]="padronRuc.razonSocial" />
+                [value]="nombreProveedor"
+                [title]="tituloProveedor" />
         </div>
 
         <div class="col-md-2">
@@ -187,7 +195,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label fw-semibold mb-2 d-block">Cuenta Gasto</label>
+            <label class="form-label fw-semibold mb-2 d-block">Cta.Gasto</label>
             <input readonly type="text" class="form-control"
                 [value]="codDocumentoGeneral != 'SD' ? tipoGastoSeleccionado.codCuentaSoles : ''" />
         </div>
@@ -195,6 +203,53 @@
     </div>
 
     <h6 class="h6-header">DATOS DEL DOCUMENTO</h6>
+
+    <!-- Fila adicional: Mes/Año de declaración + Centro de Costos (heredado de la OP) -->
+    <div class="row mt-2">
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">
+                Mes Declaración <span class="text-danger">*</span>
+            </label>
+            <select name="mesDeclaracion" id="mesDeclaracion"
+                class="general-select form-select"
+                [(ngModel)]="mesDeclaracion"
+                (ngModelChange)="onPeriodoDeclaracionChange()">
+                <option [ngValue]="null">-- Seleccione --</option>
+                <option *ngFor="let m of meses" [ngValue]="m.v">{{ m.n }}</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">
+                Año Declaración <span class="text-danger">*</span>
+            </label>
+            <select name="anioDeclaracion" id="anioDeclaracion"
+                class="general-select form-select"
+                [(ngModel)]="anioDeclaracion"
+                (ngModelChange)="onPeriodoDeclaracionChange()">
+                <option [ngValue]="null">-- Seleccione --</option>
+                <option *ngFor="let y of aniosDisponibles" [ngValue]="y">{{ y }}</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-semibold mb-2 d-block">
+                Centro de Costos <small class="text-muted">(heredado de la OP)</small>
+            </label>
+            <input readonly type="text" class="form-control"
+                [value]="orden.codCCostos || '—'"
+                title="Centro de Costos asignado a la Orden de Pago" />
+        </div>
+
+        <!-- Alerta: periodo contable fuera del rango permitido -->
+        <div *ngIf="mensajePeriodo" class="col-12 mt-2">
+            <div class="alert alert-warning py-2 mb-0 d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span>{{ mensajePeriodo }}</span>
+            </div>
+        </div>
+    </div>
+
     <div class="row mt-2">
         <div class="row">
             <div class="col-md-2">
@@ -215,8 +270,8 @@
                     </option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label fw-semibold mb-2 d-block">Cuenta Documento</label>
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">Cta.Documento</label>
                             <input readonly type="text" class="form-control"
                 [value]="ordenPagoDet.codCuentaDocumento" />
             </div>
@@ -244,9 +299,21 @@
             </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">
+                    % IGV
+                </label>
+                <input type="text" inputmode="decimal" maxlength="6"
+                    name="igvPercent" id="igvPercent"
+                    class="general-input form-control text-end"
+                    [ngModel]="igvPercentFormatted"
+                    (ngModelChange)="setIgvPercent($event)"
+                    (blur)="onIgvPercentBlur()"
+                    title="Porcentaje de IGV a aplicar (por defecto 18%)" />
+            </div>
+            <div class="col-md-1">
+                <label class="form-label fw-semibold mb-2 d-block">
                     Impuestos {{dataImagen.currency}}
                 </label>
-                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input [readonly]="!!imageChangedEvent" type="text" name="impuesto" id="impuesto" class="general-input form-control text-end"
                     [(ngModel)]="impuesto" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>

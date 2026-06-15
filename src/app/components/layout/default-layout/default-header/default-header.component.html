@@ -13,6 +13,17 @@
     <div class="spacer"></div>
 
 
+    <!-- Botón de Ayuda / Manual de Usuario -->
+    <button
+      class="help-button"
+      type="button"
+      title="Manual de Usuario"
+      aria-label="Abrir manual de usuario"
+      (click)="openHelpManual()"
+    >
+      <span class="help-button-icon">?</span>
+    </button>
+
     <div class="theme-area">
       <i class="fas fa-brush user-icon" (click)="showThemeDropdown = !showThemeDropdown"
         style="padding: 50px !important; cursor: pointer;"></i>
@@ -129,3 +140,9 @@
 
   </div>
 </header>
+
+<!-- Manual de Usuario flotante -->
+<app-help-manual
+  [visible]="showHelpManual"
+  (closeManual)="closeHelpManual()"
+></app-help-manual>

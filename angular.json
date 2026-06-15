@@ -36,24 +36,48 @@
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "src/styles.scss"
             ],
-            "scripts": ["node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"]
+            "scripts": ["node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"],
+            "allowedCommonJsDependencies": [
+              "canvg",
+              "core-js/modules/es.promise.js",
+              "core-js/modules/es.string.match.js",
+              "core-js/modules/es.string.replace.js",
+              "core-js/modules/es.string.starts-with.js",
+              "core-js/modules/es.array.iterator.js",
+              "core-js/modules/web.dom-collections.iterator.js",
+              "core-js/modules/es.array.reduce.js",
+              "core-js/modules/es.string.ends-with.js",
+              "core-js/modules/es.string.split.js",
+              "core-js/modules/es.string.trim.js",
+              "core-js/modules/es.array.index-of.js",
+              "core-js/modules/es.string.includes.js",
+              "core-js/modules/es.array.reverse.js",
+              "core-js/modules/es.regexp.to-string.js",
+              "raf",
+              "rgbcolor",
+              "sweetalert2",
+              "tesseract.js",
+              "html2canvas",
+              "moment"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2MB",
-                  "maximumError": "3MB"
+                  "maximumWarning": "3MB",
+                  "maximumError": "5MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "16kB",
+                  "maximumError": "24kB"
                 }
               ],
               "outputHashing": "all",
               "serviceWorker": "ngsw-config.json",
+              "baseHref": "/ren-aquarius/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

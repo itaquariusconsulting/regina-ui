@@ -9,7 +9,6 @@ import { EditUsuarioComponent } from './views/usuario/edit-usuario/edit-usuario.
 import { ListPerfilesComponent } from './views/perfil/list-perfiles/list-perfiles.component';
 import { NuevoPerfilComponent } from './views/perfil/nuevo-perfil/nuevo-perfil.component';
 import { EditPerfilComponent } from './views/perfil/edit-perfil/edit-perfil.component';
-import { HomeComponent } from './views/home/home.component';
 import { ListValidacionesComponent } from './views/validates/list-validaciones/list-validaciones.component';
 import { NuevoValidacionComponent } from './views/validates/nuevo-validacion/nuevo-validacion.component';
 import { EditValidacionComponent } from './views/validates/edit-validacion/edit-validacion.component';
@@ -20,8 +19,17 @@ import { PlanillaMovilidadComponent } from './views/orden-pago/planilla-movilida
 import { EditPlanillaMovilidadComponent } from './views/orden-pago/edit-planilla-movilidad/edit-planilla-movilidad.component';
 import { ChangePasswordComponent } from './views/usuario/change-password/change-password.component';
 import { authGuard } from './guards/auth.guard';
+import { DashboardComponent } from './views/dashboard/dashboard.component';
+import { ReportesComponent } from './views/reportes/reportes.component';
+import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 
 export const routes: Routes = [
+
+  {
+    // Bloqueo cuando no hay sesión del CORE de Seguridad (sin login propio).
+    path: 'no-core',
+    component: CoreNotStartedComponent
+  },
 
   {
     path: 'login',
@@ -36,11 +44,20 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        component: HomeComponent
+        component: DashboardComponent
+      },
+      {
+        path: 'dashboard',
+        component: DashboardComponent
+      },
+      {
+        path: 'reportes',
+        component: ReportesComponent
       },
       {
         path: 'home',
-        component: HomeComponent
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
       },
       {
         path: 'list-orders',

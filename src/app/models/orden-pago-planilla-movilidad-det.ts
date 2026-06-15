@@ -16,4 +16,7 @@ export class OrdenPagoPlanillaMovilidadDet {
     ocupantes?: string;
     codOrigen?: string;
     codDestino?: string;
+    // Direcciones físicas del trayecto (calle/avenida, número, referencia)
+    dirOrigen?: string;
+    dirDestino?: string;
 }

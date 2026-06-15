@@ -1,5 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NgbDatepickerConfig, NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
@@ -18,6 +18,7 @@ import { RegRenKeywordService } from '../../../services/reg-ren-keyword.service'
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { RegRenKeywordDTO } from '../../../models/reg-ren-keyword-dto';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { LegibilityChoiceDialogComponent, LegibilityChoice } from '../../../components/dialogs/legibility-choice-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
@@ -62,6 +63,7 @@ export class DatosImagen {
   currency?: string;
   rawText?: string;
   igv?: string = '0.00';
+  
 }
 
 @Component({
@@ -129,6 +131,49 @@ export class EditRendirCuentaComponent implements OnInit {
   mensaje: string = "";
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
+
+  /**
+   * Nombre a mostrar en el campo "Proveedor".
+   * Prioriza el nombre comercial; si no viene, cae a la razón social.
+   * Si ninguno está disponible, devuelve cadena vacía.
+   */
+  get nombreProveedor(): string {
+    const nc = (this.padronRuc?.nombreComercial || '').trim();
+    if (nc) return nc;
+    return (this.padronRuc?.razonSocial || '').trim();
+  }
+
+  /**
+   * Tooltip del campo "Proveedor" — muestra la razón social completa,
+   * útil cuando se está mostrando el nombre comercial en el input visible.
+   * Se expone como getter para evitar problemas de strict template type-check
+   * con `padronRuc?.razonSocial || ''` directamente en el HTML.
+   */
+  get tituloProveedor(): string {
+    return (this.padronRuc?.razonSocial || '').trim();
+  }
+
+  /**
+   * Tooltip del badge "(nombre comercial)" — siempre devuelve string.
+   * Evita la concatenación `'Razón Social: ' + padronRuc.razonSocial`
+   * que el strict template type-check marca cuando razonSocial es undefined.
+   */
+  get tituloBadgeComercial(): string {
+    const rs = (this.padronRuc?.razonSocial || '').trim();
+    return rs ? `Razón Social: ${rs}` : '';
+  }
+
+  /**
+   * ¿Mostrar el badge "(nombre comercial)" al lado del label Proveedor?
+   * Solo se muestra si hay AMBOS y son distintos — para no decirle al usuario
+   * "esto es el nombre comercial" cuando en realidad es la razón social.
+   */
+  get mostrarBadgeComercial(): boolean {
+    const nc = (this.padronRuc?.nombreComercial || '').trim();
+    const rs = (this.padronRuc?.razonSocial || '').trim();
+    return !!nc && !!rs && nc !== rs;
+  }
+
   reglas: RegRenValidate[] = [];
   keywords: RegRenKeywordDTO[] = [];
   rubros: MaeRubro[] = [];
@@ -153,6 +198,46 @@ export class EditRendirCuentaComponent implements OnInit {
   impuesto: number = 0;
   total: number = 0;
   selectedFile?: File;
+
+  /* ====== Nuevos campos (obs. usuario) ====== */
+
+  // Mes / Año de declaración tributaria (obligatorio)
+  meses = [
+    { v: 1, n: 'Enero' },   { v: 2, n: 'Febrero' }, { v: 3, n: 'Marzo' },
+    { v: 4, n: 'Abril' },   { v: 5, n: 'Mayo' },    { v: 6, n: 'Junio' },
+    { v: 7, n: 'Julio' },   { v: 8, n: 'Agosto' },  { v: 9, n: 'Setiembre' },
+    { v: 10, n: 'Octubre' }, { v: 11, n: 'Noviembre' }, { v: 12, n: 'Diciembre' }
+  ];
+  mesDeclaracion: number | null = (new Date()).getMonth() + 1;
+  anioDeclaracion: number | null = (new Date()).getFullYear();
+  aniosDisponibles: number[] = (() => {
+    const y = new Date().getFullYear();
+    return [y + 1, y, y - 1, y - 2, y - 3];
+  })();
+
+  // % IGV editable (default 18%)
+  igvPercent: number = 18;
+
+  // Mensaje de validación del periodo contable (vacío = válido)
+  mensajePeriodo: string = '';
+
+  /**
+   * Nombre comercial detectado por OCR (logo/branding del documento).
+   * Se guarda aquí para preservarlo cuando handleRucResponse() reemplaza
+   * por completo `padronRuc` con la respuesta de SUNAT — si SUNAT no trae
+   * nombre comercial, restauramos el detectado por OCR.
+   */
+  private commercialNameOcr: string = '';
+
+  /**
+   * Marca el flujo como entrada manual tras un OCR no legible.
+   * Cuando es true, las validaciones que dependen del OCR pueden relajarse
+   * y la UI puede destacar que el usuario está llenando los campos a mano.
+   */
+  requireManualEntry: boolean = false;
+
+  /** Ref al <input type="file"> para reabrirlo programáticamente al mejorar la imagen. */
+  @ViewChild('fileInputRef') fileInputRef?: ElementRef<HTMLInputElement>;
 
   codRubroDefault?: string = "";
   codTipoGastoDefault?: string = "";
@@ -371,7 +456,14 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
       (response: Response) => {
         this.tiposGasto = response.resultado;
-        this.tiposGasto = this.tiposGasto.filter(tg=>this.arrGastos.includes(tg.codCuentaSoles??''));
+          var filtro: string = "";
+          if(this.orden.codCCostos?.startsWith('10')) {
+            filtro="010";
+          } else {
+            filtro="0" + this.orden.codCCostos?.substring(0,1) + this.orden.codCCostos?.substring(2,3);
+          }
+        this.tiposGasto = this.tiposGasto.filter(tg=>tg.desTipoGasto?.startsWith(filtro));
+        /*
         if (this.indMovilidad !== 'S') {
           if (this.codTipoGastoDefault?.length == 0) {
             this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
@@ -381,6 +473,7 @@ export class EditRendirCuentaComponent implements OnInit {
         } else {
           this.ordenPagoDet.codTipoGasto = this.codTipoGastoMovilidad;
         }
+          */
         this.ordenPagoDet.codTipoGasto = this.tiposGasto[0].codTipoGasto;
         this.onChangeTipoGasto();
       },
@@ -493,6 +586,15 @@ export class EditRendirCuentaComponent implements OnInit {
       return;
     }
     this.padronRuc = response.resultado;
+
+    // Preservar nombre comercial detectado por OCR si SUNAT no devuelve uno.
+    // SUNAT solo entrega razón social en muchos casos, así que el branding
+    // del documento (HOSTAL SHALOM, POLLERIA X, etc.) viene del OCR.
+    const ncSunat = (this.padronRuc?.nombreComercial || '').trim();
+    if (!ncSunat && this.commercialNameOcr) {
+      this.padronRuc.nombreComercial = this.commercialNameOcr;
+    }
+
     this.mensaje = '';
     this.hasValidRules = true;
     this.hasValidState();
@@ -561,13 +663,40 @@ export class EditRendirCuentaComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
-  private processFile(file: File): void {
-    this.ocrService.uploadFile(file).subscribe({
+  /**
+   * Envía el archivo al OCR backend.
+   * @param file Archivo a procesar.
+   * @param enhance Si es true se activa la doble pasada con mejora fuerte de
+   *   imagen en el backend (Nivel 3). Se usa solo cuando el usuario eligió
+   *   "Mejorar la imagen" tras un documento no legible.
+   * @param suppressLegibilityDialog Si es true, no vuelve a abrir el diálogo
+   *   de legibilidad aunque el score siga bajo — evita loops infinitos al
+   *   reintentar con enhance=true.
+   */
+  private processFile(
+    file: File,
+    enhance: boolean = false,
+    suppressLegibilityDialog: boolean = false,
+  ): void {
+    this.ocrService.uploadFile(file, enhance).subscribe({
       next: (response: any) => {
         const detected = response?.detectedData;
         if (!detected) {
           return;
         }
+
+        // Si el documento no es legible, preguntar al usuario qué hacer
+        // (mejorar la imagen o registrar manualmente) antes de mapear datos.
+        // Pero NO volver a preguntar si ya estamos en un reintento con enhance.
+        if (!suppressLegibilityDialog && !this.esDocumentoLegible(detected)) {
+          this.handleNotLegible(detected);
+          return;
+        }
+
+        // El documento es legible: limpia el flag de entrada manual y procede normal.
+        this.requireManualEntry = false;
+
+        //No debe permitir rendir el mismo documento para diferentes OP.
         const isValidDoc = this.mapDetectedData(detected);
         if (isValidDoc) {
           this.onGetDatosRuc();
@@ -611,6 +740,103 @@ export class EditRendirCuentaComponent implements OnInit {
       return '';
     }
     return name.substring(dot + 1).toUpperCase();
+  }
+
+  /**
+   * Verifica si el OCR devolvió un documento "legible".
+   * Criterio combinado:
+   *  - score >= umbral configurado en BD (regla OCR_MIN_LEGIBILIDAD), OR
+   *  - al menos 3 de 4 campos críticos extraídos: RUC válido, número de
+   *    documento con formato, fecha y monto > 0.
+   * Si no hay regla configurada, se considera legible por defecto.
+   */
+  private esDocumentoLegible(detected: any): boolean {
+    if (!detected) return false;
+
+    const regla = this.reglas.find(r => r.fieldCode === 'OCR_MIN_LEGIBILIDAD');
+    const umbral = Number(regla?.maxValue);
+    const score = Number(detected.legibilityScore);
+
+    // Sin regla → no se valida legibilidad
+    if (!regla || !Number.isFinite(umbral) || umbral <= 0) {
+      return true;
+    }
+
+    // Score por encima del umbral → legible
+    if (Number.isFinite(score) && score >= umbral) {
+      return true;
+    }
+
+    // Fallback: 3 de 4 campos críticos presentes → también lo aceptamos
+    const tieneRuc = Array.isArray(detected.issuerRuc) &&
+      detected.issuerRuc.some((r: any) => typeof r === 'string' && r.length === 11);
+    const tieneNumero = typeof detected.documentNumber === 'string' &&
+      /[A-Z]\d{3}\s*-?\s*\d+/i.test(detected.documentNumber);
+    const tieneFecha = !!detected.documentDate;
+    const tieneMonto = Number(detected.amount) > 0;
+
+    const camposOk = [tieneRuc, tieneNumero, tieneFecha, tieneMonto].filter(Boolean).length;
+    return camposOk >= 3;
+  }
+
+  /**
+   * Maneja el caso "documento no legible": abre un diálogo de opción múltiple
+   * con dos acciones — mejorar la imagen o registrar manualmente — y ejecuta
+   * el flujo correspondiente según la elección del usuario.
+   */
+  private handleNotLegible(detected: any): void {
+    this.loadingService.hide();
+
+    const ref = this.dialog.open(LegibilityChoiceDialogComponent, {
+      width: '440px',
+      disableClose: true,
+      autoFocus: false,
+    });
+
+    ref.afterClosed().subscribe((choice: LegibilityChoice | undefined) => {
+      switch (choice) {
+        case 'IMPROVE':
+          // Reenvía el MISMO archivo al backend con enhance=true para que
+          // ejecute la pipeline OpenCV fuerte + doble pasada de OCR (Nivel 3).
+          // No vuelve a abrir el diálogo aunque el score siga bajo —
+          // si el segundo intento aún falla, el usuario verá el resultado y
+          // podrá elegir entre cargar otro archivo o registrar manualmente.
+          this.requireManualEntry = false;
+          if (this.selectedFile) {
+            console.log('🔬 [Mejorar imagen] reenviando con enhance=true');
+            this.loadingService.show();
+            this.processFile(this.selectedFile, true, true);
+          } else {
+            // Sin archivo en memoria: reabrir el selector como fallback.
+            this.onDescartar();
+            setTimeout(() => {
+              const input = this.fileInputRef?.nativeElement;
+              if (input) {
+                input.value = '';
+                input.click();
+              }
+            }, 200);
+          }
+          break;
+
+        case 'MANUAL':
+          // El usuario aceptó llenar manualmente. Cargamos lo poco que el OCR
+          // alcanzó a detectar (si algo) y permitimos que edite los campos.
+          this.requireManualEntry = true;
+          const isValidDoc = this.mapDetectedData(detected);
+          if (isValidDoc) {
+            this.onGetDatosRuc();
+          }
+          break;
+
+        case 'CANCEL':
+        default:
+          // El usuario cerró sin elegir: limpiamos el archivo para que vuelva a empezar.
+          this.requireManualEntry = false;
+          this.onDescartar();
+          break;
+      }
+    });
   }
 
   private mapDetectedData(detected: any): boolean {
@@ -693,6 +919,15 @@ export class EditRendirCuentaComponent implements OnInit {
     const issuerRuc = detected.issuerRuc;
     this.dataImagen.issuerRuc = issuerRuc;
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
+
+    // Guardamos el nombre comercial detectado por OCR (logo/branding del documento).
+    // Se preservará en handleRucResponse si SUNAT no devuelve uno propio.
+    // Además lo asignamos a padronRuc para que el campo Proveedor lo muestre
+    // de inmediato, aunque luego sea reemplazado por la respuesta de SUNAT.
+    this.commercialNameOcr = (detected.commercialName || '').trim();
+    if (this.commercialNameOcr) {
+      this.padronRuc.nombreComercial = this.commercialNameOcr;
+    }
 
     this.cargarItems(this.dataImagen.items);
     return true;
@@ -919,8 +1154,14 @@ export class EditRendirCuentaComponent implements OnInit {
       }
 
       this.ordenPagoDet.anoEmisionDua = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
-      this.ordenPagoDet.anoProcesoDeclara = this.dataImagen.documentDate ? String(new Date(this.dataImagen.documentDate).getFullYear()) : undefined;
+
+      // ====== MES / AÑO DE DECLARACIÓN (obligatorio · obs. usuario) ======
+      this.ordenPagoDet.anoProcesoDeclara = String(this.anioDeclaracion ?? new Date().getFullYear());
+      this.ordenPagoDet.mesProcesoDeclara = String(this.mesDeclaracion ?? (new Date().getMonth() + 1)).padStart(2, '0');
+
       this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
+
+      // ====== CENTRO DE COSTOS heredado de la OP (solo lectura · obs. usuario) ======
       this.ordenPagoDet.codCCostos = this.orden.codCCostos;
 
       this.ordenPagoDet.codCuentaConcepto = this.ordenPagoDet.codMoneda === '01' ? this.tipoGastoSeleccionado.codCuentaSoles : this.tipoGastoSeleccionado.codCuentaDolares;
@@ -951,9 +1192,11 @@ export class EditRendirCuentaComponent implements OnInit {
         this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
       }
 
-      const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
-      this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles - (this.ordenPagoDet.impSoles / totalPorcentaje);
-      this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares - (this.ordenPagoDet.impDolares / totalPorcentaje);
+      // ====== % IGV EDITABLE (obs. usuario) ======
+      // Se usa el porcentaje configurado por el usuario en el formulario
+      const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
+      this.ordenPagoDet.impImponSoles   = totalPorcentaje > 0 ? this.ordenPagoDet.impSoles   / totalPorcentaje : this.ordenPagoDet.impSoles;
+      this.ordenPagoDet.impImponDolares = totalPorcentaje > 0 ? this.ordenPagoDet.impDolares / totalPorcentaje : this.ordenPagoDet.impDolares;
 
       this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
         (response: Response) => {
@@ -1070,19 +1313,124 @@ export class EditRendirCuentaComponent implements OnInit {
   isSaveDisabled(): boolean {
     const docNum = (this.dataImagen.documentNumber || '').trim();
     const subTotal = Number(this.subTotal);
-    const impuesto = Number(this.impuesto);
     const total = Number(this.total);
     const isDocNumValid = this.isDocumentNumberValid(docNum);
+
+    // Mes/Año de declaración obligatorios
+    if (!this.mesDeclaracion || !this.anioDeclaracion) {
+      return true;
+    }
+    // % IGV válido
+    if (this.igvPercent === null || this.igvPercent === undefined || this.igvPercent < 0 || this.igvPercent > 100) {
+      return true;
+    }
 
     return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
 
   changeImporte(importe: Event) {
     this.total = Number(importe);
-    console.log(this.total);
-    const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
-    this.subTotal = this.total / totalPorcentaje;
+    // Recálculo usando el % de IGV editable
+    const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
+    this.subTotal = totalPorcentaje > 0 ? this.total / totalPorcentaje : this.total;
     this.impuesto = this.total - this.subTotal;
+  }
+
+  /** Cuando el usuario cambia el % de IGV se recalculan importes. */
+  onIgvPercentChange(): void {
+    const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
+    if (totalPorcentaje > 0 && this.total > 0) {
+      this.subTotal = this.total / totalPorcentaje;
+      this.impuesto = this.total - this.subTotal;
+    }
+  }
+
+  // ─── Formateo del % IGV con 2 decimales ───
+  // Mantiene el valor numérico interno en `igvPercent` pero permite mostrar
+  // siempre "18.00" en el input de pantalla (los inputs type="number" no
+  // muestran ceros finales). El usuario puede escribir libremente y al perder
+  // el foco se asegura el formato con 2 decimales.
+
+  /** String que se muestra en el input (siempre con 2 decimales). */
+  get igvPercentFormatted(): string {
+    const v = Number(this.igvPercent);
+    return Number.isFinite(v) ? v.toFixed(2) : '0.00';
+  }
+
+  /**
+   * Setter usado por (ngModelChange) — parsea lo que el usuario va tecleando
+   * (acepta coma o punto como separador decimal) y actualiza `igvPercent`.
+   * NO reformatea aún para no interferir mientras se escribe.
+   */
+  setIgvPercent(value: any): void {
+    if (value === null || value === undefined || value === '') {
+      this.igvPercent = 0;
+    } else {
+      const cleaned = String(value).replace(',', '.').replace(/[^\d.]/g, '');
+      const parts = cleaned.split('.');
+      // Solo el primer punto cuenta como decimal, lo demás se ignora
+      const normalized = parts.length > 1
+        ? `${parts[0]}.${parts.slice(1).join('').slice(0, 2)}`
+        : cleaned;
+      const num = parseFloat(normalized);
+      this.igvPercent = Number.isFinite(num) ? Math.min(100, Math.max(0, num)) : 0;
+    }
+    this.onIgvPercentChange();
+  }
+
+  /**
+   * Al perder foco redondea a 2 decimales y recalcula. Esto fuerza que el
+   * input muestre "18.00" aunque el usuario haya tecleado "18".
+   */
+  onIgvPercentBlur(): void {
+    const v = Number(this.igvPercent);
+    this.igvPercent = Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
+    this.onIgvPercentChange();
+  }
+
+  /**
+   * Valida el periodo contable (mes/año declaración) contra la fecha del
+   * documento. Si la diferencia en meses supera el máximo configurado en la
+   * regla `PERIODO_CONTABLE_MAX_MESES` de REG_REN_VALIDATE, muestra mensaje.
+   *
+   * Se dispara cuando el usuario cambia el mes o el año de declaración.
+   */
+  onPeriodoDeclaracionChange(): void {
+    this.mensajePeriodo = '';
+
+    // Sin mes/año no podemos validar; el isSaveDisabled() ya marca como obligatorio
+    if (!this.mesDeclaracion || !this.anioDeclaracion) {
+      return;
+    }
+
+    // Sin fecha de documento no hay base para validar el periodo
+    const docDateStr = this.dataImagen?.documentDate;
+    if (!docDateStr) {
+      return;
+    }
+
+    // Regla de máximo de meses (puede no estar configurada → no se valida)
+    const regla = this.reglas.find(r => r.fieldCode === 'PERIODO_CONTABLE_MAX_MESES');
+    const maxMeses = Number(regla?.maxValue);
+    if (!regla || !Number.isFinite(maxMeses) || maxMeses <= 0) {
+      return;
+    }
+
+    const docDate = new Date(docDateStr + 'T12:00:00');
+    if (isNaN(docDate.getTime())) {
+      return;
+    }
+
+    // Calcula diferencia en meses absolutos entre periodo declarado y fecha doc
+    const docMonthIndex = docDate.getFullYear() * 12 + docDate.getMonth();
+    const decMonthIndex = (this.anioDeclaracion) * 12 + (this.mesDeclaracion - 1);
+    const diffMeses = Math.abs(decMonthIndex - docMonthIndex);
+
+    if (diffMeses > maxMeses) {
+      this.mensajePeriodo =
+        regla.errorMessage ||
+        `El periodo contable seleccionado supera el máximo permitido de ${maxMeses} meses respecto a la fecha del documento.`;
+    }
   }
 
   private isDocumentNumberValid(value: string): boolean {
