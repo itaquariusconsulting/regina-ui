@@ -23,6 +23,7 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ValidationEngineService } from '../../../shared/services/validation-engine.service';
 import { ValidationContext } from '../../../shared/models/validation-context';
+import Swal from 'sweetalert2';
 import {
   RucInput,
   DocumentType,
@@ -47,6 +48,8 @@ import { ConfigService } from '../../../services/config.service';
 import { OrdenPagoDetProvService } from '../../../services/orden-pago-det-prov.service';
 import { WrapperRequestDocumebtoExistente } from '../../../models/wrappers/wrapper-request-documento-existente';
 import { NgxCurrencyDirective } from 'ngx-currency';
+import { WrapperComprobanteSunat } from '../../../models/wrappers/WrapperComprobanteSunat';
+import { RegSunResponseComprobanteSunat } from '../../../models/reg-sun-response-comprobante-sunat';
 export class ItemDetalle {
   descripcion?: string;
 }
@@ -63,7 +66,7 @@ export class DatosImagen {
   currency?: string;
   rawText?: string;
   igv?: string = '0.00';
-  
+
 }
 
 @Component({
@@ -131,7 +134,8 @@ export class EditRendirCuentaComponent implements OnInit {
   mensaje: string = "";
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
-
+  validaComprobante: boolean = false;
+  wrapper: WrapperComprobanteSunat = new WrapperComprobanteSunat();
   /**
    * Nombre a mostrar en el campo "Proveedor".
    * Prioriza el nombre comercial; si no viene, cae a la razón social.
@@ -174,6 +178,86 @@ export class EditRendirCuentaComponent implements OnInit {
     return !!nc && !!rs && nc !== rs;
   }
 
+  /**
+   * Abre un Swal mostrando la razón social registrada en SUNAT
+   * con el texto SELECCIONABLE y un botón para copiar al portapapeles.
+   * Útil cuando el campo "Proveedor" está mostrando el nombre comercial
+   * y el usuario quiere ver/copiar la razón social completa.
+   */
+  mostrarRazonSocial(): void {
+    const rs = (this.padronRuc?.razonSocial || '').trim();
+    const nc = (this.padronRuc?.nombreComercial || '').trim();
+
+    if (!rs && !nc) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Sin información',
+        text: 'Aún no se ha consultado el proveedor en SUNAT.',
+        confirmButtonText: 'Cerrar'
+      });
+      return;
+    }
+
+    const html = `
+      <div style="text-align:left; font-family: var(--app-font-family, Arial);">
+        <div style="margin-bottom:8px;">
+          <strong>Razón Social:</strong>
+          <div style="user-select:text; padding:6px 8px; border:1px solid #dee2e6;
+                      border-radius:4px; margin-top:4px; background:#f8f9fa; word-break:break-word;">
+            ${rs || '<em>(no disponible)</em>'}
+          </div>
+        </div>
+        ${nc ? `
+        <div>
+          <strong>Nombre Comercial:</strong>
+          <div style="user-select:text; padding:6px 8px; border:1px solid #dee2e6;
+                      border-radius:4px; margin-top:4px; background:#f8f9fa; word-break:break-word;">
+            ${nc}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    Swal.fire({
+      title: 'Datos del proveedor',
+      html,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Copiar razón social',
+      cancelButtonText: 'Cerrar',
+      focusConfirm: false
+    }).then(result => {
+      if (result.isConfirmed && rs) {
+        const copyFallback = () => {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = rs;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            return true;
+          } catch { return false; }
+        };
+
+        const showOk = () => Swal.fire({
+          icon: 'success', title: 'Copiado', text: 'Razón social copiada al portapapeles.',
+          timer: 1500, showConfirmButton: false
+        });
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(rs).then(showOk, () => {
+            if (copyFallback()) showOk();
+          });
+        } else if (copyFallback()) {
+          showOk();
+        }
+      }
+    });
+  }
+
   reglas: RegRenValidate[] = [];
   keywords: RegRenKeywordDTO[] = [];
   rubros: MaeRubro[] = [];
@@ -190,6 +274,15 @@ export class EditRendirCuentaComponent implements OnInit {
   ordenPagoDetProvs: OrdenPagoDetProv[] = [];
   saldoSoles: number = 0;
   saldoDolares: number = 0;
+  /**
+   * Saldo base de la OP cuando se abre el componente (impSoles - impRendidoSoles).
+   * Se usa para recalcular el saldo cada vez que el usuario cambia el importe
+   * del documento, sin perder el saldo original ante varios cambios sucesivos.
+   */
+  private _saldoBaseSoles: number = 0;
+  private _saldoBaseDolares: number = 0;
+  /** Debounce del recálculo de saldo para evitar parpadeo en cada tecla. */
+  private _saldoDebounce: any = null;
   isDesktop: boolean = false;
   items: any[] = [];
   itemsText: string = '';
@@ -203,9 +296,9 @@ export class EditRendirCuentaComponent implements OnInit {
 
   // Mes / Año de declaración tributaria (obligatorio)
   meses = [
-    { v: 1, n: 'Enero' },   { v: 2, n: 'Febrero' }, { v: 3, n: 'Marzo' },
-    { v: 4, n: 'Abril' },   { v: 5, n: 'Mayo' },    { v: 6, n: 'Junio' },
-    { v: 7, n: 'Julio' },   { v: 8, n: 'Agosto' },  { v: 9, n: 'Setiembre' },
+    { v: 1, n: 'Enero' }, { v: 2, n: 'Febrero' }, { v: 3, n: 'Marzo' },
+    { v: 4, n: 'Abril' }, { v: 5, n: 'Mayo' }, { v: 6, n: 'Junio' },
+    { v: 7, n: 'Julio' }, { v: 8, n: 'Agosto' }, { v: 9, n: 'Setiembre' },
     { v: 10, n: 'Octubre' }, { v: 11, n: 'Noviembre' }, { v: 12, n: 'Diciembre' }
   ];
   mesDeclaracion: number | null = (new Date()).getMonth() + 1;
@@ -268,8 +361,10 @@ export class EditRendirCuentaComponent implements OnInit {
         this.codRubroDefault = this.configService.get('COD_RUBRO_GENERAL');
         this.codTipoGastoDefault = this.configService.get('COD_TIPO_GASTO_GENERAL');
       }
-      this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
-      this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
+      this._saldoBaseSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
+      this._saldoBaseDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
+      this.saldoSoles = this._saldoBaseSoles;
+      this.saldoDolares = this._saldoBaseDolares;
     }
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
@@ -284,8 +379,10 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   inicializa() {
-    this.saldoSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
-    this.saldoDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
+    this._saldoBaseSoles = (this.orden.impSoles ?? 0) - (this.orden.impRendidoSoles ?? 0);
+    this._saldoBaseDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
+    this.saldoSoles = this._saldoBaseSoles;
+    this.saldoDolares = this._saldoBaseDolares;
 
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
@@ -456,13 +553,13 @@ export class EditRendirCuentaComponent implements OnInit {
     this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
       (response: Response) => {
         this.tiposGasto = response.resultado;
-          var filtro: string = "";
-          if(this.orden.codCCostos?.startsWith('10')) {
-            filtro="010";
-          } else {
-            filtro="0" + this.orden.codCCostos?.substring(0,1) + this.orden.codCCostos?.substring(2,3);
-          }
-        this.tiposGasto = this.tiposGasto.filter(tg=>tg.desTipoGasto?.startsWith(filtro));
+        var filtro: string = "";
+        if (this.orden.codCCostos?.startsWith('10')) {
+          filtro = "010";
+        } else {
+          filtro = "0" + this.orden.codCCostos?.substring(0, 1) + this.orden.codCCostos?.substring(2, 3);
+        }
+        this.tiposGasto = this.tiposGasto.filter(tg => tg.desTipoGasto?.startsWith(filtro));
         /*
         if (this.indMovilidad !== 'S') {
           if (this.codTipoGastoDefault?.length == 0) {
@@ -587,11 +684,19 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.padronRuc = response.resultado;
 
-    // Preservar nombre comercial detectado por OCR si SUNAT no devuelve uno.
-    // SUNAT solo entrega razón social en muchos casos, así que el branding
-    // del documento (HOSTAL SHALOM, POLLERIA X, etc.) viene del OCR.
+    // Si SUNAT devolvió una "dirección" disfrazada como nombre comercial
+    // (caso típico Plaza Vea, Tottus: "AV. SAN BORJA NORTE 1234, SAN BORJA"),
+    // descartarla — no es el nombre comercial real.
     const ncSunat = (this.padronRuc?.nombreComercial || '').trim();
-    if (!ncSunat && this.commercialNameOcr) {
+    if (ncSunat && this.pareceDireccion(ncSunat)) {
+      this.padronRuc.nombreComercial = '';
+    }
+
+    // Preservar nombre comercial detectado por OCR si SUNAT no devuelve uno
+    // útil. SUNAT solo entrega razón social en muchos casos, así que el
+    // branding del documento (HOSTAL SHALOM, POLLERIA X) viene del OCR.
+    const ncSunatFinal = (this.padronRuc?.nombreComercial || '').trim();
+    if (!ncSunatFinal && this.commercialNameOcr && !this.pareceDireccion(this.commercialNameOcr)) {
       this.padronRuc.nombreComercial = this.commercialNameOcr;
     }
 
@@ -849,10 +954,23 @@ export class EditRendirCuentaComponent implements OnInit {
 
     if (this.dataImagen.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0, 1) == (this.dataImagen.documentType!));
-      this.ordenPagoDet.codDocumento = this.documentos[0].codDocumento;
+
+      // Auto-seleccionar el tipo de documento que MEJOR encaje con el texto
+      // detectado por OCR. Si el OCR dijo "BOLETA DE VENTA ELECTRÓNICA",
+      // buscamos entre las opciones filtradas la que comparte más palabras
+      // clave con esa frase (ej. "Boleta de Ventas").
+      const mejor = this.findBestDocumentMatch(
+        this.documentos,
+        detected?.rawText || '',
+        detected?.documentTypeText || detected?.documentTitle || ''
+      );
+
+      const elegido = mejor || this.documentos[0];
+      this.ordenPagoDet.codDocumento = elegido?.codDocumento;
       this.ordenPagoDet.codCuentaDocumento =
-        this.ordenPagoDet.codMoneda == '01' ? this.documentos[0].codCuentaSoles : this.documentos[0].codCuentaDolares;
+        this.ordenPagoDet.codMoneda == '01' ? elegido?.codCuentaSoles : elegido?.codCuentaDolares;
       this.codDocumentoGeneral = this.ordenPagoDet.codDocumento!;
+      this.documentoSeleccionado = elegido || new MaeDocumento();
     }
 
     this.dataImagen.documentNumber = detected.documentNumber;
@@ -925,6 +1043,10 @@ export class EditRendirCuentaComponent implements OnInit {
     // Además lo asignamos a padronRuc para que el campo Proveedor lo muestre
     // de inmediato, aunque luego sea reemplazado por la respuesta de SUNAT.
     this.commercialNameOcr = (detected.commercialName || '').trim();
+    // Filtro: no pegar la dirección del documento como nombre comercial.
+    if (this.commercialNameOcr && this.pareceDireccion(this.commercialNameOcr)) {
+      this.commercialNameOcr = '';
+    }
     if (this.commercialNameOcr) {
       this.padronRuc.nombreComercial = this.commercialNameOcr;
     }
@@ -1195,7 +1317,7 @@ export class EditRendirCuentaComponent implements OnInit {
       // ====== % IGV EDITABLE (obs. usuario) ======
       // Se usa el porcentaje configurado por el usuario en el formulario
       const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
-      this.ordenPagoDet.impImponSoles   = totalPorcentaje > 0 ? this.ordenPagoDet.impSoles   / totalPorcentaje : this.ordenPagoDet.impSoles;
+      this.ordenPagoDet.impImponSoles = totalPorcentaje > 0 ? this.ordenPagoDet.impSoles / totalPorcentaje : this.ordenPagoDet.impSoles;
       this.ordenPagoDet.impImponDolares = totalPorcentaje > 0 ? this.ordenPagoDet.impDolares / totalPorcentaje : this.ordenPagoDet.impDolares;
 
       this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
@@ -1325,15 +1447,219 @@ export class EditRendirCuentaComponent implements OnInit {
       return true;
     }
 
+    // 🔒 El comprobante debe haber sido validado con SUNAT (botón "Validar Comprobante").
+    // `validaComprobante` arranca en false y solo se vuelve true cuando SUNAT
+    // responde estadoCp === '1' en validarComprobante().
+    if (!this.validaComprobante) {
+      return true;
+    }
+
+    // 🔒 Debe existir un archivo (PDF o imagen) cargado para rendir el gasto.
+    // Sin sustento físico no se permite guardar.
+    if (!this.selectedFile) {
+      return true;
+    }
+
     return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
 
-  changeImporte(importe: Event) {
-    this.total = Number(importe);
+  changeImporte(importe: Event | number) {
+    const raw = typeof importe === 'number' ? importe : Number(importe as any);
+    // Ignorar NaN: preservar el importe actual y no destruir el OCR.
+    if (!Number.isFinite(raw)) { return; }
+    this.total = raw;
     // Recálculo usando el % de IGV editable
     const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
     this.subTotal = totalPorcentaje > 0 ? this.total / totalPorcentaje : this.total;
     this.impuesto = this.total - this.subTotal;
+    // Recalcular saldo con debounce (evita parpadeo y múltiples Swal seguidos).
+    this.recalcularSaldos();
+  }
+
+  /**
+   * Recalcula `saldoSoles` y `saldoDolares` a partir del saldo base de la OP
+   * y el importe actual del documento. Si el resultado queda en negativo,
+   * muestra una advertencia (Swal) pero NO bloquea la operación.
+   *
+   * El recálculo se aplica con un debounce de 600 ms para evitar disparar la
+   * alerta en cada tecla mientras el usuario edita el importe.
+   */
+  recalcularSaldos(): void {
+    if (this._saldoDebounce) {
+      clearTimeout(this._saldoDebounce);
+    }
+    this._saldoDebounce = setTimeout(() => {
+      const importe = Number.isFinite(this.total) ? this.total : 0;
+      // Determinar la moneda del documento para imputar el descuento al saldo
+      // correcto. En Regina '01' = SOLES y cualquier otro código = DÓLARES.
+      // Si no hay moneda en el detalle, se usa la moneda de la OP.
+      const codMon = (this.ordenPagoDet?.codMoneda ||
+                      this.orden?.codMoneda ||
+                      '01').toString();
+      const esDolares = codMon !== '01';
+
+      if (esDolares) {
+        this.saldoDolares = (this._saldoBaseDolares || 0) - importe;
+        this.saldoSoles = this._saldoBaseSoles || 0;
+      } else {
+        this.saldoSoles = (this._saldoBaseSoles || 0) - importe;
+        this.saldoDolares = this._saldoBaseDolares || 0;
+      }
+
+      const negativo = esDolares ? this.saldoDolares < 0 : this.saldoSoles < 0;
+      if (negativo) {
+        const sigla = esDolares ? 'US$' : 'S/.';
+        const saldoNeg = esDolares ? this.saldoDolares : this.saldoSoles;
+        Swal.fire({
+          icon: 'warning',
+          title: 'Saldo en negativo',
+          html: `El importe del documento <strong>excede el saldo disponible</strong>.<br>` +
+                `Saldo proyectado: <strong>${sigla} ${saldoNeg.toFixed(2)}</strong>.<br>` +
+                `<em>La operación no se bloquea — confirme si desea continuar.</em>`,
+          confirmButtonText: 'Entendido'
+        });
+      }
+    }, 600);
+  }
+
+  /**
+   * Normaliza un texto para comparar: mayúsculas, sin tildes, sin signos,
+   * espacios simples. "Boletá de Ventas" → "BOLETA DE VENTAS".
+   */
+  private normalize(s: string): string {
+    if (!s) return '';
+    return s
+      .toString()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')   // quita tildes
+      .toUpperCase()
+      .replace(/[^A-Z0-9 ]+/g, ' ')      // quita signos
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Heurística para auto-seleccionar el "tipo de documento" más apropiado
+   * cuando el OCR ha detectado una familia (ej. 'B' → boletas) pero la BD
+   * tiene varias variantes ("Boleta", "Boleta de Ventas", "Boleto de Avión",
+   * "Boleta No Emitida", etc.).
+   *
+   * Estrategia: para cada documento candidato calcula un score basado en
+   * cuántas palabras significativas de su `desDocumento` aparecen en el
+   * texto del comprobante (`rawText` + título detectado). El documento con
+   * mayor score gana. Se favorece el match exacto con frases completas
+   * (ej. "BOLETA DE VENTA") sobre matches parciales.
+   *
+   * Si ningún candidato supera el umbral mínimo, devuelve `null` y el
+   * llamador usará el primero de la lista como fallback.
+   */
+  private findBestDocumentMatch(
+    docs: MaeDocumento[],
+    rawText: string,
+    detectedTitle: string
+  ): MaeDocumento | null {
+    if (!docs || !docs.length) return null;
+
+    // Texto del comprobante a buscar contra: título detectado + raw OCR.
+    const haystack = this.normalize(`${detectedTitle || ''} ${rawText || ''}`);
+    if (!haystack) return null;
+
+    // Frases canónicas frecuentes en comprobantes peruanos. Si alguna
+    // aparece tal cual, le damos un boost grande para ganar la elección.
+    const frasesCanonicas: { regex: RegExp; keywords: string[] }[] = [
+      { regex: /\bBOLETA\s+DE\s+VENTA(S)?\b/, keywords: ['BOLETA', 'VENTA'] },
+      { regex: /\bFACTURA\s+DE\s+VENTA(S)?\b/, keywords: ['FACTURA', 'VENTA'] },
+      { regex: /\bBOLETO\s+DE\s+AVION\b/, keywords: ['BOLETO', 'AVION'] },
+      { regex: /\bBOLETO\s+DE\s+TRANSPORTE\b/, keywords: ['BOLETO', 'TRANSPORTE'] },
+      { regex: /\bNOTA\s+DE\s+CREDITO\b/, keywords: ['NOTA', 'CREDITO'] },
+      { regex: /\bNOTA\s+DE\s+DEBITO\b/, keywords: ['NOTA', 'DEBITO'] },
+      { regex: /\bRECIBO\s+POR\s+HONORARIOS\b/, keywords: ['RECIBO', 'HONORARIOS'] },
+      { regex: /\bGUIA\s+DE\s+REMISION\b/, keywords: ['GUIA', 'REMISION'] },
+      { regex: /\bTICKET\b/, keywords: ['TICKET'] }
+    ];
+
+    // Stopwords a ignorar al puntuar.
+    const stopwords = new Set(['DE', 'DEL', 'LA', 'EL', 'LOS', 'LAS', 'POR', 'EN', 'Y', 'A']);
+
+    let mejor: MaeDocumento | null = null;
+    let mejorScore = 0;
+
+    for (const doc of docs) {
+      const desc = this.normalize(`${doc.desDocumento || ''} ${doc.desCorta || ''}`);
+      if (!desc) continue;
+
+      const palabras = desc.split(' ').filter(w => w.length >= 3 && !stopwords.has(w));
+      if (!palabras.length) continue;
+
+      let score = 0;
+
+      // 1) palabras de la descripción que aparecen en el haystack.
+      for (const w of palabras) {
+        if (haystack.includes(w)) score += 1;
+      }
+
+      // 2) bonus por frase canónica completa coincidente con la descripción.
+      for (const fc of frasesCanonicas) {
+        if (fc.regex.test(haystack) && fc.keywords.every(k => desc.includes(k))) {
+          score += 5;
+        }
+      }
+
+      // 3) bonus si la descripción aparece prácticamente entera en el texto.
+      if (palabras.length >= 2 && palabras.every(w => haystack.includes(w))) {
+        score += 3;
+      }
+
+      // 4) ligero bonus al codDocumento de dos letras (BV, FV) que suelen
+      //    ser la variante "más comercial / más usada", frente a 'B' o 'F'
+      //    que son tipos genéricos.
+      const cod = (doc.codDocumento || '').toString();
+      if (cod.length >= 2) score += 0.5;
+
+      if (score > mejorScore) {
+        mejorScore = score;
+        mejor = doc;
+      }
+    }
+
+    // Umbral mínimo: si nadie alcanza al menos 1 palabra coincidente, no
+    // forzamos elección y dejamos que el caller use el fallback.
+    return mejorScore >= 1 ? mejor : null;
+  }
+
+  /**
+   * Heurística: detecta cuando SUNAT/OCR devuelve una dirección en lugar
+   * de un nombre comercial real. Reglas:
+   *  - empieza por prefijos típicos de dirección (AV., CAL., JR., MZ., etc.).
+   *  - contiene patrón de número de calle ("Av. X 123").
+   *  - termina en distrito/ciudad ("..., LIMA").
+   */
+  pareceDireccion(texto: string | undefined | null): boolean {
+    if (!texto) return false;
+    const t = texto.toString().trim().toUpperCase();
+    if (!t) return false;
+
+    const prefijos = [
+      'AV.', 'AV ', 'AVENIDA',
+      'CAL.', 'CAL ', 'CALLE',
+      'JR.', 'JR ', 'JIRON', 'JIRÓN',
+      'PSJ.', 'PSJ ', 'PASAJE',
+      'MZ.', 'MZ ', 'MANZANA',
+      'LT.', 'LOTE',
+      'PROL.', 'PROLONGACION',
+      'CARRT.', 'CARRETERA',
+      'URB.', 'URBANIZACION',
+      'PROLONGACIÓN'
+    ];
+    if (prefijos.some(p => t.startsWith(p))) return true;
+
+    // Patrón "PALABRA NUMERO" típico de direcciones
+    if (/^[A-ZÁÉÍÓÚÑ\.]+\s+\d{2,5}\b/.test(t)) return true;
+
+    // Termina en ", LIMA" o ", <CIUDAD>"
+    if (/,\s*(LIMA|AREQUIPA|CUSCO|TRUJILLO|PIURA|CHICLAYO|HUANCAYO|TACNA|ICA|CALLAO)\b/.test(t)) return true;
+
+    return false;
   }
 
   /** Cuando el usuario cambia el % de IGV se recalculan importes. */
@@ -1440,6 +1766,63 @@ export class EditRendirCuentaComponent implements OnInit {
     return pattern.test(value.trim());
   }
 
+  validarComprobante() {
+    const { numeroSerie, numero } = this.parseNroDocumento(this.dataImagen.documentNumber ?? '');
 
+    this.wrapper.rucConsultante = sessionStorage.getItem("ruc") ?? '';
+    this.wrapper.numRuc = this.ruc;
+    this.wrapper.codComp = this.documentos.filter(doc=>doc.codDocumento==this.codDocumentoGeneral)[0].codSunat;
+    this.wrapper.numeroSerie = numeroSerie;
+    this.wrapper.numero = numero;
+    this.wrapper.fechaEmision = this.formatFecha(this.modelIni);
+    this.wrapper.monto = String(this.total);
+
+    console.log("Wrapper : ", this.wrapper);
+
+    // Resetea el flag mientras se ejecuta la validación contra SUNAT.
+    // El botón Guardar dependerá de que esto vuelva a true tras una respuesta exitosa.
+    this.validaComprobante = false;
+
+    this.sunatService.validarComprobante(this.wrapper).subscribe({
+      next: (response: Response) => {
+        const respuestaSunat = response.resultado;
+        if (respuestaSunat?.data?.estadoCp === '1') {
+          this.validaComprobante = true;    // ✅ habilita Guardar
+          Swal.fire('Validación correcta', '...', 'success');
+        } else {
+          this.validaComprobante = false;   // ❌ deja deshabilitado
+          Swal.fire('Validación incorrecta', '...', 'error');
+        }
+      },
+      error: () => {
+        this.validaComprobante = false;     // Error de red → tampoco habilita
+        Swal.fire('Error', '...', 'error');
+      }
+    });
+  }
+
+  parseNroDocumento(nroDocumento: string): { numeroSerie: string; numero: string } {
+    const valor = (nroDocumento || '').trim();
+    const idx = valor.indexOf('-');
+
+    if (idx === -1) {
+      return { numeroSerie: '', numero: valor };
+    }
+
+    const numeroSerie = valor.substring(0, idx).trim();
+    const numero = valor.substring(idx + 1).trim();
+
+    return { numeroSerie, numero };
+  }
+
+  formatFecha(fecha: NgbDateStruct): string {
+    if (!fecha) {
+      return '';
+    }
+    const dd = String(fecha.day).padStart(2, '0');
+    const mm = String(fecha.month).padStart(2, '0');
+    const yyyy = String(fecha.year);
+    return `${dd}/${mm}/${yyyy}`;
+  }
 }
 

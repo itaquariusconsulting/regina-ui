@@ -223,8 +223,8 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.selectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     sessionStorage.setItem('periodo_month', this.selectedMonth.toString().padStart(2, '0'));
     sessionStorage.setItem('periodo_year', this.selectedYear.toString().padStart(4, '0'));
-
     sessionStorage.setItem('codempresa', '0001');
+    sessionStorage.setItem("ruc", "20503271592");
     this.getTiposCambio();
     this.getConfiguracionSistema();
     this.service.loadUserPermissions(this.dtoUser.profileId!, this.dtoUser.codEmpresa!);

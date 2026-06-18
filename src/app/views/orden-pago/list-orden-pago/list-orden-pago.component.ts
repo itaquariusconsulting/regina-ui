@@ -104,9 +104,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   imagen: Imagen = new Imagen();
 
   private readonly stateActions: any = {
-    'EM': { asiento_contable: false, rendir_cuenta: false, detalle: false, planilla_movillidad: true },
+    'EM': { asiento_contable: false, rendir_cuenta: false, detalle: false, planilla_movillidad: false },
     'PE': { asiento_contable: false, rendir_cuenta: true, detalle: true, planilla_movillidad: true },
-    'LQ': { asiento_contable: true, rendir_cuenta: false, detalle: true, planilla_movillidad: true },
+    'LQ': { asiento_contable: true, rendir_cuenta: false, detalle: true, planilla_movillidad: false },
     'PR': { asiento_contable: false, rendir_cuenta: false, detalle: false, planilla_movillidad: false }
   };
 

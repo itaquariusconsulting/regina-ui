@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "descripcion": "Mapeo de códigos de respuesta de la consulta de comprobantes ante SUNAT (estadoCp). Se usa en validarComprobante() del componente edit-rendir-cuenta para mostrar al usuario un mensaje claro según el resultado.",
+    "fuente": "API SUNAT — consulta de validez de comprobantes",
+    "campoEnRespuesta": "data.estadoCp"
+  },
+
+  "0": {
+    "estado": "NO EXISTE",
+    "descripcion": "El comprobante no ha sido informado ni registrado en los sistemas de la SUNAT.",
+    "esValido": false,
+    "tipoSwal": "error"
+  },
+  "1": {
+    "estado": "ACEPTADO",
+    "descripcion": "El documento es válido, fue recibido correctamente y se encuentra vigente.",
+    "esValido": true,
+    "tipoSwal": "success"
+  },
+  "2": {
+    "estado": "ANULADO",
+    "descripcion": "El comprobante ha sido dado de baja de forma oficial por el emisor.",
+    "esValido": false,
+    "tipoSwal": "warning"
+  },
+  "3": {
+    "estado": "AUTORIZADO",
+    "descripcion": "Comprobante físico con autorización de imprenta (vigente para casos excepcionales o contingencias).",
+    "esValido": true,
+    "tipoSwal": "success"
+  },
+  "4": {
+    "estado": "NO AUTORIZADO",
+    "descripcion": "El comprobante no cuenta con autorización vigente ante SUNAT.",
+    "esValido": false,
+    "tipoSwal": "error"
+  }
+}

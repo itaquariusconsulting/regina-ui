@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Response } from '../models/response';
+import { WrapperComprobanteSunat } from '../models/wrappers/WrapperComprobanteSunat';
 
 @Injectable({
     providedIn: 'root'
@@ -14,6 +15,7 @@ export class SunatService {
     // mandaba "Bearer null" y el utils respondía "falta el token".
     private get token(): string | null { return sessionStorage.getItem('authToken'); }
     private apiUrlUtils: string = environment.apiUrlUtils;
+    private apiUrlSunat: string = environment.apiUrlAuth; 
     constructor(private http: HttpClient) { }
 
     getDataRUC(buscarruc: string): Observable<Response> {
@@ -34,6 +36,17 @@ export class SunatService {
             'Content-Type': 'application/json'
         });
         return this.http.get<Response>(`${this.apiUrlUtils}log-padron-sunat`, {
+            headers,
+            responseType: 'json'
+        });
+    }
+
+    validarComprobante(wrapper: WrapperComprobanteSunat): Observable<Response> {
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+        });
+        return this.http.post<Response>(`${this.apiUrlSunat}/api/sunat/validar-comprobante`, wrapper, {
             headers,
             responseType: 'json'
         });

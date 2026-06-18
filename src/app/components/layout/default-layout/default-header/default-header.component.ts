@@ -229,19 +229,11 @@ export class DefaultHeaderComponent implements OnInit {
   ];
 
   onLogout() {
-    // En LOCAL volvemos al login tradicional.
-    // En PRODUCCIÓN cerramos la pestaña (abierta por el CORE) o caemos al
-    // bloqueo /no-core como respaldo.
+    // Regina ya no usa SSO con aquarius-security: cerrar sesión simplemente
+    // limpia almacenamiento y vuelve a la pantalla /login tradicional.
     try { sessionStorage.clear(); } catch { /* noop */ }
     try { localStorage.clear(); } catch { /* noop */ }
-
-    if (!environment.production) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    try { window.close(); } catch { /* noop */ }
-    this.router.navigate(['/no-core']);
+    this.router.navigate(['/login']);
   }
 
   cambiaPeriodo() {

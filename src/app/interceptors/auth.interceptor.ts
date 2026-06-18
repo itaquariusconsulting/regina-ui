@@ -129,10 +129,9 @@ export class AuthInterceptor implements HttpInterceptor {
     }).then(() => {
       this.isAlertShown = false;
       sessionStorage.clear();
-      // En LOCAL (sin CORE) volvemos al login tradicional;
-      // en PRODUCCIÓN mostramos la pantalla de bloqueo del CORE.
-      const target = environment.production ? '/no-core' : '/login';
-      this.router.navigate([target]);
+      // Regina ya no usa SSO. Ante cualquier 401 redirigimos al login
+      // tradicional (tanto en local como en producción).
+      this.router.navigate(['/login']);
     });
   }
 

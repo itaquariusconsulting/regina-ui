@@ -40,6 +40,8 @@
                 <input #fileInputRef type="file" accept="image/*,application/pdf" capture="environment" (change)="onSelectFile($event)" hidden>
             </label>
 
+            <button class="general-button btn-primary" (click)="validarComprobante()">Prueba Validacion</button>
+
             <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="selectedFile"
                 class="general-button btn-danger">
                 <i class="fa-solid fa-xmark"></i>
@@ -132,13 +134,23 @@
                 Proveedor
                 <small *ngIf="mostrarBadgeComercial"
                        class="text-muted ms-1"
-                       [title]="tituloBadgeComercial">
+                       style="cursor: pointer; text-decoration: underline dotted;"
+                       [title]="tituloBadgeComercial"
+                       (click)="mostrarRazonSocial()">
                     (nombre comercial)
                 </small>
             </label>
-            <input readonly class="form-control general-input" name="proveedor" id="proveedor"
-                [value]="nombreProveedor"
-                [title]="tituloProveedor" />
+            <div class="input-group">
+                <input class="form-control general-input" name="proveedor" id="proveedor"
+                    [value]="nombreProveedor"
+                    [title]="tituloProveedor" />
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        title="Ver / copiar razón social registrada en SUNAT"
+                        (click)="mostrarRazonSocial()">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
         </div>
 
         <div class="col-md-2">
