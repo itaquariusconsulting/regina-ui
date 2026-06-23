@@ -4,10 +4,42 @@
 
 <div class="form-container">
 
-    <div class="row">
+    <div class="row align-items-center mb-2">
         <div class="col-md-6">
             <h6 class="h6-header">{{indMovilidad=='S' ? 'Planilla de Movilidad' : 'Rendir Cuenta '}} de Orden -
                 {{orden.numOrden}}</h6>
+        </div>
+
+        <!-- Indicador de estado del comprobante: tres estados visuales.
+             1) Sin archivo cargado          → ROJO  "COMPROBANTE NO CARGADO"
+             2) Cargado pero sin validar     → AMARILLO "COMPROBANTE NO VALIDADO"
+             3) Validado en SUNAT (estado 1/3) → VERDE "COMPROBANTE VALIDADO" -->
+        <div class="col-md-6 text-end">
+            <span class="badge-validacion-sunat"
+                  [ngClass]="{
+                    'badge-no-cargado'  : !selectedFile,
+                    'badge-no-validado' :  selectedFile && !validaComprobante,
+                    'badge-validado'    :  selectedFile &&  validaComprobante
+                  }"
+                  [title]="!selectedFile
+                            ? 'Aún no se ha cargado el archivo del comprobante'
+                            : (validaComprobante
+                                ? 'Comprobante validado correctamente contra SUNAT'
+                                : 'Comprobante cargado pero aún no se ha validado en SUNAT')">
+                <i class="fa-solid"
+                   [ngClass]="{
+                      'fa-file-circle-xmark' : !selectedFile,
+                      'fa-circle-exclamation':  selectedFile && !validaComprobante,
+                      'fa-circle-check'      :  selectedFile &&  validaComprobante
+                   }"></i>
+                {{
+                  !selectedFile
+                    ? 'COMPROBANTE NO CARGADO'
+                    : (validaComprobante
+                        ? 'COMPROBANTE VALIDADO'
+                        : 'COMPROBANTE NO VALIDADO')
+                }}
+            </span>
         </div>
     </div>
 
@@ -125,7 +157,9 @@
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
-            <input maxlength="11" (input)="ruccompleto()" class="form-control general-input" name="ruc" id="ruc"
+            <input maxlength="11" (input)="ruccompleto()"
+                (ngModelChange)="onRucManualChange($event)"
+                class="form-control general-input" name="ruc" id="ruc"
                 [(ngModel)]="ruc" />
         </div>
 
@@ -168,9 +202,35 @@
 
     <div class="row mt-2">
         <div class="col-md-12">
-            <label class="form-label fw-semibold mb-2 d-block">Dirección</label>
-            <input class="form-control general-input" name="direccion" id="direccion"
-                [(ngModel)]="dataImagen.issuerAddress" />
+            <label class="form-label fw-semibold mb-2 d-block">
+                Dirección
+                <small *ngIf="anexoSeleccionado" class="text-success ms-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Anexo seleccionado: <strong>{{ anexoSeleccionado.codigo }}</strong>
+                    <ng-container *ngIf="anexoSeleccionado.tipo"> — {{ anexoSeleccionado.tipo }}</ng-container>
+                </small>
+            </label>
+            <div class="input-group">
+                <input class="form-control general-input" name="direccion" id="direccion"
+                       [(ngModel)]="dataImagen.issuerAddress" readonly
+                       placeholder="Seleccione un establecimiento anexo de SUNAT…" />
+                <button type="button"
+                        class="btn btn-primary"
+                        title="Seleccionar establecimiento anexo del proveedor (SUNAT)"
+                        [disabled]="cargandoAnexos || !ruc"
+                        (click)="abrirSelectorAnexos()">
+                    <i class="fa-solid" [class.fa-spinner]="cargandoAnexos" [class.fa-spin]="cargandoAnexos"
+                       [class.fa-location-dot]="!cargandoAnexos"></i>
+                    {{ cargandoAnexos ? 'Cargando…' : 'Seleccionar Anexo' }}
+                    <span *ngIf="!cargandoAnexos && anexosDisponibles.length > 0" class="badge bg-light text-dark ms-1">
+                        {{ anexosDisponibles.length }}
+                    </span>
+                </button>
+            </div>
+            <small *ngIf="!anexoSeleccionado && ruc && anexosDisponibles.length > 0" class="text-warning d-block mt-1">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Debe seleccionar un establecimiento anexo para poder guardar.
+            </small>
         </div>
     </div>
 
@@ -275,12 +335,17 @@
             <div class="col-md-2">
                 <label class="form-label fw-semibold mb-2 d-block">Tipo de Documento</label>
                 <select name="documento" id="documento" class="general-select form-select"
+                    [class.is-invalid]="bloqueoTipoDoc"
                     [(ngModel)]="codDocumentoGeneral" (change)="changeDocumento()">
                     <option class="option" value="SD">{{"SIN DOCUMENTO"}}</option>
                     <option class="option" *ngFor="let doc of documentos" [value]="doc.codDocumento">
                         {{ doc.desDocumento }}
                     </option>
                 </select>
+                <small *ngIf="bloqueoTipoDoc" class="text-danger d-block mt-1" style="font-size: 0.78rem; line-height: 1.2;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    {{ mensajeTipoDoc }}
+                </small>
             </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">Cta.Documento</label>

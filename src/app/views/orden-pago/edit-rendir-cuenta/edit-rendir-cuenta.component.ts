@@ -31,6 +31,9 @@ import {
   FieldCode,
 } from '../../../shared/constants/validation-constants';
 import { MaestrosService } from '../../../services/maestros.service';
+import { SunatAnexosService } from '../../../services/sunat-anexos.service';
+import { EstablecimientoAnexo, RucAnexosResponse } from '../../../models/establecimiento-anexo';
+import { AnexoSelectorDialogComponent, AnexoSelectorData } from '../../../components/dialogs/anexo-selector-dialog.component';
 import { Response } from '../../../models/response';
 import { MaeRubro } from '../../../models/mae-rubro';
 import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
@@ -105,11 +108,22 @@ export class EditRendirCuentaComponent implements OnInit {
     private ordenPagoDetProvService: OrdenPagoDetProvService,
     private configService: ConfigService,
     private config: NgbDatepickerConfig,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private sunatAnexosService: SunatAnexosService
   ) {
     this.isLoading$ = this.loadingService.loading$;
     this.config.navigation = 'select';
   }
+
+  // ─── Estado de Establecimientos Anexos del proveedor ───────────────────
+  /** Lista de anexos disponibles del RUC consultado. */
+  anexosDisponibles: EstablecimientoAnexo[] = [];
+  /** Anexo elegido por el usuario en el modal (obligatorio para guardar). */
+  anexoSeleccionado: EstablecimientoAnexo | null = null;
+  /** Bandera de "consultando SUNAT" para deshabilitar el botón mientras carga. */
+  cargandoAnexos: boolean = false;
+  /** Último RUC para el cual se cargaron anexos (evita recargar el mismo). */
+  private _ultRucAnexos: string = '';
 
   codEmpresa: string = sessionStorage.getItem('codempresa') || '';
   codAuxiliar: string = '';
@@ -409,6 +423,22 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensajeDetalle = "";
     this.itemsText = "";
     this.subTotal = 0;
+    this.total = 0;
+    this.impuesto = 0;
+
+    // 🔁 Reset del estado de validación SUNAT y de la legibilidad de la fecha
+    // para que el badge vuelva a "COMPROBANTE NO VALIDADO" y la próxima
+    // captura/validación arranque desde cero.
+    this.validaComprobante = false;
+    this.fechaDocValida = true;
+    this.commercialNameOcr = '';
+
+    // Reset del selector de Establecimientos Anexos: al cambiar de
+    // proveedor/comprobante, la selección anterior ya no aplica.
+    this.anexosDisponibles = [];
+    this.anexoSeleccionado = null;
+    this._ultRucAnexos = '';
+
     this.getRubros();
   }
 
@@ -583,18 +613,72 @@ export class EditRendirCuentaComponent implements OnInit {
   getTiposDocumento() {
     this.maestrosService.getTiposDocumento(this.codEmpresa).subscribe(
       (response: Response) => {
-        this.documentos = response.resultado;
-        this.documentosGeneral = this.documentos;
+        // Filtrar SOLO documentos de COMPRA: esta pantalla es de rendición
+        // de gastos del titular, por lo que cualquier documento que describa
+        // una operación de VENTA debe excluirse del catálogo visible.
+        const todos = (response.resultado || []) as MaeDocumento[];
+        const filtrados = this.filtrarDocumentosCompra(todos);
+        this.documentos = filtrados;
+        this.documentosGeneral = filtrados;
         this.documentoSeleccionado = this.documentos[0];
-        this.ordenPagoDet.codDocumento = this.documentoSeleccionado.codDocumento;
-        this.codDocumentoGeneral = this.documentoSeleccionado.codDocumento!;
-        this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
+        this.ordenPagoDet.codDocumento = this.documentoSeleccionado?.codDocumento;
+        this.codDocumentoGeneral = this.documentoSeleccionado?.codDocumento ?? 'SD';
+        this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.documentoSeleccionado?.codCuentaSoles : this.documentoSeleccionado?.codCuentaDolares;
         this.getImpuestos();
       },
       (error) => {
         console.error('Error al cargar tipos de documento', error);
       }
     );
+  }
+
+  /**
+   * Filtra el catálogo MaeDocumento para mostrar solo los documentos de
+   * COMPRA en la pantalla de rendición de gastos. Excluye todos los códigos
+   * cuya descripción contenga palabras de venta o exportación.
+   *
+   * Ejemplos típicos que se excluyen:
+   *   - BOLETAS DE VENTAS (BV)
+   *   - FACTURA DE VENTA (FV)
+   *   - FACTURA DE EXPORTACION VENTA (FX)
+   *   - DETRACCION VENTA (VT)
+   *   - NOTA DE CREDITO DE VENTA, etc.
+   *
+   * Reglas:
+   *   1. Cualquier documento con la palabra "VENTA"/"VENTAS" se descarta.
+   *      EXCEPCIÓN: si también dice "COMPRA" (ej. "BV POR COMPRAS") se
+   *      mantiene, porque es claramente de compra a pesar de mencionar
+   *      "ventas" en otra parte del texto.
+   *   2. Códigos puramente de salida (EXPORTACION, EXP) se descartan.
+   *   3. Documentos sin descripción o sin codDocumento también se filtran.
+   */
+  private filtrarDocumentosCompra(docs: MaeDocumento[]): MaeDocumento[] {
+    if (!docs || !docs.length) return [];
+
+    const norm = (s: string | undefined | null): string => {
+      if (!s) return '';
+      return s.toString()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toUpperCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    return docs.filter(d => {
+      if (!d?.codDocumento || !d?.desDocumento) return false;
+      const desc = norm(d.desDocumento);
+
+      // Excluir: cualquier documento de VENTA o EXPORTACION,
+      // pero conservar los que mencionan COMPRA (ej. "BV POR COMPRAS").
+      const esVenta = /\b(VENTA|VENTAS|EXPORTACI[OÓ]N|EXPORTACION|EXP\b)/.test(desc);
+      const esCompra = /\b(COMPRA|COMPRAS)/.test(desc);
+
+      if (esVenta && !esCompra) {
+        return false;
+      }
+      return true;
+    });
   }
 
   getMonedas() {
@@ -662,6 +746,111 @@ export class EditRendirCuentaComponent implements OnInit {
         this.ordenPagoDet.codMoneda == '01' ? this.documentoSeleccionado.codCuentaSoles : this.documentoSeleccionado.codCuentaDolares;
     }
     this.getImpuestos();
+    this.validarTipoDocumentoPorRuc(true); // emite alerta si la combinación es ilegal
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  //  Regla SUNAT: RUC que empieza con "20" = persona jurídica.
+  //  En ese caso el proveedor SOLO puede emitir facturas (códigos F*).
+  //  Si el usuario u OCR seleccionan boleta / recibo / nota, se bloquea
+  //  el guardado y se muestra advertencia.
+  // ──────────────────────────────────────────────────────────────────────
+
+  /** True cuando la combinación RUC+TipoDoc viola la regla y bloquea Guardar. */
+  bloqueoTipoDoc: boolean = false;
+  /** Mensaje descriptivo del bloqueo (se muestra debajo del select). */
+  mensajeTipoDoc: string = '';
+
+  /**
+   * Valida que un RUC 20XXXXXXXXX (persona jurídica) solo acepte facturas
+   * como tipo de documento. Si la regla se viola:
+   *   - bloqueoTipoDoc = true
+   *   - mensajeTipoDoc = explicación corta
+   *   - (opcional) Swal advirtiendo al usuario.
+   *
+   * @param mostrarAlerta cuando viene desde el (change) del select del
+   *                      usuario, mostramos Swal. Cuando viene desde el
+   *                      OCR (precarga automática) no, para no estorbar.
+   */
+  validarTipoDocumentoPorRuc(mostrarAlerta: boolean = false): boolean {
+    const ruc = (this.ruc || '').trim();
+    const cod = (this.codDocumentoGeneral || '').toString().trim().toUpperCase();
+
+    // Sin RUC o sin tipo aún → no validamos.
+    if (!ruc || !cod || cod === 'SD') {
+      this.bloqueoTipoDoc = false;
+      this.mensajeTipoDoc = '';
+      return true;
+    }
+
+    // Persona jurídica = RUC empieza con "20".
+    const esPersonaJuridica = ruc.startsWith('20');
+    // Facturas = códigos que empiezan con 'F' (F, FV, FC, FH, etc).
+    const esFactura = cod.startsWith('F');
+
+    if (esPersonaJuridica && !esFactura) {
+      this.bloqueoTipoDoc = true;
+      const descActual = this.documentos.find(d => d.codDocumento === cod)?.desDocumento || cod;
+      this.mensajeTipoDoc =
+        `El RUC ${ruc} corresponde a una persona jurídica (inicia con 20). ` +
+        `Solo se aceptan FACTURAS — el tipo seleccionado "${descActual}" no es válido.`;
+      if (mostrarAlerta) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Tipo de documento no permitido',
+          html: `<div style="text-align:left;">
+                   <p>El RUC <strong>${ruc}</strong> corresponde a una <strong>persona jurídica</strong>
+                      (inicia con <code>20</code>).</p>
+                   <p>Las personas jurídicas SUNAT solo pueden emitir <strong>facturas</strong>.</p>
+                   <p>Cambie el tipo a una variante de Factura (F001, FE, FV…) para poder guardar.</p>
+                 </div>`,
+          confirmButtonText: 'Entendido'
+        });
+      }
+      return false;
+    }
+
+    // Regla cumplida.
+    this.bloqueoTipoDoc = false;
+    this.mensajeTipoDoc = '';
+    return true;
+  }
+
+  /**
+   * Listener del input de RUC. Cada vez que el usuario edita el RUC:
+   *   1) Re-evalúa la regla "RUC 20XXX = solo facturas".
+   *   2) Resetea la selección de anexos previa (cambia el proveedor).
+   *   3) Si el RUC ya está completo y es válido (11 dígitos), precarga
+   *      los establecimientos anexos del nuevo RUC en segundo plano.
+   *
+   * NOTA: no llama a SUNAT en cada keystroke — espera a tener 11 dígitos
+   * y aplica un pequeño debounce para evitar múltiples consultas mientras
+   * el usuario aún está escribiendo.
+   */
+  private _rucDebounce: any = null;
+
+  onRucManualChange(nuevoRuc: any): void {
+    const r = (nuevoRuc || '').toString().trim();
+
+    // Si cambia el proveedor (RUC distinto al cacheado), reseteamos el
+    // anexo previo y la validación de SUNAT.
+    if (r !== this._ultRucAnexos) {
+      this.anexoSeleccionado = null;
+      this.anexosDisponibles = [];
+      this.validaComprobante = false;  // forzar revalidar SUNAT
+    }
+
+    // Validación instantánea de la regla "RUC 20XXX = solo facturas"
+    this.validarTipoDocumentoPorRuc(false);
+
+    // Carga de anexos: solo cuando ya hay 11 dígitos válidos, con debounce
+    // de 500ms para evitar spammear al backend si el usuario aún tipea.
+    if (this._rucDebounce) clearTimeout(this._rucDebounce);
+    if (/^\d{11}$/.test(r)) {
+      this._rucDebounce = setTimeout(() => {
+        this.cargarAnexosDelRuc(r, { silencioso: true });
+      }, 500);
+    }
   }
 
   changeNumDocumento() {
@@ -705,6 +894,144 @@ export class EditRendirCuentaComponent implements OnInit {
     this.hasValidState();
     this.dataImagen.issuerAddress = this.buildDireccion(this.padronRuc);
     this.validateRules({ skipRule });
+
+    // Cargar establecimientos anexos del RUC (no bloqueante).
+    this.cargarAnexosDelRuc(this.ruc);
+  }
+
+  /**
+   * Consulta los establecimientos anexos del RUC al backend Regina-API-Process.
+   * Se dispara cuando: (a) cambia el RUC, (b) termina el OCR con RUC detectado,
+   * (c) el usuario abre el modal por primera vez.
+   *
+   * Reset también `anexoSeleccionado` porque al cambiar de proveedor la
+   * selección previa ya no aplica.
+   */
+  cargarAnexosDelRuc(ruc: string, opts: { silencioso?: boolean } = {}): void {
+    const r = (ruc || '').trim();
+    if (!r || !/^\d{11}$/.test(r)) {
+      this.anexosDisponibles = [];
+      this.anexoSeleccionado = null;
+      this._ultRucAnexos = '';
+      return;
+    }
+    if (r === this._ultRucAnexos && this.anexosDisponibles.length > 0) {
+      return; // ya está cargado para este RUC
+    }
+
+    this._ultRucAnexos = r;
+    this.anexoSeleccionado = null;   // nuevo RUC → reset selección
+    this.anexosDisponibles = [];
+    this.cargandoAnexos = true;
+    console.log(`[edit-rendir-cuenta] Cargando anexos del RUC ${r}…`);
+
+    this.sunatAnexosService.consultarAnexos(r).subscribe({
+      next: (data: RucAnexosResponse) => {
+        this.anexosDisponibles = data?.anexos ?? [];
+        this.cargandoAnexos = false;
+        console.log(`[edit-rendir-cuenta] RUC ${r}: ${this.anexosDisponibles.length} anexo(s) cargados`);
+
+        // Si la respuesta incluye razón social/nombre comercial y el
+        // padron actual no los tiene, los enriquecemos.
+        if (this.padronRuc) {
+          if (!this.padronRuc.nombreComercial && data?.nombreComercial) {
+            this.padronRuc.nombreComercial = data.nombreComercial;
+          }
+        }
+      },
+      error: (err) => {
+        this.cargandoAnexos = false;
+        this.anexosDisponibles = [];
+        this._ultRucAnexos = '';     // permitir reintentar
+        const mensaje = err?.error?.mensaje
+                     || err?.message
+                     || 'No fue posible consultar SUNAT.';
+        console.error('[edit-rendir-cuenta] Error consultando anexos:', err);
+
+        if (!opts.silencioso) {
+          Swal.fire({
+            icon: 'error',
+            title: 'No se pudieron cargar los establecimientos',
+            html: `<div style="text-align:left;">
+                     <p>SUNAT no devolvió la lista de anexos para el RUC <strong>${r}</strong>.</p>
+                     <p class="text-muted" style="font-size:0.85em;"><strong>Detalle técnico:</strong> ${mensaje}</p>
+                     <hr>
+                     <p>Puede intentar:</p>
+                     <ul>
+                       <li>Verificar que el RUC sea correcto.</li>
+                       <li>Reintentar en unos segundos (SUNAT puede estar saturado).</li>
+                       <li>Si el problema persiste, registre el comprobante manualmente.</li>
+                     </ul>
+                   </div>`,
+            confirmButtonText: 'Entendido',
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Abre el modal para elegir el establecimiento anexo del proveedor.
+   * Si la lista aún no está cargada, primero la carga y luego abre el modal.
+   */
+  abrirSelectorAnexos(): void {
+    const ruc = (this.ruc || '').trim();
+    if (!ruc) {
+      Swal.fire({
+        icon: 'info',
+        title: 'RUC requerido',
+        text: 'Primero ingrese el RUC del proveedor para consultar sus establecimientos anexos.',
+      });
+      return;
+    }
+
+    const abrir = () => {
+      if (!this.anexosDisponibles || this.anexosDisponibles.length === 0) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Sin establecimientos',
+          text: `El RUC ${ruc} no tiene establecimientos anexos registrados en SUNAT, o aún no fueron consultados.`,
+        });
+        return;
+      }
+
+      const ref = this.dialog.open(AnexoSelectorDialogComponent, {
+        width: '920px',
+        maxWidth: '95vw',
+        autoFocus: false,
+        data: <AnexoSelectorData>{
+          ruc,
+          razonSocial: this.padronRuc?.razonSocial,
+          anexos: this.anexosDisponibles,
+          seleccionPrevia: this.anexoSeleccionado
+        }
+      });
+
+      ref.afterClosed().subscribe((seleccion: EstablecimientoAnexo | null) => {
+        if (seleccion) {
+          this.anexoSeleccionado = seleccion;
+          // Reemplazar la dirección por la del anexo elegido
+          this.dataImagen.issuerAddress = (seleccion.direccion || '').trim();
+        }
+      });
+    };
+
+    // Si aún no se cargaron, cargar y luego abrir.
+    if (this.cargandoAnexos) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Cargando',
+        text: 'Aún se están cargando los establecimientos del RUC. Intente en unos segundos.',
+      });
+      return;
+    }
+    if (!this.anexosDisponibles.length && ruc !== this._ultRucAnexos) {
+      this.cargarAnexosDelRuc(ruc);
+      // Pequeño delay para que termine la carga antes de abrir.
+      setTimeout(abrir, 800);
+    } else {
+      abrir();
+    }
   }
 
   private buildDireccion(data: PadronRuc): string {
@@ -1000,9 +1327,9 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    // if (!this.changeDate()) {
-    //   return false;
-    // }
+    // Sincronizar el flag fechaDocValida con la fecha cargada por OCR
+    // SIN mostrar el Swal (que solo debe aparecer cuando el USUARIO la cambia).
+    this.fechaDocValida = this.isFechaValida(this.modelIni);
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
@@ -1038,6 +1365,9 @@ export class EditRendirCuentaComponent implements OnInit {
     this.dataImagen.issuerRuc = issuerRuc;
     this.ruc = Array.isArray(issuerRuc) ? issuerRuc[0] : issuerRuc;
 
+    // Validar regla SUNAT: RUC 20XXXXXXXXX (persona jurídica) → solo facturas
+    this.validarTipoDocumentoPorRuc(false);
+
     // Guardamos el nombre comercial detectado por OCR (logo/branding del documento).
     // Se preservará en handleRucResponse si SUNAT no devuelve uno propio.
     // Además lo asignamos a padronRuc para que el campo Proveedor lo muestre
@@ -1055,6 +1385,13 @@ export class EditRendirCuentaComponent implements OnInit {
     return true;
   }
 
+  /**
+   * Bandera reactiva que indica si la fecha actual del documento es válida
+   * respecto a la fecha de generación de la OP. Se usa en `isSaveDisabled()`
+   * para bloquear el guardado sin necesidad de destruir los datos cargados.
+   */
+  fechaDocValida: boolean = true;
+
   isFechaValida(model: any): boolean {
     if (!model || !this.orden?.fecOrden) return false;
 
@@ -1071,18 +1408,45 @@ export class EditRendirCuentaComponent implements OnInit {
     return true;
   }
 
+  /**
+   * Se dispara cuando el usuario cambia la fecha del documento.
+   *
+   * IMPORTANTE: NO debe limpiar los datos cargados del OCR — solo avisa al
+   * usuario que la fecha está fuera de rango y bloquea el guardado mediante
+   * `fechaDocValida = false` y `validaComprobante = false`. El usuario puede
+   * corregir la fecha sin tener que volver a subir la imagen.
+   */
   changeDate(): boolean {
-    if (!this.isFechaValida(this.modelIni)) {
-      this.inicializa();
-      this.dialog.open(ConfirmDialogComponent, {
-        width: '280px',
-        data: {
-          title: 'Alerta',
-          message: "La fecha no puede ser menor que la fecha de generación de la Orden de Pago.",
-          type: 'alert'
-        }
+    const ok = this.isFechaValida(this.modelIni);
+    this.fechaDocValida = ok;
+
+    if (!ok) {
+      // Solo bloqueamos visualmente con el flag fechaDocValida (lo lee
+      // isSaveDisabled). NO tocamos validaComprobante — así, al corregir
+      // la fecha el botón vuelve a habilitarse SIN necesidad de re-validar
+      // SUNAT (porque el comprobante por RUC+serie+número sigue siendo el
+      // mismo; SUNAT no depende de la fecha del documento).
+      // Tampoco tocamos this.dataImagen / padronRuc / ordenPagoDet.
+      const fechaOrdenTxt = this.orden?.fecOrden
+        ? new Date(this.orden.fecOrden).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+
+      Swal.fire({
+        icon: 'warning',
+        title: 'Fecha del documento inválida',
+        html: `La fecha del documento no puede ser <b>menor</b> que la fecha de generación de la Orden de Pago` +
+              (fechaOrdenTxt ? ` (<b>${fechaOrdenTxt}</b>).` : '.') +
+              `<br><br><em>Los datos del comprobante se mantienen — corrija la fecha para habilitar el guardado.</em>`,
+        confirmButtonText: 'Entendido'
       });
+
       return false;
+    }
+
+    // Fecha OK: recalcular validaciones que dependan de la fecha (periodo
+    // contable, etc.) sin destruir lo cargado.
+    if (typeof this.onPeriodoDeclaracionChange === 'function') {
+      try { this.onPeriodoDeclaracionChange(); } catch { /* noop */ }
     }
     return true;
   }
@@ -1460,6 +1824,23 @@ export class EditRendirCuentaComponent implements OnInit {
       return true;
     }
 
+    // 🔒 Debe seleccionarse un Establecimiento Anexo del proveedor.
+    // Solo lo exigimos cuando SÍ hay anexos disponibles para el RUC; si la
+    // empresa no tiene anexos registrados, no bloqueamos.
+    if (this.anexosDisponibles && this.anexosDisponibles.length > 0 && !this.anexoSeleccionado) {
+      return true;
+    }
+
+    // 🔒 Regla SUNAT: RUC que inicia con "20" (persona jurídica) solo puede
+    // emitir facturas. Si el comprobante es boleta/recibo/nota, bloqueamos.
+    if (this.bloqueoTipoDoc) {
+      return true;
+    }
+
+    // 🔔 La validación de fecha NO bloquea el guardado, solo emite la
+    // advertencia (Swal) en changeDate(). El usuario debe poder guardar
+    // aunque la fecha sea anterior a la OP — la decisión queda en sus manos.
+
     return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
 
@@ -1564,18 +1945,36 @@ export class EditRendirCuentaComponent implements OnInit {
     const haystack = this.normalize(`${detectedTitle || ''} ${rawText || ''}`);
     if (!haystack) return null;
 
-    // Frases canónicas frecuentes en comprobantes peruanos. Si alguna
-    // aparece tal cual, le damos un boost grande para ganar la elección.
+    // Frases canónicas frecuentes en comprobantes peruanos.
+    //
+    // IMPORTANTE: el catálogo en pantalla solo contiene documentos de
+    // COMPRA (los de venta están filtrados). Por eso, cuando el OCR detecta
+    // un comprobante que el proveedor emite como VENTA ("FACTURA DE VENTA",
+    // "FACTURA ELECTRONICA", "BOLETA DE VENTA"), debemos seleccionar el
+    // equivalente de COMPRA en el catálogo del receptor.
+    //
+    // Así, las keywords buscan palabras presentes en la DESCRIPCIÓN del
+    // documento del catálogo (ej. "FACTURA DE COMPRAS"), no las palabras
+    // que aparecen en el comprobante físico.
     const frasesCanonicas: { regex: RegExp; keywords: string[] }[] = [
-      { regex: /\bBOLETA\s+DE\s+VENTA(S)?\b/, keywords: ['BOLETA', 'VENTA'] },
-      { regex: /\bFACTURA\s+DE\s+VENTA(S)?\b/, keywords: ['FACTURA', 'VENTA'] },
-      { regex: /\bBOLETO\s+DE\s+AVION\b/, keywords: ['BOLETO', 'AVION'] },
-      { regex: /\bBOLETO\s+DE\s+TRANSPORTE\b/, keywords: ['BOLETO', 'TRANSPORTE'] },
-      { regex: /\bNOTA\s+DE\s+CREDITO\b/, keywords: ['NOTA', 'CREDITO'] },
-      { regex: /\bNOTA\s+DE\s+DEBITO\b/, keywords: ['NOTA', 'DEBITO'] },
-      { regex: /\bRECIBO\s+POR\s+HONORARIOS\b/, keywords: ['RECIBO', 'HONORARIOS'] },
-      { regex: /\bGUIA\s+DE\s+REMISION\b/, keywords: ['GUIA', 'REMISION'] },
-      { regex: /\bTICKET\b/, keywords: ['TICKET'] }
+      // ─── FACTURA emitida por el proveedor → buscar "FACTURA … COMPRA" ───
+      // Cubre: "FACTURA DE VENTA ELECTRONICA", "FACTURA ELECTRONICA",
+      //        "FACTURA DE VENTA", "FACTURA COMERCIAL".
+      { regex: /\bFACTURA\b/, keywords: ['FACTURA', 'COMPRA'] },
+
+      // ─── BOLETA emitida por el proveedor → buscar "BOLETA … COMPRA" ───
+      // Cubre: "BOLETA DE VENTA", "BOLETA DE VENTA ELECTRONICA".
+      { regex: /\bBOLETA\b/, keywords: ['BOLETA', 'COMPRA'] },
+
+      // ─── Documentos específicos cuya naturaleza es la misma desde
+      //     ambos lados de la transacción ───
+      { regex: /\bBOLETO\s+DE\s+AVION\b/,           keywords: ['BOLETO', 'AVION'] },
+      { regex: /\bBOLETO\s+DE\s+TRANSPORTE\b/,      keywords: ['BOLETO', 'TRANSPORTE'] },
+      { regex: /\bNOTA\s+DE\s+CREDITO\b/,           keywords: ['NOTA', 'CREDITO'] },
+      { regex: /\bNOTA\s+DE\s+DEBITO\b/,            keywords: ['NOTA', 'DEBITO'] },
+      { regex: /\bRECIBO\s+POR\s+HONORARIOS\b/,     keywords: ['RECIBO', 'HONORARIOS'] },
+      { regex: /\bGUIA\s+DE\s+REMISION\b/,          keywords: ['GUIA', 'REMISION'] },
+      { regex: /\bTICKET\b/,                        keywords: ['TICKET'] }
     ];
 
     // Stopwords a ignorar al puntuar.
@@ -1786,17 +2185,86 @@ export class EditRendirCuentaComponent implements OnInit {
     this.sunatService.validarComprobante(this.wrapper).subscribe({
       next: (response: Response) => {
         const respuestaSunat = response.resultado;
-        if (respuestaSunat?.data?.estadoCp === '1') {
-          this.validaComprobante = true;    // ✅ habilita Guardar
-          Swal.fire('Validación correcta', '...', 'success');
-        } else {
-          this.validaComprobante = false;   // ❌ deja deshabilitado
-          Swal.fire('Validación incorrecta', '...', 'error');
+        const data = respuestaSunat?.data ?? {};
+        const estadoCp = String(data.estadoCp ?? '');
+
+        // Catálogo de códigos SUNAT (estadoCp):
+        //   0 = NO EXISTE  | 1 = ACEPTADO  | 2 = ANULADO
+        //   3 = AUTORIZADO | 4 = NO AUTORIZADO
+        const catalogoSunat: Record<string, { titulo: string; mensaje: string; tipo: 'success' | 'warning' | 'error'; valido: boolean }> = {
+          '0': { titulo: 'Comprobante no existe',     mensaje: 'El comprobante NO EXISTE en los registros de SUNAT. Verifique RUC, serie y número.', tipo: 'error',   valido: false },
+          '1': { titulo: 'Validación correcta',       mensaje: 'El comprobante fue ACEPTADO por SUNAT.',                                              tipo: 'success', valido: true  },
+          '2': { titulo: 'Comprobante anulado',       mensaje: 'El comprobante fue ANULADO en SUNAT. No es válido para sustento de gasto.',           tipo: 'error',   valido: false },
+          '3': { titulo: 'Comprobante autorizado',    mensaje: 'El comprobante está AUTORIZADO por SUNAT.',                                           tipo: 'success', valido: true  },
+          '4': { titulo: 'Comprobante no autorizado', mensaje: 'El comprobante NO ESTÁ AUTORIZADO por SUNAT.',                                        tipo: 'error',   valido: false },
+        };
+
+        const info = catalogoSunat[estadoCp] ?? {
+          titulo: 'Respuesta SUNAT desconocida',
+          mensaje: `SUNAT devolvió un estado no contemplado (estadoCp = "${estadoCp}"). Comuníquese con soporte.`,
+          tipo: 'warning' as const,
+          valido: false,
+        };
+
+        // Datos adicionales útiles para el usuario (estado del RUC, condición de
+        // domicilio, observaciones). Se muestran solo si vienen en la respuesta.
+        //
+        // SUNAT codifica algunos valores numéricamente y debemos traducirlos:
+        //   estadoRuc:    "00" → ACTIVO        | otro → NO ACTIVO
+        //   condDomiRuc:  "00" → HABIDO        | otro → NO HABIDO
+        const estadoRucTxt = data.estadoRuc !== undefined && data.estadoRuc !== null && data.estadoRuc !== ''
+          ? (String(data.estadoRuc) === '00' ? 'ACTIVO' : 'NO ACTIVO')
+          : '';
+        const condDomiTxt = data.condDomiRuc !== undefined && data.condDomiRuc !== null && data.condDomiRuc !== ''
+          ? (String(data.condDomiRuc) === '00' ? 'HABIDO' : 'NO HABIDO')
+          : '';
+
+        // Color visual para resaltar valores positivos vs negativos
+        const colorEstado = estadoRucTxt === 'ACTIVO' ? '#198754' : '#dc3545';
+        const colorDomi   = condDomiTxt   === 'HABIDO' ? '#198754' : '#dc3545';
+
+        const detalles: string[] = [];
+        if (estadoRucTxt) {
+          detalles.push(
+            `<b>Estado del RUC:</b> <span style="color:${colorEstado}; font-weight:bold;">${estadoRucTxt}</span>`
+          );
         }
+        if (condDomiTxt) {
+          detalles.push(
+            `<b>Condición de domicilio:</b> <span style="color:${colorDomi}; font-weight:bold;">${condDomiTxt}</span>`
+          );
+        }
+        if (data.observaciones)   detalles.push(`<b>Observaciones:</b> ${data.observaciones}`);
+
+        const html = `
+          <div style="text-align:left; font-family: var(--app-font-family, Arial);">
+            <p style="margin-bottom:${detalles.length ? '10px' : '0'};">${info.mensaje}</p>
+            ${detalles.length ? `<div style="border-top:1px solid #dee2e6; padding-top:8px; font-size:0.9em; color:#555;">
+              ${detalles.join('<br>')}
+            </div>` : ''}
+          </div>
+        `;
+
+        this.validaComprobante = info.valido;
+        Swal.fire({
+          title: info.titulo,
+          html,
+          icon: info.tipo,
+          confirmButtonText: 'OK',
+        });
       },
-      error: () => {
+      error: (err) => {
         this.validaComprobante = false;     // Error de red → tampoco habilita
-        Swal.fire('Error', '...', 'error');
+        const detalle = err?.error?.mensaje
+                      || err?.error?.detalle
+                      || err?.message
+                      || 'No fue posible conectarse con el servicio de validación de SUNAT. Intente nuevamente en unos segundos.';
+        Swal.fire({
+          title: 'Error al validar el comprobante',
+          text: detalle,
+          icon: 'error',
+          confirmButtonText: 'OK',
+        });
       }
     });
   }

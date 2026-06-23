@@ -2,40 +2,40 @@
  * environment.prod.ts → se usa SOLO cuando el build se hace con
  *   ng build --configuration=production
  *
- * Arquitectura:
- *   - apiUrlAuth     → regina-api (Spring Boot) que expone /api/auth/me y
- *                      /api/auth/autenticar. NO va contra aquarius-security
- *                      porque ese gateway NO tiene esos endpoints.
- *   - coreApiUrl     → API del CORE de Seguridad (aquarius-security) usada
- *                      SOLO para /auth/introspect (validar token vivo).
- *   - resto de URLs  → cada backend en su path.
+ * Distribución física de los backends:
  *
- * Si la app se despliega EN PRODUCCIÓN PÚBLICA (marcaciongps:8443) hay que
- * cambiar la base por https://marcaciongps.aquariusconsultores.com:8443/...
+ *   Servidor "developer" (HTTP, mismo host del frontend):
+ *     - regina-billing-dev   (autenticación + permisos)
+ *     - regina-process-dev   (process + maestros)
+ *
+ *   Servidor "marcaciongps" (HTTPS, host externo dedicado):
+ *     - sai-web-utils-dev    (utilitarios)
+ *     - reginaIA-1           (servicio IA)
+ *     - regina-ia            (OCR)
+ *
+ * Como el frontend se publica en HTTP, los servicios del developer se
+ * referencian con HTTP (mismo origen → sin CORS ni PNA). Los servicios del
+ * marcaciongps se mantienen en HTTPS porque allí solo están publicados
+ * por TLS (8443). El navegador permite que una página HTTP llame a APIs
+ * HTTPS — pero el marcaciongps DEBE incluir el origen del developer en
+ * su lista CORS o las llamadas serán bloqueadas.
  */
 export const environment = {
   production: true,
 
-  /* ========================================================
-     AUTENTICACIÓN — regina-api (login + /me + permisos)
-     Acá NO va aquarius-security: ese gateway no expone /api/auth/me.
-  ======================================================== */
-  apiUrlAuth: 'http://192.168.2.9:9080/regina-billing-dev',
+  // ── Servidor "developer" (mismo host del frontend, HTTP) ──────────────
+  apiUrlAuth:     'http://developer.aquariusconsultores.com:21678/regina-billing-dev',
+  apiUrlProcess:  'http://developer.aquariusconsultores.com:21678/regina-process-dev/api/',
+  apiUrlMaestros: 'http://developer.aquariusconsultores.com:21678/regina-process-dev/api/',
 
-  /* ========================================================
-     RESTO DE SERVICIOS — PRODUCCIÓN LAN
-  ======================================================== */
-  apiUrlProcess:  'http://192.168.2.9:9080/regina-process-dev/api/',
+  // ── Servidor "marcaciongps" (HTTPS, host externo) ─────────────────────
   apiUrlUtils:    'https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
-  apiUrlMaestros: 'http://192.168.2.9:9080/regina-process-dev/api/',
   apiUrlIA:       'https://marcaciongps.aquariusconsultores.com:8443/reginaIA-1/ai',
   apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-ia',
 
-  // CORE de seguridad — solo se usa para /auth/introspect (verificar logout).
-  // OJO: la UI del CORE vive en /aquarius-security-ui/ (con sufijo), pero
-  // la API REST vive en /aquarius-security/ (SIN sufijo "-ui"). El error
-  // CORS que vimos confirmó este path desde el server público.
-  coreApiUrl:     'http://192.168.2.9:9080/aquarius-security/api/v1'
+  // CORE de seguridad — ya no se usa (Regina maneja su propio login),
+  // se conserva el campo por compatibilidad con código que aún lo lea.
+  coreApiUrl:     'http://developer.aquariusconsultores.com:21678/aquarius-security/api/v1'
 
   /* ========================================================
      CONFIGURACIONES ANTERIORES — preservadas por si hay rollback

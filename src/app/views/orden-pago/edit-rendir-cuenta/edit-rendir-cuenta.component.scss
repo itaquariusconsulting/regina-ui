@@ -169,3 +169,75 @@
 .ngb-dp-header {
   display: block !important;
 }
+/* ──────────────────────────────────────────────────────────────
+   Badge de estado de validación SUNAT
+   COMPROBANTE VALIDADO    → verde (success)
+   COMPROBANTE NO VALIDADO → rojo  (danger)
+   ────────────────────────────────────────────────────────────── */
+.badge-validacion-sunat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease-in-out;
+  user-select: none;
+  white-space: nowrap;
+
+  i {
+    font-size: 1.05rem;
+  }
+}
+
+/* ROJO — archivo aún no cargado. */
+.badge-no-cargado {
+  background-color: #fdecea;
+  color: #c0392b;
+  border-color: #e74c3c;
+  animation: pulse-danger 2s ease-in-out infinite;
+
+  i { color: #c0392b; }
+}
+
+/* AMARILLO — archivo cargado pero pendiente de validación SUNAT. */
+.badge-no-validado {
+  background-color: #fff8e1;
+  color: #b7791f;
+  border-color: #f1c40f;
+  animation: pulse-warning 2s ease-in-out infinite;
+
+  i { color: #b7791f; }
+}
+
+/* VERDE — validado correctamente contra SUNAT. */
+.badge-validado {
+  background-color: #e9f7ef;
+  color: #196f3d;
+  border-color: #28a745;
+
+  i { color: #196f3d; }
+}
+
+@keyframes pulse-danger {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.45); }
+  50%      { box-shadow: 0 0 0 8px rgba(231, 76, 60, 0); }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.45); }
+  50%      { box-shadow: 0 0 0 8px rgba(241, 196, 15, 0); }
+}
+
+@media (max-width: 768px) {
+  .badge-validacion-sunat {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    margin-top: 6px;
+  }
+}
