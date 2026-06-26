@@ -24,18 +24,18 @@ export const environment = {
   production: true,
 
   // ── Servidor "developer" (mismo host del frontend, HTTP) ──────────────
-  apiUrlAuth:     'http://developer.aquariusconsultores.com:21678/regina-billing-dev',
-  apiUrlProcess:  'http://developer.aquariusconsultores.com:21678/regina-process-dev/api/',
-  apiUrlMaestros: 'http://developer.aquariusconsultores.com:21678/regina-process-dev/api/',
+  apiUrlAuth:     'https://developer.aquariusconsultores.com:8443/regina-billing-dev',
+  apiUrlProcess:  'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
+  apiUrlMaestros: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
 
   // ── Servidor "marcaciongps" (HTTPS, host externo) ─────────────────────
   apiUrlUtils:    'https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
-  apiUrlIA:       'https://marcaciongps.aquariusconsultores.com:8443/reginaIA-1/ai',
-  apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-ia',
+  apiUrlIA:       'https://developer.aquariusconsultores.com:8443/reginaIA-1/ai',
+  apiUrlOcr:      'https://developer.aquariusconsultores.com:8443/regina-ia',
 
   // CORE de seguridad — ya no se usa (Regina maneja su propio login),
   // se conserva el campo por compatibilidad con código que aún lo lea.
-  coreApiUrl:     'http://developer.aquariusconsultores.com:21678/aquarius-security/api/v1'
+  coreApiUrl:     'https://developer.aquariusconsultores.com:8443/aquarius-security/api/v1'
 
   /* ========================================================
      CONFIGURACIONES ANTERIORES — preservadas por si hay rollback

@@ -8,8 +8,10 @@
   bottom: 0;
   left: 0;
   z-index: 1000;
-  padding-top: 10px;
-  height: 100px !important;
+  padding-top: 6px;
+  // Altura reducida: solo lo necesario para los botones (~62px) + footer-text (~22px)
+  height: auto !important;
+  min-height: 84px;
 }
 
 :host {
@@ -32,20 +34,36 @@
 }
 
 /* =========================
-   Botones principales
+   Botones principales — scrollable horizontal
 ========================= */
 .navbar-buttons {
   display: flex;
-  justify-content: flex-start; /* 🔹 alineación izquierda */
+  flex-wrap: nowrap;          // mantienen línea única
+  justify-content: flex-start;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 4px;
   width: 100%;
+
+  // Scroll horizontal cuando hay más items de los que caben
+  overflow-x: auto;
+  overflow-y: visible;        // permite que los dropdown salgan hacia arriba
+  -webkit-overflow-scrolling: touch;
+
+  // Scrollbar discreta en móvil
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+
+  &::-webkit-scrollbar { height: 3px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
 }
 
 .nav-item-wrapper {
   position: relative;
-  flex: 0 0 auto; /* 🔹 evita que se expandan */
+  flex: 0 0 auto;
 }
 
 .nav-item {
@@ -53,26 +71,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 14px;
-  min-width: 60px;
-  height: 60px;
+  padding: 6px 10px;
+  min-width: 48px;
+  height: 48px;
   background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   gap: 2px;
   white-space: nowrap;
   transition: background 0.2s;
 }
 
-.nav-item:hover {
-  background: var(--primary-color);
+.nav-item:hover,
+.nav-item:active {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .nav-item i {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
 }
 
 /* =========================
@@ -133,9 +152,11 @@
 .footer-text {
   width: 100%;
   text-align: center;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
+  line-height: 1.1;
   color: white;
   border-top: 1px solid white;
   padding-top: 2px;
+  padding-bottom: 2px;
   background-color: black;
 }

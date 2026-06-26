@@ -151,15 +151,91 @@
     </div>
 </div>
 
-<!-- Modal Nuevo Detalle -->
+<!-- Modal Nuevo Detalle (ahora con OCR + modal-xl ampliado) -->
 <div class="modal fade" id="modalNuevoDetalle" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-vertical">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-detalle-mov">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nuevo Detalle de Planilla</h5>
+            <div class="modal-header d-flex align-items-center">
+                <h5 class="modal-title flex-grow-1">Nuevo Detalle de Planilla</h5>
+
+                <!-- Badge de estado del comprobante (igual concepto que en rendir-cuenta):
+                     - ROJO   "COMPROBANTE NO CARGADO" cuando no hay archivo aún.
+                     - VERDE  "COMPROBANTE CARGADO"   cuando ya se subió y procesó. -->
+                <span class="badge-comprobante-mov me-3"
+                      [ngClass]="selectedFileMov ? 'badge-cargado' : 'badge-no-cargado'"
+                      [title]="selectedFileMov
+                                ? 'Comprobante cargado correctamente'
+                                : 'Aún no se ha cargado el archivo del comprobante'">
+                    <i class="fa-solid"
+                       [ngClass]="{
+                          'fa-file-circle-xmark' : !selectedFileMov,
+                          'fa-circle-check'      :  selectedFileMov
+                       }"></i>
+                    {{ selectedFileMov ? 'COMPROBANTE CARGADO' : 'COMPROBANTE NO CARGADO' }}
+                </span>
+
                 <button type="button" class="btn-close" (click)="closeDetailModal()"></button>
             </div>
             <div class="modal-body">
+
+                <!-- ─── Zona de carga + OCR ──────────────────────────── -->
+                <div class="ocr-mov-zone">
+                    <div class="ocr-mov-actions">
+                        <label class="general-button btn-primary btn-sm m-0"
+                               *ngIf="!selectedFileMov">
+                            <i class="fas fa-camera me-1"></i>
+                            Capturar / Subir comprobante
+                            <input type="file"
+                                   accept="image/*,application/pdf"
+                                   capture="environment"
+                                   hidden
+                                   (change)="onSelectFileMov($event)">
+                        </label>
+
+                        <button type="button" class="general-button btn-warning btn-sm"
+                                *ngIf="selectedFileMov"
+                                [disabled]="cargandoOcrMov"
+                                (click)="mejorarImagenMov()"
+                                title="Reintenta el OCR con mejora de imagen Nivel 3">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i>
+                            Mejorar imagen
+                        </button>
+
+                        <button type="button" class="general-button btn-danger btn-sm"
+                                *ngIf="selectedFileMov"
+                                (click)="onDescartarImagenMov()"
+                                title="Quitar la imagen cargada">
+                            <i class="fas fa-xmark me-1"></i>
+                            Eliminar
+                        </button>
+
+                        <span class="ocr-mov-status" *ngIf="mensajeOcrMov">
+                            <i class="fas" [class.fa-spinner]="cargandoOcrMov"
+                               [class.fa-spin]="cargandoOcrMov"
+                               [class.fa-circle-info]="!cargandoOcrMov"></i>
+                            {{ mensajeOcrMov }}
+                        </span>
+                    </div>
+
+                    <div class="ocr-mov-preview" *ngIf="selectedFileMov">
+                        <img *ngIf="previewImageMov && !showPdfPreviewMov"
+                             [src]="previewImageMov" alt="Comprobante"
+                             class="ocr-mov-img"
+                             title="Click para ver en pantalla completa"
+                             (click)="abrirPantallaCompletaMov($event)" />
+                        <!-- Visor PDF.js: NO requiere Adobe, funciona en
+                             Windows sin plugin, Linux, macOS, iOS, Android.
+                             Renderiza el PDF en <canvas> con toolbar nativa. -->
+                        <app-pdf-viewer *ngIf="showPdfPreviewMov && pdfPreviewRawUrlMov"
+                                        [src]="pdfPreviewRawUrlMov"
+                                        filename="comprobante-movilidad.pdf"
+                                        class="ocr-mov-pdf">
+                        </app-pdf-viewer>
+                    </div>
+                </div>
+
+                <hr *ngIf="selectedFileMov" class="my-3">
+
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha</label>
@@ -176,7 +252,8 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Tipo Documento</label>
-                        <select class="form-select" [(ngModel)]="nuevoDetalle.codDocumento">
+                        <select class="form-select" [(ngModel)]="nuevoDetalle.codDocumento"
+                                (change)="validarDuplicadoMov()">
                             <option value="" disabled>Seleccione</option>
                             <option *ngFor="let doc of documentosGeneral" [value]="doc.codDocumento">
                                 {{doc.desDocumento}}
@@ -184,30 +261,24 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Serie</label>
-                        <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.serDocumento" maxlength="4" />
-                    </div>
-                    <div class="col-md-6">
                         <label class="form-label fw-semibold">Nro Documento</label>
                         <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.numDocumento"
-                            maxlength="15" />
+                               maxlength="20"
+                               (change)="validarDuplicadoMov()" />
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Proveedor</label>
-                        <div class="datepicker-container">
-                            <input readonly type="text" class="form-control"
-                                [(ngModel)]="nuevoDetalle.codAuxiliarProveedor" />
-                            <button class="calendar-btn" (click)="openAuxiliaresModal()" type="button">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                        <div style="font-size: 0.6rem; color: #390193;">
-                            {{auxiliarSeleccionado ? auxiliarSeleccionado.desAuxiliar : ''}}
+                    <!-- Aviso de duplicado: rojo si el comprobante ya está registrado en otra OP -->
+                    <div class="col-12" *ngIf="esDuplicadoMov">
+                        <div class="alert alert-danger py-2 mb-0" style="font-size: 0.85rem;">
+                            <i class="fas fa-triangle-exclamation me-1"></i>
+                            <strong>Comprobante duplicado:</strong> {{ mensajeDuplicadoMov }}
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Observaciones</label>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold">Observaciones
+                            <small class="text-muted">(chofer, vehículo, hora de salida y llegada, distancia)</small>
+                        </label>
                         <input type="text" class="form-control" [(ngModel)]="nuevoDetalle.glosa" />
                     </div>
 

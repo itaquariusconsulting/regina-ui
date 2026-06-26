@@ -34,6 +34,7 @@ import { WrapperRequestOrdenPagoDet } from '../../../models/wrappers/wrapper-req
 import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { OrdenPagoPlanillaMovilidadDetService } from '../../../services/orden-pago-planilla-movilidad-det.service';
+import { ChatFiltrosService } from '../../../services/chat-filtros.service';
 import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
 import { OrdenPagoPlanillaMovilidadDet } from '../../../models/orden-pago-planilla-movilidad-det';
 import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
@@ -76,10 +77,14 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     private conVoucherService: ConVoucherService,
     private ordenPagoDetService: OrdenPagoDetService,
     private planillaCabService: OrdenPagoPlanillaMovilidadCabService,
-    private planillaDetService: OrdenPagoPlanillaMovilidadDetService
+    private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
+    private chatFiltrosService: ChatFiltrosService,
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
+
+  /** Suscripción al BehaviorSubject de filtros del chat IA. */
+  private chatFiltrosSub?: Subscription;
 
   wrapperRequestOrdenPago: WrapperRequestOrdenPago = new WrapperRequestOrdenPago();
   isAdminUser: boolean = false;
@@ -120,10 +125,34 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.cargarDesdeStateOApi();
       });
+
+    // 🆕 Escuchar filtros del chat IA.
+    //
+    // Por qué un servicio en lugar de history.state:
+    //   Cuando el usuario YA está en /list-orders y pide otra búsqueda
+    //   por chat, Angular NO emite NavigationEnd porque la URL no cambia,
+    //   por lo que ngOnInit ni cargarDesdeStateOApi se vuelven a ejecutar.
+    //   El servicio (BehaviorSubject) garantiza que el filtro llegue
+    //   sin importar el estado de navegación.
+    this.chatFiltrosSub = this.chatFiltrosService.filtrosOrdenes$
+      .subscribe(filtros => {
+        if (!filtros) return;
+        console.log('🎯 [list-orden-pago] filtros recibidos por servicio:', filtros);
+        // Si la lista general ya está cargada, aplicamos directo.
+        // Si todavía no, los filtros quedan en el servicio y se
+        // aplicarán cuando termine getOrdenesPago().
+        if (this.ordenesGeneral && this.ordenesGeneral.length > 0) {
+          this.aplicarFiltrosIA(filtros);
+        } else {
+          // Forzamos una recarga del listado pasándole los filtros.
+          this.getOrdenesPagoConFiltros(filtros);
+        }
+      });
   }
 
   ngOnDestroy(): void {
     this.navigationSub?.unsubscribe();
+    this.chatFiltrosSub?.unsubscribe();
   }
 
   private inicializarWrapperDesdeSession(): void {
@@ -163,11 +192,229 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       this.buildPagination();
       this.loadingService.hide();
 
+      // Si vinieron filtros del chat IA junto con la lista preconstruida,
+      // los aplicamos también sobre la lista ya cargada.
+      this.aplicarFiltrosIA(state.filtros);
+
     } else {
 
-      this.getOrdenesPago();
+      // Sin lista pre-cargada: traemos del backend y, cuando termine,
+      // aplicamos los filtros si venían en el state.
+      const filtrosIA = state?.filtros;
+      this.getOrdenesPagoConFiltros(filtrosIA);
 
     }
+  }
+
+  /**
+   * Versión de getOrdenesPago que aplica los filtros del chat IA una vez
+   * cargada la lista del backend. Reutiliza el subscribe original.
+   */
+  private getOrdenesPagoConFiltros(filtrosIA: any): void {
+    this.ordenPagoService
+      .getOrdenesPago(this.wrapperRequestOrdenPago)
+      .subscribe({
+        next: (response: Response) => {
+          this.ordenes = response.resultado || [];
+          if (this.isAdminUser == false) {
+            this.ordenes = this.ordenes.filter(filtro => filtro.tipEstado == "PR" || filtro.tipEstado == "LQ");
+          }
+          this.ordenesGeneral = this.ordenes;
+          this.currentPage = 0;
+          this.buildPagination();
+          this.loadingService.hide();
+
+          // Aplicar filtros del chat IA si los hay.
+          this.aplicarFiltrosIA(filtrosIA);
+        },
+        error: () => {
+          this.loadingService.hide();
+        }
+      });
+  }
+
+  /**
+   * Aplica los filtros que vienen del chat de Regina IA sobre la lista
+   * de órdenes ya cargada (`ordenesGeneral`). Los filtros son AND.
+   *
+   * Filtros soportados:
+   *   - numOrden       → match tolerante a ceros a la izquierda
+   *                      ('16179' o '000016179' matchean la misma orden)
+   *   - nombreCompleto → busca en cdesAuxiliar (descripción del proveedor)
+   *                      sin acentos, case-insensitive y con FONÉTICA
+   *                      (Isla = Ysla = Hisla = Hysla, Vásquez = Basquez…)
+   *   - nombre/apellido → si vienen separados, se concatenan y se aplica
+   *                      el mismo matching
+   *   - anio           → compara con orden.anoPeriodo
+   *   - mes            → compara con orden.codPeriodo (zero-padded a 2)
+   *   - centroCosto    → busca en orden.codCCostos (match parcial)
+   */
+  private aplicarFiltrosIA(filtros: any): void {
+    if (!filtros || typeof filtros !== 'object') {
+      console.log('🎯 [list-orden-pago] filtros del chat IA: nada que aplicar (vacío o null)');
+      return;
+    }
+    console.log('🎯 [list-orden-pago] aplicando filtros del chat IA:', filtros);
+    console.log(`🎯 [list-orden-pago] tamaño ordenesGeneral: ${this.ordenesGeneral?.length || 0}`);
+
+    const norm = (s: any): string => {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')   // quitar acentos (rango unicode combining)
+        .toLowerCase()
+        .trim();
+    };
+
+    /**
+     * Reduce una palabra a su "huella fonética" en español-peruano para
+     * que apellidos que suenan igual matcheen aunque se escriban distinto.
+     *
+     * Equivalencias aplicadas (en orden):
+     *   - quitar H al inicio:     "Hisla" → "isla"
+     *   - quitar H entre vocales: "Cohel" → "Coel"
+     *   - Y → I:                  "Ysla" → "Isla", "Reyes" → "Reies"
+     *   - V → B:                  "Vásquez" → "Básquez"
+     *   - Z → S:                  "Vásquez" → "Básqueš" → "basques"
+     *   - QU → K:                 "Quispe" → "Kispe"
+     *   - C antes de E/I → S:     "Cecilia" → "Sesilia"
+     *   - C otros → K:            "Cárdenas" → "Kárdenas"
+     *   - LL → Y → I:             "Llanos" → "Ianos"
+     *   - X → S al inicio:        "Xavier" → "Savier"
+     *
+     * Resultado: "Isla", "Ysla", "Hisla", "Hysla" → todos → "isla"
+     *            "Vásquez", "Basquez", "Vazquez" → "basques"
+     */
+    const fonetica = (s: any): string => {
+      let t = norm(s);
+      if (!t) return '';
+      // 1) Quitar H inicial y entre vocales
+      t = t.replace(/^h/, '');
+      t = t.replace(/([aeiou])h([aeiou])/g, '$1$2');
+      // 2) Y → I (siempre — incluso al inicio: "ysla" → "isla")
+      t = t.replace(/y/g, 'i');
+      // 3) V → B
+      t = t.replace(/v/g, 'b');
+      // 4) Z → S
+      t = t.replace(/z/g, 's');
+      // 5) QU → K  (antes de tocar C)
+      t = t.replace(/qu/g, 'k');
+      // 6) C antes de E/I → S
+      t = t.replace(/c([ei])/g, 's$1');
+      // 7) Otras C → K
+      t = t.replace(/c/g, 'k');
+      // 8) LL → I  (en muchos hablantes "Llanos" suena "Ianos")
+      t = t.replace(/ll/g, 'i');
+      // 9) X inicial → S
+      t = t.replace(/^x/, 's');
+      // 10) G antes de E/I → J  (suena igual)
+      t = t.replace(/g([ei])/g, 'j$1');
+      return t;
+    };
+
+    const stripLeadingZeros = (s: any): string => {
+      const t = String(s ?? '').replace(/^0+/, '');
+      return t === '' ? '0' : t;
+    };
+
+    // Normalizamos los filtros una sola vez
+    const filtroNumOrden = filtros.numOrden ? stripLeadingZeros(filtros.numOrden) : null;
+    const palabrasNombre: string[] = [filtros.nombre, filtros.apellido, filtros.nombreCompleto]
+      .filter((s): s is string => !!s && !!String(s).trim())
+      .flatMap(s => norm(s).split(/\s+/))
+      .filter(w => w.length >= 2);   // descartar "y", "de", etc.
+    const palabrasFoneticas = palabrasNombre.map(fonetica);
+    const filtroAnio = filtros.anio ? String(filtros.anio) : null;
+    const filtroMes  = filtros.mes  ? String(filtros.mes).padStart(2, '0') : null;
+    const filtroCC   = filtros.centroCosto ? norm(filtros.centroCosto) : null;
+
+    console.log('🎯 [list-orden-pago] normalizados:', {
+      filtroNumOrden, palabrasNombre, palabrasFoneticas, filtroAnio, filtroMes, filtroCC,
+    });
+
+    const tienenAlgo = filtroNumOrden || palabrasNombre.length || filtroAnio || filtroMes || filtroCC;
+    if (!tienenAlgo) {
+      // 🆕 BUGFIX 2026-06-26: antes hacíamos `return` y la lista quedaba
+      // pegada con el filtro de la consulta anterior. Ahora, si el chat
+      // dice "ordenes" sin filtros (o el parser no detectó ninguno),
+      // RESETEAMOS a la lista completa para que el usuario vuelva a verlas.
+      console.log('🎯 [list-orden-pago] sin filtros activos → limpio el filtro y muestro la lista completa');
+      this.ordenes = this.ordenesGeneral;
+      this.currentPage = 0;
+      this.buildPagination();
+      return;
+    }
+
+    let descartadosPorNum = 0, descartadosPorNombre = 0, descartadosPorAnio = 0,
+        descartadosPorMes = 0, descartadosPorCC = 0;
+
+    this.ordenes = this.ordenesGeneral.filter(orden => {
+      // 1) Número de orden
+      if (filtroNumOrden) {
+        const numLimpio = stripLeadingZeros(orden.numOrden);
+        if (numLimpio !== filtroNumOrden && !numLimpio.includes(filtroNumOrden)) {
+          descartadosPorNum++;
+          return false;
+        }
+      }
+
+      // 2) Nombre / apellido con fonética.
+      //    Para cada palabra del filtro, EXIGIMOS que aparezca en
+      //    cdesAuxiliar — comparando primero literalmente y, si falla,
+      //    comparando con la huella fonética.
+      if (palabrasNombre.length) {
+        const aux = norm(orden.cdesAuxiliar);
+        if (!aux) {
+          descartadosPorNombre++;
+          return false;
+        }
+        const auxPalabras = aux.split(/\s+/);
+        const auxFoneticas = auxPalabras.map(fonetica);
+
+        const todasMatchearon = palabrasNombre.every((pal, i) => {
+          const palFon = palabrasFoneticas[i];
+          // 2a) match literal en cualquier palabra del auxiliar
+          if (auxPalabras.some(a => a.includes(pal))) return true;
+          // 2b) match fonético (Isla = Ysla = Hisla)
+          if (auxFoneticas.some(a => a.includes(palFon))) return true;
+          return false;
+        });
+        if (!todasMatchearon) {
+          descartadosPorNombre++;
+          return false;
+        }
+      }
+
+      // 3) Año del periodo.
+      if (filtroAnio && String(orden.anoPeriodo || '') !== filtroAnio) {
+        descartadosPorAnio++;
+        return false;
+      }
+
+      // 4) Mes del periodo.
+      if (filtroMes && String(orden.codPeriodo || '').padStart(2, '0') !== filtroMes) {
+        descartadosPorMes++;
+        return false;
+      }
+
+      // 5) Centro de Costo.
+      if (filtroCC) {
+        const cc = norm(orden.codCCostos);
+        if (!cc.includes(filtroCC)) {
+          descartadosPorCC++;
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    this.currentPage = 0;
+    this.buildPagination();
+
+    console.log(`🎯 [list-orden-pago] filtro IA aplicado → ${this.ordenes.length} órdenes` +
+      ` (descartados: num=${descartadosPorNum}, nombre=${descartadosPorNombre},` +
+      ` año=${descartadosPorAnio}, mes=${descartadosPorMes}, cc=${descartadosPorCC})`);
   }
 
   private buildPagination(): void {

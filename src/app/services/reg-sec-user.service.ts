@@ -39,6 +39,26 @@ export class RegSecUserService {
     });
   }
 
+  /**
+   * Cambia la contraseña de un usuario específico (operación de admin).
+   *
+   * Reutiliza el endpoint PATCH `actualizar-parcial` enviando SOLO el
+   * userId y la nueva contraseña, así el backend no toca otros campos
+   * del registro (apellidos, perfil, status, etc.).
+   *
+   * Si el backend tuviera un endpoint dedicado (ej. `/api/usuario/{id}/password`)
+   * sería preferible cambiarlo aquí para mejor auditoría — por ahora
+   * vamos por PATCH para no romper compatibilidad.
+   */
+  changeUserPasswordAsAdmin(userId: number, newPassword: string): Observable<Response> {
+    const partial: RegSecUser = new RegSecUser();
+    partial.userId = userId;
+    partial.userPassword = newPassword;
+    return this.http.patch<Response>(`${this.apiUrlAuth}/api/usuario/actualizar-parcial`, partial, {
+      headers: this.getHeaders(),
+    });
+  }
+
   deleteUser(id: number): Observable<Response> {
     return this.http.delete<Response>(`${this.apiUrlAuth}/api/usuario/eliminar/${id}`, {
       headers: this.getHeaders()

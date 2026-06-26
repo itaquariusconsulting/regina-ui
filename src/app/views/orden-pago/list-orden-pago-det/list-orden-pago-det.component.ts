@@ -16,6 +16,7 @@ import { MaeDocumento } from '../../../models/mae-documento';
 import * as bootstrap from 'bootstrap';
 import { DocumentoService } from '../../../services/documento.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
 
 @Component({
   selector: 'app-edit-orden-pago',
@@ -24,7 +25,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
     CommonModule,
     FormsModule,
     LoadingDancingSquaresComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    PdfViewerComponent
   ],
   templateUrl: './list-orden-pago-det.component.html',
   styleUrls: ['./list-orden-pago-det.component.scss']
@@ -60,6 +62,15 @@ export class ListOrdenPagoDetComponent implements OnInit {
   expandedRow: any = null;
   imagenDocumento: string | null = null;
   pdfDocumentoUrl: SafeResourceUrl | null = null;
+  /**
+   * URL cruda (blob:) del PDF en preview. La necesita `<app-pdf-viewer>`
+   * que NO acepta SafeResourceUrl (sanitizado para iframes) — trabaja
+   * directamente con el binario o la URL plana.
+   *
+   * Cuando el documento es un PDF, se setea junto a `pdfDocumentoUrl`
+   * para que el visor PDF.js pueda renderizarlo.
+   */
+  pdfDocumentoRawUrl: string | null = null;
   private pdfObjectUrl: string | null = null;
   
   ngOnInit(): void {
@@ -190,6 +201,11 @@ export class ListOrdenPagoDetComponent implements OnInit {
           if (await this.esPdf(blob)) {
             this.pdfObjectUrl = URL.createObjectURL(blob);
             this.pdfDocumentoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjectUrl);
+            // ✅ También exponemos el blob URL plano para <app-pdf-viewer>
+            // (PDF.js): el iframe nativo del navegador a veces no renderiza
+            // PDFs descargados desde un backend con CSP estricto, mientras
+            // que PDF.js trabaja directamente con los bytes.
+            this.pdfDocumentoRawUrl = this.pdfObjectUrl;
             this.abrirModal();
             return;
           }
@@ -228,6 +244,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
   private limpiarDocumentoPreview(): void {
     this.imagenDocumento = null;
     this.pdfDocumentoUrl = null;
+    this.pdfDocumentoRawUrl = null;
     if (this.pdfObjectUrl) {
       URL.revokeObjectURL(this.pdfObjectUrl);
       this.pdfObjectUrl = null;

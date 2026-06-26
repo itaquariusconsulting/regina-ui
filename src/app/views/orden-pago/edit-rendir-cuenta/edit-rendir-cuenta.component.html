@@ -63,7 +63,11 @@
 
         </div>
 
-        <div class="d-flex align-items-center gap-1 mt-3">
+        <!-- Toolbar de acciones del comprobante.
+             En móvil usamos `flex-wrap` para que los botones bajen a una
+             nueva línea en lugar de cortarse fuera del viewport, y los
+             textos se ocultan dejando solo íconos. -->
+        <div class="d-flex flex-wrap align-items-center gap-1 mt-3 toolbar-comprobante">
 
             <label *ngIf="!selectedFile" class="general-button btn-primary btn-capture-image"
                 style="height: 32px !important;">
@@ -72,7 +76,11 @@
                 <input #fileInputRef type="file" accept="image/*,application/pdf" capture="environment" (change)="onSelectFile($event)" hidden>
             </label>
 
-            <button class="general-button btn-primary" (click)="validarComprobante()">Prueba Validacion</button>
+            <button class="general-button btn-primary btn-sm" (click)="validarComprobante()"
+                    title="Probar Validación">
+                <i class="fa-solid fa-clipboard-check me-1"></i>
+                {{isDesktop ? 'Prueba Validacion' : ''}}
+            </button>
 
             <button (click)="onDescartar()" title="Eliminar Imagen" *ngIf="selectedFile"
                 class="general-button btn-danger">
@@ -132,6 +140,78 @@
 
     </div>
 
+    <!-- Overlay de loading del OCR: REEMPLAZA al loadingService durante
+         todo el procesamiento del comprobante. Muestra al usuario:
+            · cronómetro con el tiempo transcurrido
+            · etapas del proceso, marcando cada una conforme avanza
+         Se cierra automáticamente al recibir respuesta (next/error/complete).
+         pointer-events: auto bloquea la interacción debajo (es overlay modal). -->
+    <div *ngIf="ocrTimerActive" class="ocr-loading-overlay" aria-live="polite">
+        <div class="ocr-loading-card">
+
+            <!-- Cronómetro grande, foco visual principal -->
+            <div class="ocr-loading-header">
+                <i class="fa-solid fa-stopwatch ocr-loading-icon"></i>
+                <div class="ocr-loading-time">{{ formatOcrTimer() }}</div>
+                <div class="ocr-loading-title">{{ ocrTimerLabel }}</div>
+            </div>
+
+            <!-- Lista de fases del proceso. Cada fase pasa de
+                 pending (gris) → active (azul + spinner) → done (verde + check) -->
+            <ul class="ocr-loading-fases">
+                <li *ngFor="let f of ocrFases" [ngClass]="'fase-' + f.estado">
+                    <div class="fase-icon">
+                        <i *ngIf="f.estado === 'done'"    class="fa-solid fa-circle-check"></i>
+                        <i *ngIf="f.estado === 'active'"  class="fa-solid fa-spinner fa-spin"></i>
+                        <i *ngIf="f.estado === 'pending'" class="fa-regular fa-circle"></i>
+                    </div>
+                    <div class="fase-text">
+                        <div class="fase-titulo">{{ f.titulo }}</div>
+                        <div class="fase-desc">{{ f.descripcion }}</div>
+                    </div>
+                </li>
+            </ul>
+
+            <!-- Aviso entre 20 y 60s: tranquilizar al usuario -->
+            <div *ngIf="ocrTimerSeconds >= 20 && ocrTimerSeconds < 60" class="ocr-loading-aviso">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Esto está tomando más de lo habitual. Puedes seguir
+                editando el formulario mientras tanto — en cuanto termine,
+                los datos se cargan automáticamente.
+            </div>
+
+            <!-- Aviso a partir de 60s: sugerir reemplazar la imagen -->
+            <div *ngIf="ocrTimerSeconds >= 60" class="ocr-loading-aviso aviso-grave">
+                <strong><i class="fa-solid fa-triangle-exclamation me-1"></i>
+                       El OCR está tardando demasiado.</strong>
+                <div style="margin-top:6px;">
+                    Las imágenes <strong>oscuras o con flash</strong> son las
+                    que más lo enlentecen. Sugerencias:
+                </div>
+                <ul style="margin:6px 0 0 18px;padding:0;">
+                    <li>Toma la foto con luz natural (sin flash).</li>
+                    <li>Apoya el documento sobre una superficie plana.</li>
+                    <li>Asegura que el texto se vea nítido y contrastado.</li>
+                </ul>
+                <div style="margin-top:8px;">
+                    Puedes <strong>Continuar trabajando</strong> y subir
+                    una foto nueva, el OCR actual seguirá en background.
+                </div>
+            </div>
+
+            <!-- Acción: minimizar (NO cancela el OCR, solo oculta el overlay).
+                 El proceso sigue en background y cuando termine aparece un toast. -->
+            <div class="ocr-loading-actions">
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="minimizarOcr()">
+                    <i class="fa-regular fa-window-minimize me-1"></i>
+                    Continuar trabajando
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="mb-1" *ngIf="imageChangedEvent && showImageCropper">
         <div class="card preview-card preview-image">
             <div class="preview-badge">Imagen</div>
@@ -147,7 +227,20 @@
         <div class="card preview-card preview-pdf">
             <div class="preview-badge">PDF</div>
             <div class="card-body p-1">
-                <iframe [src]="pdfPreviewUrl" style="width: 100%; height: 420px; border: 0;"></iframe>
+                <!-- Visor PDF nativo basado en PDF.js (Mozilla).
+                     Renderiza el PDF en un <canvas> dentro del propio navegador
+                     usando JavaScript puro: NO requiere Adobe Reader instalado
+                     ni el plugin nativo de PDF del navegador. Funciona en
+                     Windows sin Adobe, Linux, macOS, iOS Safari y Android.
+                     Incluye toolbar con navegación, zoom, rotación, descarga
+                     e impresión. -->
+                <div class="pdf-preview-wrapper" *ngIf="pdfPreviewRawUrl">
+                    <app-pdf-viewer
+                        [src]="pdfPreviewRawUrl"
+                        filename="comprobante.pdf"
+                        class="pdf-viewer-embedded">
+                    </app-pdf-viewer>
+                </div>
             </div>
         </div>
     </div>
@@ -212,24 +305,44 @@
             </label>
             <div class="input-group">
                 <input class="form-control general-input" name="direccion" id="direccion"
-                       [(ngModel)]="dataImagen.issuerAddress" readonly
+                       [(ngModel)]="dataImagen.issuerAddress"
                        placeholder="Seleccione un establecimiento anexo de SUNAT…" />
                 <button type="button"
-                        class="btn btn-primary"
+                        class="btn btn-primary btn-seleccionar-anexo"
                         title="Seleccionar establecimiento anexo del proveedor (SUNAT)"
                         [disabled]="cargandoAnexos || !ruc"
                         (click)="abrirSelectorAnexos()">
-                    <i class="fa-solid" [class.fa-spinner]="cargandoAnexos" [class.fa-spin]="cargandoAnexos"
+                    <!-- Ícono principal: localizador o spinner según estado.
+                         En móvil, mientras carga, no mostramos ningún ícono
+                         para dejar el área visual al loader de 3 puntos. -->
+                    <i *ngIf="!cargandoAnexos || isDesktop"
+                       class="fa-solid"
+                       [class.fa-spinner]="cargandoAnexos"
+                       [class.fa-spin]="cargandoAnexos"
                        [class.fa-location-dot]="!cargandoAnexos"></i>
-                    {{ cargandoAnexos ? 'Cargando…' : 'Seleccionar Anexo' }}
+
+                    <!-- Desktop cargando: texto tradicional "Cargando…" -->
+                    <ng-container *ngIf="cargandoAnexos && isDesktop">&nbsp;Cargando…</ng-container>
+
+                    <!-- Móvil cargando: 3 puntos animados que aparecen/desaparecen
+                         secuencialmente. Mucho más visible y nativo en celular. -->
+                    <span *ngIf="cargandoAnexos && !isDesktop" class="dots-loader" aria-label="Cargando">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </span>
+
+                    <!-- Estado reposo en desktop: texto completo -->
+                    <ng-container *ngIf="!cargandoAnexos && isDesktop">&nbsp;Seleccionar Anexo</ng-container>
+
                     <span *ngIf="!cargandoAnexos && anexosDisponibles.length > 0" class="badge bg-light text-dark ms-1">
                         {{ anexosDisponibles.length }}
                     </span>
                 </button>
             </div>
-            <small *ngIf="!anexoSeleccionado && ruc && anexosDisponibles.length > 0" class="text-warning d-block mt-1">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                Debe seleccionar un establecimiento anexo para poder guardar.
+            <small *ngIf="!anexoSeleccionado && ruc && anexosDisponibles.length > 0" class="text-muted d-block mt-1">
+                <i class="fa-solid fa-circle-info"></i>
+                Sugerencia: puede seleccionar un establecimiento anexo del proveedor (no es obligatorio).
             </small>
         </div>
     </div>

@@ -159,8 +159,19 @@
 
         <div *ngIf="detail" class="contenedor-scroll">
 
+          <!-- IMAGEN: se mantiene con <img> nativo, no requiere cambios. -->
           <img *ngIf="imagenDocumento" [src]="imagenDocumento" class="imagen-doc">
-          <iframe *ngIf="pdfDocumentoUrl" [src]="pdfDocumentoUrl" class="pdf-doc" title="Documento PDF"></iframe>
+
+          <!-- PDF: visor PDF.js (Mozilla) embebido. NO requiere Adobe Reader
+               instalado, ni depende del visor nativo del navegador (que en
+               algunos casos no renderiza PDFs servidos desde el backend por
+               políticas CSP / Content-Disposition). Funciona en Windows sin
+               Adobe, Linux, macOS, iOS Safari y Android Chrome. -->
+          <app-pdf-viewer *ngIf="pdfDocumentoRawUrl"
+                          [src]="pdfDocumentoRawUrl"
+                          filename="documento.pdf"
+                          class="pdf-doc-viewer">
+          </app-pdf-viewer>
 
         </div>
 

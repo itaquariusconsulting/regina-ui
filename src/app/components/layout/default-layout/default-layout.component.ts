@@ -10,6 +10,7 @@ import { DefaultFooterMobileComponent } from '../../layout/default-layout/defaul
 import { DefaultFooterComponent } from './default-footer/default-footer.component';
 
 import { ChatResponse, ReginaIaService } from '../../../services/regina-ia.service';
+import { ChatFiltrosService } from '../../../services/chat-filtros.service';
 import { finalize } from 'rxjs/operators';
 import { WrapperRequestIA } from '../../../models/wrappers/wrapper-request-ia';
 import { environment } from '../../../../environments/environment';
@@ -41,7 +42,8 @@ export class DefaultLayoutComponent implements OnInit {
     private router: Router,
     private zone: NgZone,
     private reginaService: ReginaIaService,
-    private deviceService: DeviceService
+    private deviceService: DeviceService,
+    private chatFiltrosService: ChatFiltrosService,
   ) { }
 
   user = sessionStorage.getItem('user')
@@ -238,7 +240,18 @@ export class DefaultLayoutComponent implements OnInit {
 
             switch (res.tipo) {
               case 'ordenes':
-                this.router.navigate(['/list-orders'], { state: { data: this.retorno } });
+                // 🆕 Emitimos los filtros por el servicio reactivo ANTES de
+                // navegar. Esto garantiza que list-orden-pago los reciba
+                // aunque ya estuviera en /list-orders (caso en el que
+                // Angular NO emite NavigationEnd y el ngOnInit no corre).
+                this.chatFiltrosService.emitirFiltrosOrdenes((res as any).filtros);
+
+                this.router.navigate(['/list-orders'], {
+                  state: {
+                    data: this.retorno,
+                    filtros: (res as any).filtros || null,
+                  },
+                });
                 break;
 
               case 'usuarios':
@@ -269,6 +282,50 @@ export class DefaultLayoutComponent implements OnInit {
     }
   }
 
+  // ─── Catálogo de voces conocidas para Regina ─────────────────────
+  //
+  // Las voces de español del SpeechSynthesis no exponen género en
+  // su `name` ni en su `lang` — usan nombres propios (Sabina, Helena,
+  // Pablo, Raúl, etc.). Sin una lista explícita, el navegador toma la
+  // primera voz disponible, que en Windows en español SUELE ser una
+  // voz masculina por orden de instalación.
+  //
+  // Solución: lista blanca priorizada de voces femeninas en español
+  // (Windows + Google + Apple) y lista negra de nombres masculinos
+  // conocidos para evitarlos como fallback.
+
+  /** Nombres propios de voces FEMENINAS en español por proveedor. */
+  private readonly VOCES_FEMENINAS_ES = [
+    // Microsoft (Windows)
+    'sabina',   // Microsoft Sabina  (es-MX) — predeterminada en muchas PE
+    'helena',   // Microsoft Helena  (es-ES)
+    'laura',    // Microsoft Laura   (es-ES)
+    'paulina',  // Microsoft Paulina (es-MX)
+    'mónica', 'monica',
+    'elena',
+    'lola',     // Microsoft Lola
+    'ximena',
+    'esperanza',
+    'catalina',
+    'isabel',
+    // Apple (macOS / iOS)
+    'mónica', 'paulina', 'angelica',
+    // Google
+    'google español',
+    'google espanol',
+  ];
+
+  /** Nombres MASCULINOS conocidos — se evitan en el fallback. */
+  private readonly VOCES_MASCULINAS_ES = [
+    'pablo',    // Microsoft Pablo  (es-ES)
+    'raul', 'raúl', // Microsoft Raúl (es-MX)
+    'jorge',    // Microsoft Jorge  (es-ES)
+    'diego',
+    'juan',
+    'carlos',
+    'ricardo',
+  ];
+
   private hablarTexto(texto: string, enfatizar: boolean = false): void {
 
     if (!('speechSynthesis' in window)) return;
@@ -278,22 +335,20 @@ export class DefaultLayoutComponent implements OnInit {
     const decir = () => {
 
       const voces = synth.getVoices();
+      const vozFemenina = this.elegirVozFemeninaEs(voces);
 
-      let vozSeleccionada = voces.find(v =>
-        v.lang.startsWith('es') &&
-        (v.name.toLowerCase().includes('latino') ||
-          v.name.toLowerCase().includes('female') ||
-          v.name.toLowerCase().includes('mujer') ||
-          v.name.toLowerCase().includes('woman'))
-      );
-
-      if (!vozSeleccionada) {
-        vozSeleccionada = voces.find(v => v.lang.startsWith('es'));
+      // Solo loggeamos la primera vez por sesión para no spamear
+      if (!(window as any).__reginaVozLogged) {
+        console.log('🗣️ Voces disponibles en este navegador:',
+          voces.map(v => `${v.name} [${v.lang}]`));
+        console.log('🗣️ Voz elegida para Regina:',
+          vozFemenina ? `${vozFemenina.name} [${vozFemenina.lang}]` : '(ninguna en español)');
+        (window as any).__reginaVozLogged = true;
       }
 
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = 'es-PE';
-      utterance.voice = vozSeleccionada || null;
+      utterance.voice = vozFemenina || null;
       utterance.rate = enfatizar ? 1.05 : 0.95;
       utterance.pitch = enfatizar ? 1.25 : 1.15;
 
@@ -306,6 +361,49 @@ export class DefaultLayoutComponent implements OnInit {
     } else {
       decir();
     }
+  }
+
+  /**
+   * Selecciona la mejor voz femenina en español disponible.
+   *
+   * Algoritmo:
+   *   1. Filtra solo voces cuyo `lang` empiece por "es".
+   *   2. PRIORIDAD A: nombre coincide con la lista blanca femenina.
+   *      Dentro de la lista blanca, se prefiere la voz cuyo nombre
+   *      aparezca PRIMERO (Sabina > Helena > Laura ...).
+   *   3. PRIORIDAD B: nombre incluye palabras de género ("female",
+   *      "mujer", "woman").
+   *   4. PRIORIDAD C: cualquier voz en español que NO esté en la
+   *      lista negra de masculinos.
+   *   5. PRIORIDAD D: la primera voz en español (último recurso).
+   */
+  private elegirVozFemeninaEs(voces: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+    if (!voces || voces.length === 0) return null;
+    const vocesEs = voces.filter(v => v.lang.toLowerCase().startsWith('es'));
+    if (vocesEs.length === 0) return null;
+
+    const lower = (v: SpeechSynthesisVoice) => v.name.toLowerCase();
+
+    // A) Coincidencia con nombre femenino conocido
+    for (const nombreFem of this.VOCES_FEMENINAS_ES) {
+      const match = vocesEs.find(v => lower(v).includes(nombreFem));
+      if (match) return match;
+    }
+
+    // B) Coincidencia por palabra de género
+    const porGenero = vocesEs.find(v =>
+      lower(v).includes('female') ||
+      lower(v).includes('mujer')  ||
+      lower(v).includes('woman'));
+    if (porGenero) return porGenero;
+
+    // C) Cualquier voz que NO esté en la lista negra
+    const noMasculina = vocesEs.find(v =>
+      !this.VOCES_MASCULINAS_ES.some(m => lower(v).includes(m)));
+    if (noMasculina) return noMasculina;
+
+    // D) Último recurso: la primera voz en español
+    return vocesEs[0];
   }
 
   private obtenerSaludoPorHora(): string {

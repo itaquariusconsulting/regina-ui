@@ -1,15 +1,18 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, ElementRef, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { NgbDatepickerConfig, NgbDatepickerModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import Tesseract from 'tesseract.js';
 import { OrdenPago } from '../../../models/orden-pago';
 import { OcrService } from '../../../services/ocr.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
+import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
+import { normalizarArchivoCamara, comprimirImagenParaOcr } from '../../../shared/utils/mobile-file.util';
+import { formatHttpError, errorHtml } from '../../../shared/utils/error-detail.util';
 import { LoadingService } from '../../../services/loading.service';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { SunatService } from '../../../services/sunat-service';
 import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
@@ -81,7 +84,8 @@ export class DatosImagen {
     NgbDatepickerModule,
     ImageCropperComponent,
     LoadingDancingSquaresComponent,
-    NgxCurrencyDirective
+    NgxCurrencyDirective,
+    PdfViewerComponent
   ],
   templateUrl: './edit-rendir-cuenta.component.html',
   styleUrls: ['./edit-rendir-cuenta.component.scss'], // ✅ corregido
@@ -135,7 +139,46 @@ export class EditRendirCuentaComponent implements OnInit {
   previewImage: string | null = null;
   croppedImage: string | null = null;
   pdfPreviewUrl: SafeResourceUrl | null = null;
+  /**
+   * URL cruda (blob:) o data URL del PDF en preview.
+   *
+   * `pdfPreviewUrl` es un `SafeResourceUrl` sanitizado para usar dentro de
+   * iframes; el visor PDF.js NO lo acepta porque trabaja directamente con el
+   * binario o la URL pura. Por eso exponemos el blob URL plano para pasarlo
+   * al componente `<app-pdf-viewer>`.
+   */
+  pdfPreviewRawUrl: string | null = null;
   private pdfObjectUrl: string | null = null;
+
+  // ─── Loading principal del proceso OCR (overlay full-screen) ────────
+  /** True mientras el OCR está corriendo: muestra el overlay con timer. */
+  ocrTimerActive: boolean = false;
+  /** Segundos transcurridos desde que arrancó el OCR (0,1,2,…). */
+  ocrTimerSeconds: number = 0;
+  /** Handle del setInterval, para poder limpiarlo al terminar. */
+  private ocrTimerHandle: any = null;
+  /** Subtítulo principal del overlay. */
+  ocrTimerLabel: string = 'Procesando comprobante…';
+  /**
+   * Fases del proceso. Cada una se va marcando como `done` o `active`
+   * según el tiempo transcurrido. El usuario ve exactamente qué está
+   * ocurriendo en cada momento.
+   */
+  ocrFases: { titulo: string; descripcion: string; estado: 'pending' | 'active' | 'done' }[] = [];
+
+  /**
+   * Suscripción activa al observable del OCR. Se conserva para que el
+   * componente pueda saber si hay un OCR en curso (NO para cancelarlo).
+   * Política del usuario: el OCR NUNCA se aborta, solo se puede minimizar.
+   */
+  private ocrSubscription: Subscription | null = null;
+
+  /**
+   * Cuando el usuario "minimiza" el overlay, el proceso OCR continúa y al
+   * terminar se muestra un toast en lugar de cerrar visualmente algo que
+   * ya no está visible. Esta bandera controla ese comportamiento.
+   */
+  ocrEnBackground: boolean = false;
   showImageCropper = true;
   showPdfPreview = false;
   recognizedText = '';
@@ -503,12 +546,19 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   async onBuscarDocumento(): Promise<number> {
+    // Regla de duplicado (obs. usuario): SOLO se valida por
+    // RUC + serie + número de documento. NO se envía codDocumento (tipo)
+    // porque en SUNAT la combinación RUC+serie+número es única.
+    // codEmpresa/codSucursal se mandan como contexto multi-tenant del SQL.
     let wrapper: WrapperRequestDocumebtoExistente = new WrapperRequestDocumebtoExistente();
     wrapper.codAuxiliar = this.ordenPagoDet.codAuxiliar;
-    wrapper.codDocumento = this.ordenPagoDet.codDocumento;
     wrapper.codEmpresa = this.orden.codEmpresa;
     wrapper.codSucursal = this.orden.codSucursal;
     wrapper.numOrden = this.orden.numOrden;
+    // ✅ numRuc activa en el backend el modo "buscar por RUC + serie + número"
+    // (sin filtrar por tipo de documento). Es el discriminador entre los
+    // dos modos del SQL en DocumentoExistenteRepository.
+    wrapper.numRuc = (this.ruc || '').trim();
 
     let serie = '';
     let numero = '';
@@ -1061,13 +1111,27 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensaje = message;
   }
 
-  onSelectFile(event: Event): void {
+  async onSelectFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) {
       return;
     }
-    this.loadingService.show();
-    const file = input.files[0];
+    const fileRaw = input.files[0];
+
+    // 1) Renombrar de forma segura (importante para celular: el File de
+    //    cámara suele venir con "image.jpg" o ruta absoluta).
+    let file = normalizarArchivoCamara(fileRaw, 'rendir');
+
+    // 2) Si es imagen, comprimir antes de enviar al OCR.
+    //    Las fotos de celular suelen pesar 4-8 MB; comprimimos a ~1 MB
+    //    máximo manteniendo 1600 px de lado largo. PaddleOCR funciona
+    //    excelente a esa resolución y el upload + procesamiento se
+    //    reduce a la mitad o más.
+    const tamanoOriginal = file.size;
+    file = await comprimirImagenParaOcr(file);
+    if (file.size !== tamanoOriginal) {
+      console.info(`[rendir-cuenta] imagen comprimida: ${(tamanoOriginal/1024).toFixed(0)} KB → ${(file.size/1024).toFixed(0)} KB`);
+    }
     this.selectedFile = file;
 
     if (this.isPdfFile(file)) {
@@ -1110,8 +1174,72 @@ export class EditRendirCuentaComponent implements OnInit {
     enhance: boolean = false,
     suppressLegibilityDialog: boolean = false,
   ): void {
-    this.ocrService.uploadFile(file, enhance).subscribe({
-      next: (response: any) => {
+    // Cronómetro visible: el usuario ve cuánto tarda el OCR.
+    this.iniciarTimerOcr(enhance
+      ? 'Mejorando imagen y reprocesando…'
+      : 'Procesando comprobante…');
+
+    // Reset de la bandera de background — overlay arranca visible.
+    this.ocrEnBackground = false;
+
+    // ⚠ Sin `timeout()` ni `takeUntil()`: política del usuario.
+    // El OCR NO se cancela ni se aborta automáticamente; siempre se
+    // espera la respuesta del servidor, por más que tarde.
+    //
+    // Usamos `uploadFileWithProgress` (en lugar de `uploadFile`) para
+    // recibir los HttpEvents (UploadProgress, ResponseHeader, Response)
+    // y avanzar las fases del overlay por momentos REALES:
+    //   - mientras sube      → "Subiendo archivo" activo
+    //   - subida completa    → "Subiendo archivo" ✓, "Aplicando OCR" activo
+    //   - respuesta empieza  → (no cambia: el server aún arma JSON)
+    //   - respuesta completa → "Aplicando OCR" ✓, mapeo de datos
+    this.ocrSubscription = this.ocrService.uploadFileWithProgress(file, enhance)
+      .subscribe({
+      next: (event: any) => {
+        // ─── A) Evento de progreso de subida ─────────────────────────
+        if (event.type === HttpEventType.UploadProgress) {
+          if (event.total) {
+            const pct = Math.round((event.loaded / event.total) * 100);
+            // Mostramos el % en la descripción de la fase 0 para que el
+            // usuario vea la subida avanzar (importante con imágenes
+            // grandes desde celular en red lenta).
+            const fSubida = this.ocrFases[EditRendirCuentaComponent.FASE_SUBIDA];
+            if (fSubida && fSubida.estado === 'active') {
+              fSubida.descripcion = `Enviando el comprobante al servidor… (${pct}%)`;
+            }
+          }
+          // Subida 100% completa: avanzamos a la fase "Aplicando OCR".
+          // El server seguirá procesando hasta el HttpResponse final.
+          if (event.total && event.loaded === event.total) {
+            this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_SUBIDA);
+            // Mensaje de la fase OCR — útil cuando es imagen oscura/flash.
+            const fOcr = this.ocrFases[EditRendirCuentaComponent.FASE_OCR];
+            if (fOcr) {
+              fOcr.descripcion = 'El servidor está reconociendo el texto. Puede tardar más en imágenes oscuras o con flash.';
+            }
+          }
+          return;
+        }
+
+        // ─── B) Inicio de respuesta del servidor ─────────────────────
+        if (event.type === HttpEventType.ResponseHeader) {
+          // El server ya empezó a contestar — confirmamos las dos
+          // primeras fases por si UploadProgress no llegó al 100% claro.
+          this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_SUBIDA);
+          this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_OCR);
+          return;
+        }
+
+        // ─── C) Respuesta completa ───────────────────────────────────
+        if (event.type !== HttpEventType.Response) {
+          return; // otros eventos (DownloadProgress, Sent) — ignoramos
+        }
+        const response: any = event.body;
+
+        // ✓ Llegó el body → garantizamos que fases 0 y 1 estén done.
+        this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_SUBIDA);
+        this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_OCR);
+
         const detected = response?.detectedData;
         if (!detected) {
           return;
@@ -1130,17 +1258,95 @@ export class EditRendirCuentaComponent implements OnInit {
 
         //No debe permitir rendir el mismo documento para diferentes OP.
         const isValidDoc = this.mapDetectedData(detected);
+
+        // ✓ Datos del comprobante mapeados al formulario.
+        this.marcarFaseCompletada(EditRendirCuentaComponent.FASE_DATOS);
+
         if (isValidDoc) {
           this.onGetDatosRuc();
         }
+
+        // Si el overlay fue minimizado mientras el OCR procesaba en
+        // background, avisamos al usuario con un toast — porque el
+        // overlay ya no está visible para mostrar las fases.
+        if (this.ocrEnBackground) {
+          this.toastOcrListo();
+        }
       },
       error: (err) => {
-        console.error(err);
-        this.loadingService.hide();
+        console.error('[rendir-cuenta] OCR error:', err);
+        this.detenerTimerOcr();
+        this.ocrSubscription = null;
+        const fueBackground = this.ocrEnBackground;
+        this.ocrEnBackground = false;
+
+        // Si el usuario ya minimizó el overlay, NO bloqueamos con un Swal
+        // grande — mostramos un toast de error y log en consola.
+        if (fueBackground) {
+          this.toastOcrError(err);
+          return;
+        }
+
+        // Si el overlay seguía visible, mostramos el detalle completo
+        // del error para diagnosticar (sobre todo en móvil sin DevTools).
+        const b = formatHttpError(err, 'OCR /ocr/scan al subir comprobante');
+        Swal.fire({
+          icon: 'error',
+          title: b.title,
+          html: errorHtml(b),
+          width: 600,
+          confirmButtonText: 'Entendido',
+        });
       },
       complete: () => {
-        this.loadingService.hide();
+        this.detenerTimerOcr();
+        this.ocrSubscription = null;
+        this.ocrEnBackground = false;
       }
+    });
+  }
+
+  /**
+   * Oculta el overlay del OCR pero NO cancela la petición:
+   * el observable sigue suscrito y, cuando responda, se mapea al
+   * formulario y se muestra un toast informativo.
+   *
+   * Llamado desde el botón "Continuar trabajando" del overlay.
+   */
+  minimizarOcr(): void {
+    console.info('[rendir-cuenta] OCR minimizado — sigue procesando en background');
+    this.ocrEnBackground = true;
+    this.ocrTimerActive = false;        // oculta visualmente el overlay
+    // ⚠ NO llamamos `detenerTimerOcr()` porque queremos que el cronómetro
+    // siga contando hasta que llegue la respuesta real del servidor.
+  }
+
+  /** Toast verde de éxito al terminar el OCR en background. */
+  private toastOcrListo(): void {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Comprobante procesado',
+      text: 'Los datos del OCR se cargaron en el formulario.',
+      showConfirmButton: false,
+      timer: 4000,
+      timerProgressBar: true,
+    });
+  }
+
+  /** Toast rojo de error al fallar el OCR en background. */
+  private toastOcrError(err: any): void {
+    const b = formatHttpError(err, 'OCR en background');
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'error',
+      title: 'El OCR falló',
+      text: b.summary,
+      showConfirmButton: false,
+      timer: 5000,
+      timerProgressBar: true,
     });
   }
 
@@ -1148,6 +1354,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.clearPdfPreview();
     this.pdfObjectUrl = URL.createObjectURL(file);
     this.pdfPreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pdfObjectUrl);
+    this.pdfPreviewRawUrl = this.pdfObjectUrl; // string crudo para <app-pdf-viewer>
     this.showPdfPreview = true;
   }
 
@@ -1157,6 +1364,7 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.pdfObjectUrl = null;
     this.pdfPreviewUrl = null;
+    this.pdfPreviewRawUrl = null;
     this.showPdfPreview = false;
   }
 
@@ -1282,11 +1490,19 @@ export class EditRendirCuentaComponent implements OnInit {
     if (this.dataImagen.documentType) {
       this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0, 1) == (this.dataImagen.documentType!));
 
-      // Auto-seleccionar el tipo de documento que MEJOR encaje con el texto
-      // detectado por OCR. Si el OCR dijo "BOLETA DE VENTA ELECTRÓNICA",
-      // buscamos entre las opciones filtradas la que comparte más palabras
-      // clave con esa frase (ej. "Boleta de Ventas").
-      const mejor = this.findBestDocumentMatch(
+      // ───── 1) Auto-selección por defecto según tipo detectado ────────
+      // Regla de negocio (obs. usuario):
+      //   - Cualquier FACTURA del proveedor → "FACTURA DE COMPRA"
+      //   - Cualquier BOLETA del proveedor → "BV POR COMPRAS"
+      // Esta selección tiene PRIORIDAD sobre `findBestDocumentMatch` para
+      // que el comportamiento sea predecible y siempre el mismo, sin
+      // importar variantes ortográficas o palabras extras en el OCR.
+      const porDefecto = this.seleccionPorDefectoDocumento(this.dataImagen.documentType);
+
+      // ───── 2) Fallback al mejor match por palabras clave ─────────────
+      // Solo se invoca si la selección por defecto no encontró candidato
+      // exacto en el catálogo (ej. otras letras de tipo como 'N', 'G',…).
+      const mejor = porDefecto || this.findBestDocumentMatch(
         this.documentos,
         detected?.rawText || '',
         detected?.documentTypeText || detected?.documentTitle || ''
@@ -1327,9 +1543,14 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    // Sincronizar el flag fechaDocValida con la fecha cargada por OCR
-    // SIN mostrar el Swal (que solo debe aparecer cuando el USUARIO la cambia).
+    // Sincronizar el flag fechaDocValida con la fecha cargada por OCR.
+    // Si la fecha extraída es ANTERIOR a la fecha de la Orden de Pago,
+    // disparamos el Swal de advertencia y bloqueamos el botón Guardar
+    // (vía isSaveDisabled que lee fechaDocValida).
     this.fechaDocValida = this.isFechaValida(this.modelIni);
+    if (!this.fechaDocValida) {
+      this.mostrarSwalFechaInvalida();
+    }
 
     this.dataImagen.amount = detected.amount || '0';
     this.dataImagen.igv = detected.igv || '0';
@@ -1421,25 +1642,13 @@ export class EditRendirCuentaComponent implements OnInit {
     this.fechaDocValida = ok;
 
     if (!ok) {
-      // Solo bloqueamos visualmente con el flag fechaDocValida (lo lee
-      // isSaveDisabled). NO tocamos validaComprobante — así, al corregir
+      // El flag fechaDocValida lo lee isSaveDisabled() para inhabilitar
+      // el botón Guardar. NO tocamos validaComprobante — así, al corregir
       // la fecha el botón vuelve a habilitarse SIN necesidad de re-validar
       // SUNAT (porque el comprobante por RUC+serie+número sigue siendo el
       // mismo; SUNAT no depende de la fecha del documento).
       // Tampoco tocamos this.dataImagen / padronRuc / ordenPagoDet.
-      const fechaOrdenTxt = this.orden?.fecOrden
-        ? new Date(this.orden.fecOrden).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        : '';
-
-      Swal.fire({
-        icon: 'warning',
-        title: 'Fecha del documento inválida',
-        html: `La fecha del documento no puede ser <b>menor</b> que la fecha de generación de la Orden de Pago` +
-              (fechaOrdenTxt ? ` (<b>${fechaOrdenTxt}</b>).` : '.') +
-              `<br><br><em>Los datos del comprobante se mantienen — corrija la fecha para habilitar el guardado.</em>`,
-        confirmButtonText: 'Entendido'
-      });
-
+      this.mostrarSwalFechaInvalida();
       return false;
     }
 
@@ -1449,6 +1658,28 @@ export class EditRendirCuentaComponent implements OnInit {
       try { this.onPeriodoDeclaracionChange(); } catch { /* noop */ }
     }
     return true;
+  }
+
+  /**
+   * Muestra el Swal de "Fecha del documento inválida" con el detalle de
+   * la fecha de la Orden de Pago. Centralizado en un solo método para
+   * que se vea exactamente igual cuando:
+   *   - El usuario cambia la fecha manualmente (changeDate)
+   *   - El OCR cargó una fecha menor a la de la OP (mapDetectedData)
+   */
+  private mostrarSwalFechaInvalida(): void {
+    const fechaOrdenTxt = this.orden?.fecOrden
+      ? new Date(this.orden.fecOrden).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha del documento inválida',
+      html: `La fecha del documento no puede ser <b>anterior</b> a la fecha de la Orden de Pago` +
+            (fechaOrdenTxt ? ` (<b>${fechaOrdenTxt}</b>).` : '.') +
+            `<br><br><em>Corrija la fecha del comprobante para habilitar el botón Guardar.</em>`,
+      confirmButtonText: 'Entendido'
+    });
   }
 
   cargarItems(data: any) {
@@ -1583,7 +1814,17 @@ export class EditRendirCuentaComponent implements OnInit {
           console.log('Archivo subido', resp);
         },
         error: (err) => {
-          console.error('Error', err);
+          console.error('[rendir-cuenta] Error subiendo archivo:', err);
+          // El backend Java guarda el archivo en disco; si falla (ruta inválida,
+          // permisos, nombre inseguro), exponemos el detalle para móvil.
+          const b = formatHttpError(err, 'Guardado de archivo en servidor (documentos/upload)');
+          Swal.fire({
+            icon: 'error',
+            title: b.title,
+            html: errorHtml(b),
+            width: 600,
+            confirmButtonText: 'Entendido',
+          });
         }
       });
   }
@@ -1747,20 +1988,72 @@ export class EditRendirCuentaComponent implements OnInit {
       ordenPagoDetProv.impImpuestoBase = (this.ordenPagoDet.impSoles ?? 0) - ((this.ordenPagoDet.impSoles ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
       ordenPagoDetProv.impImpuestoSecun = (this.ordenPagoDet.impDolares ?? 0) - ((this.ordenPagoDet.impDolares ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
       ordenPagoDetProv.codEmpresa = this.codEmpresa;
-      ordenPagoDetProv.codSucursal = '001';
+      ordenPagoDetProv.codSucursal = this.orden.codSucursal || '001';
       ordenPagoDetProv.numOrden = this.orden.numOrden;
       ordenPagoDetProv.anoProceso = sessionStorage.getItem('periodo_year') || '';
       ordenPagoDetProv.mesProceso = sessionStorage.getItem('periodo_month') || '';
       ordenPagoDetProv.codDocumento = this.ordenPagoDet.codDocumento;
       ordenPagoDetProv.codImpuesto = this.impuestos[e].codImpuesto;
       ordenPagoDetProv.indAfecto = 'S';
+
+      // 🆕 Campos OBLIGATORIOS que antes no se enviaban y por los que el
+      // INSERT en CXP_IMPUESTO_PROV fallaba silenciosamente:
+      //
+      //   - numItemOp     → ítem del detalle de OP (lo tenemos en nroItemOp
+      //                     después de guardar el detalle).
+      //   - codSucProv    → la sucursal proveedor (misma que codSucursal en
+      //                     este flujo, en BD se ve '001').
+      //   - numProvision  → si aplica el flujo de provisión, se hereda; si
+      //                     no, el backend lo dejará NULL y el correlativo
+      //                     auto-generado bastará.
+      //
+      // numCorrelativo NO se envía: lo genera el backend con MAX+1 padded
+      // a 7 dígitos (más seguro contra colisiones entre usuarios).
+      ordenPagoDetProv.numItemOp = this.nroItemOp || '001';
+      ordenPagoDetProv.codSucProv = this.orden.codSucursal || '001';
+      // numProvision se deja undefined → el backend lo guardará como NULL.
+      // (En el registro de ejemplo de la BD viene '0000003', pero ese flujo
+      // de provisión NO existe en rendir-cuenta. La columna admite NULL.)
+
       this.ordenPagoDetProvs.push(ordenPagoDetProv);
     }
-    this.ordenPagoDetProvService.saveOrdenPagoDetProv(this.ordenPagoDetProvs).subscribe(
-      (response: any) => {
+
+    // Si por alguna razón no hay impuestos en el detalle, no llamamos al
+    // backend (evita un INSERT vacío que también provocaba ruido en logs).
+    if (this.ordenPagoDetProvs.length === 0) {
+      console.warn('[onSaveImpuestos] no hay impuestos en el detalle, salto el INSERT');
+      this.onBack();
+      return;
+    }
+
+    this.ordenPagoDetProvService.saveOrdenPagoDetProv(this.ordenPagoDetProvs).subscribe({
+      next: (response: any) => {
+        console.log('✅ Impuesto Prov guardado:', response);
         this.onBack();
+      },
+      // 🆕 Antes este error se tragaba silenciosamente — por eso parecía
+      // que "se guardaba" cuando en realidad fallaba en BD.
+      error: (err: any) => {
+        console.error('❌ Error guardando CXP_IMPUESTO_PROV:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'No se pudo guardar el impuesto',
+          html: `<div style="text-align:left;font-size:0.85rem;">
+                   <p>El detalle de la orden se guardó, pero el registro en
+                      <strong>CXP_IMPUESTO_PROV</strong> falló.</p>
+                   <p><strong>Detalle del servidor:</strong></p>
+                   <pre style="background:#f8f9fa;padding:8px;border-radius:4px;
+                               white-space:pre-wrap;word-break:break-word;
+                               font-size:0.75rem;max-height:30vh;overflow:auto;">${
+                     (err?.error?.mensaje || err?.message || JSON.stringify(err)).toString()
+                       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                   }</pre>
+                 </div>`,
+          confirmButtonText: 'Entendido',
+          width: 600,
+        });
       }
-    )
+    });
   }
 
   onDescartar() {
@@ -1824,12 +2117,12 @@ export class EditRendirCuentaComponent implements OnInit {
       return true;
     }
 
-    // 🔒 Debe seleccionarse un Establecimiento Anexo del proveedor.
-    // Solo lo exigimos cuando SÍ hay anexos disponibles para el RUC; si la
-    // empresa no tiene anexos registrados, no bloqueamos.
-    if (this.anexosDisponibles && this.anexosDisponibles.length > 0 && !this.anexoSeleccionado) {
-      return true;
-    }
+    // 🔔 El Establecimiento Anexo es SUGERIDO pero NO obligatorio.
+    // Anteriormente bloqueábamos el guardado si había anexos disponibles
+    // y el usuario no eligió ninguno; eso impedía rendir comprobantes
+    // cuando SUNAT estaba caído o el RUC tenía datos incompletos.
+    // Ahora simplemente lo dejamos pasar — la advertencia visual debajo
+    // del campo Dirección le recuerda al usuario que puede seleccionarlo.
 
     // 🔒 Regla SUNAT: RUC que inicia con "20" (persona jurídica) solo puede
     // emitir facturas. Si el comprobante es boleta/recibo/nota, bloqueamos.
@@ -1837,9 +2130,14 @@ export class EditRendirCuentaComponent implements OnInit {
       return true;
     }
 
-    // 🔔 La validación de fecha NO bloquea el guardado, solo emite la
-    // advertencia (Swal) en changeDate(). El usuario debe poder guardar
-    // aunque la fecha sea anterior a la OP — la decisión queda en sus manos.
+    // 🔒 Si la fecha del comprobante es anterior a la fecha de la OP,
+    // bloqueamos el guardado hasta que el usuario corrija la fecha.
+    // El Swal se dispara en `changeDate()` y en `mapDetectedData()`
+    // (cuando la fecha viene del OCR). El usuario ve la advertencia y
+    // tiene que corregir la fecha para poder guardar.
+    if (!this.fechaDocValida) {
+      return true;
+    }
 
     return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
@@ -1934,6 +2232,134 @@ export class EditRendirCuentaComponent implements OnInit {
    * Si ningún candidato supera el umbral mínimo, devuelve `null` y el
    * llamador usará el primero de la lista como fallback.
    */
+  /**
+   * Selección por defecto del tipo de documento según la primera letra
+   * del `documentType` detectado por OCR.
+   *
+   * Regla de negocio (observación del usuario):
+   *   - F → "FACTURA DE COMPRA"   (cualquier tipo de factura del proveedor)
+   *   - B → "BV POR COMPRAS"      (cualquier tipo de boleta del proveedor)
+   *
+   * Busca el match contra la descripción del catálogo (`desDocumento`)
+   * usando inclusión de palabras clave normalizadas; así sigue funcionando
+   * aunque la descripción exacta cambie a "Factura de Compras", "FACTURAS
+   * DE COMPRA", etc.
+   *
+   * Devuelve `null` si no encuentra ningún documento que cumpla las
+   * keywords — el llamador caerá al `findBestDocumentMatch` genérico.
+   */
+  private seleccionPorDefectoDocumento(documentType: string | undefined): MaeDocumento | null {
+    if (!documentType) return null;
+    const letra = documentType.toUpperCase().substring(0, 1);
+
+    // Keywords mínimas que la descripción del documento debe contener
+    // (todas y cada una). Orden de prioridad: la primera que matchea gana.
+    let claves: string[][] = [];
+    if (letra === 'F') {
+      // Acepta "FACTURA DE COMPRA", "FACTURA DE COMPRAS", "FACTURAS DE COMPRA"
+      claves = [['FACTURA', 'COMPRA']];
+    } else if (letra === 'B') {
+      // Acepta "BV POR COMPRAS", "BV POR COMPRA",
+      //        "BOLETA POR COMPRAS", "BOLETA POR COMPRA",
+      //        "BOLETA DE VENTA POR COMPRA"
+      claves = [
+        ['BV', 'COMPRA'],
+        ['BOLETA', 'COMPRA'],
+      ];
+    } else {
+      return null;
+    }
+
+    for (const grupo of claves) {
+      const found = this.documentos.find(d => {
+        const desc = this.normalize(`${d.desDocumento || ''} ${d.desCorta || ''}`);
+        return grupo.every(k => desc.includes(k));
+      });
+      if (found) return found;
+    }
+    return null;
+  }
+
+  // ─── Loading principal del proceso OCR (overlay con timer y fases) ──
+
+  // Índices fijos de cada fase, para usarlos como constantes legibles.
+  private static readonly FASE_SUBIDA   = 0;
+  private static readonly FASE_OCR      = 1;
+  private static readonly FASE_DATOS    = 2;
+
+  /**
+   * Arranca el overlay de loading con cronómetro y fases REALES del
+   * proceso. Reemplaza al `loadingService.show()` durante el OCR.
+   *
+   * Cada fase se marca por evento real (no por timeout):
+   *   - Fase 0 "Subiendo archivo":   active al hacer .subscribe();
+   *                                  done apenas llega el next().
+   *   - Fase 1 "Aplicando OCR":      done con el next() (el server ya
+   *                                  terminó de leer el comprobante).
+   *   - Fase 2 "Identificando datos":done tras mapDetectedData.
+   *
+   * IMPORTANTE: la verificación de duplicado en BD (solo RUC + tipo +
+   * serie + número) ocurre RECIÉN al hacer Guardar — no se reenvía la
+   * imagen ni se reescanea. Por eso el overlay del OCR ya no incluye
+   * esa fase: el usuario tiene el formulario disponible apenas termine
+   * el mapeo y puede revisar/corregir antes de guardar.
+   */
+  private iniciarTimerOcr(label: string = 'Procesando comprobante…'): void {
+    this.detenerTimerOcr(); // por si ya había uno corriendo
+    this.ocrTimerSeconds = 0;
+    this.ocrTimerLabel = label;
+    this.ocrTimerActive = true;
+
+    // Estado inicial de las fases
+    this.ocrFases = [
+      { titulo: 'Subiendo archivo',    descripcion: 'Enviando el comprobante al servidor.',          estado: 'active'  },
+      { titulo: 'Aplicando OCR',       descripcion: 'Reconociendo el texto de la imagen.',           estado: 'pending' },
+      { titulo: 'Identificando datos', descripcion: 'Extrayendo RUC, número, fechas y montos.',      estado: 'pending' },
+    ];
+
+    // Solo contador de tiempo total; las fases se manejan por evento.
+    this.ocrTimerHandle = setInterval(() => {
+      this.ocrTimerSeconds++;
+    }, 1000);
+  }
+
+  /**
+   * Marca una fase como `done` y activa la siguiente (si existe).
+   * Se invoca desde puntos reales del flujo (next del OCR, fin de mapeo,
+   * fin de validación), no por tiempo.
+   */
+  marcarFaseCompletada(idx: number): void {
+    if (!this.ocrFases || idx < 0 || idx >= this.ocrFases.length) return;
+    this.ocrFases[idx].estado = 'done';
+    const siguiente = idx + 1;
+    if (siguiente < this.ocrFases.length && this.ocrFases[siguiente].estado === 'pending') {
+      this.ocrFases[siguiente].estado = 'active';
+    }
+  }
+
+  /**
+   * Detiene el cronómetro y marca TODAS las fases como completadas
+   * (la animación final muestra los checks en verde antes de cerrar).
+   */
+  private detenerTimerOcr(): void {
+    if (this.ocrTimerHandle) {
+      clearInterval(this.ocrTimerHandle);
+      this.ocrTimerHandle = null;
+    }
+    if (this.ocrFases?.length) {
+      this.ocrFases.forEach(f => (f.estado = 'done'));
+    }
+    this.ocrTimerActive = false;
+  }
+
+  /** Formatea segundos como "00:42" para mostrar en el overlay. */
+  formatOcrTimer(): string {
+    const s = this.ocrTimerSeconds;
+    const mm = Math.floor(s / 60).toString().padStart(2, '0');
+    const ss = (s % 60).toString().padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
   private findBestDocumentMatch(
     docs: MaeDocumento[],
     rawText: string,

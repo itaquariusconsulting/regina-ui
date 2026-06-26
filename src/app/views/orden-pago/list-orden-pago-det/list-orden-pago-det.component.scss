@@ -76,6 +76,27 @@
     display: block;
 }
 
+/* Visor PDF.js (Mozilla) embebido dentro del modal "Visor de Documentos".
+   Sustituye al <iframe> que en algunos casos quedaba en blanco por las
+   políticas CSP del backend o por la versión del navegador. Le damos
+   altura fija para que la toolbar del visor (navegación, zoom, descarga)
+   tenga espacio cómodo sin que el modal scrollee. */
+app-pdf-viewer.pdf-doc-viewer {
+    display: block;
+    width: 100%;
+    height: 70vh;
+    min-height: 480px;
+}
+
+/* En móvil el modal-lg de Bootstrap ocupa casi toda la pantalla.
+   Subimos la altura del visor para que el contenido del PDF sea legible. */
+@media (max-width: 768px) {
+    app-pdf-viewer.pdf-doc-viewer {
+        height: 75vh;
+        min-height: 420px;
+    }
+}
+
 .modal-header {
     background-color: var(--primary-color);
 }

@@ -42,6 +42,18 @@
             class="btn btn-warning btn-sm me-1" *hasPermission="{ route: '/list-usuarios', action: 'permitEdit' }">
             <i class="fa fa-edit"></i>
           </button>
+
+          <!-- 🆕 Cambiar contraseña — SOLO visible si el usuario logueado
+               es admin. La doble protección (HTML + check en TS) evita que
+               un usuario malicioso forzando el DOM dispare la acción. -->
+          <button *ngIf="isAdminUser"
+                  (click)="onChangePassword(reg)"
+                  type="button"
+                  title="Cambiar contraseña del usuario"
+                  class="btn btn-info btn-sm me-1">
+            <i class="fa-solid fa-key"></i>
+          </button>
+
           <button (click)="onDeleteUser(reg)" type="button" title="Eliminar Usuario" class="btn btn-danger btn-sm"
             *hasPermission="{ route: '/list-usuarios', action: 'permitDelete' }">
             <i class="fa fa-trash"></i>

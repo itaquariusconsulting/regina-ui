@@ -121,6 +121,27 @@
   display: block;
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Versión MÓVIL del botón flotante Regina.
+   El footer mobile mide ~84px; el botón debe quedar POR ENCIMA de los
+   ítems del menú, no encima de ellos, así que lo subimos y lo achicamos.
+   ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .regina-chat-slot {
+    width: 48px;
+    height: 48px;
+    bottom: 96px; // por encima del footer (84px) + margen
+    left: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  .regina-chat-icon {
+    width: 42px !important;
+    height: 42px !important;
+    max-width: 42px;
+    max-height: 42px;
+  }
+}
+
 .regina-chat-panel {
   position: fixed;
   // 📍 Movido para acompañar al botón flotante a la esquina inferior izquierda.

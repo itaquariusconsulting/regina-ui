@@ -14,6 +14,275 @@
   margin-bottom: 40px;
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Overlay de loading del OCR.
+   REEMPLAZA al `loadingService` durante el procesamiento del comprobante.
+   Es un overlay modal full-screen con:
+     · backdrop semi-transparente que bloquea la interacción
+     · tarjeta centrada con cronómetro grande
+     · lista de fases del proceso con estado visual (pendiente/activo/listo)
+   ─────────────────────────────────────────────────────────────────── */
+.ocr-loading-overlay {
+  position: fixed;
+  inset: 0;                                                // top/right/bottom/left = 0
+  z-index: 2000;                                           // sobre todo (Bootstrap modal = 1050)
+  background: rgba(15, 23, 42, 0.55);                      // backdrop oscuro
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: ocrOverlayFadeIn 0.2s ease-out;
+}
+
+.ocr-loading-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  animation: ocrOverlaySlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Header con cronómetro grande ── */
+.ocr-loading-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.ocr-loading-icon {
+  font-size: 2.2rem;
+  color: #1f3864;
+  margin-bottom: 8px;
+  animation: ocrIconTick 1s steps(2, end) infinite;
+}
+
+.ocr-loading-time {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #1f3864;
+  font-variant-numeric: tabular-nums;                       // dígitos del mismo ancho
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.ocr-loading-title {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* ── Lista de fases del proceso ── */
+.ocr-loading-fases {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  text-align: left;
+  border-top: 1px solid #e9ecef;
+  padding-top: 14px;
+}
+
+.ocr-loading-fases li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 4px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.fase-icon {
+  flex: 0 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  padding-top: 2px;
+}
+
+.fase-text {
+  flex: 1 1 auto;
+}
+
+.fase-titulo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.fase-desc {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* Estados visuales de cada fase */
+.fase-pending {
+  opacity: 0.45;
+}
+.fase-pending .fase-icon { color: #adb5bd; }
+
+.fase-active {
+  background: linear-gradient(90deg, rgba(31, 56, 100, 0.08), transparent);
+  border-radius: 8px;
+}
+.fase-active .fase-icon  { color: #1f3864; }
+.fase-active .fase-titulo { color: #1f3864; }
+
+.fase-done {
+  opacity: 0.92;
+}
+.fase-done .fase-icon   { color: #28a745; }
+.fase-done .fase-titulo { text-decoration: line-through; text-decoration-color: rgba(40,167,69,0.4); }
+
+/* ── Aviso cuando tarda más de 15s ── */
+.ocr-loading-aviso {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  color: #856404;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+/* Aviso "grave" cuando el OCR supera 60s — color rojizo para
+   transmitir urgencia: probablemente la imagen es muy oscura/borrosa. */
+.ocr-loading-aviso.aviso-grave {
+  background: #f8d7da;
+  border-color: #f5c2c7;
+  color: #842029;
+}
+
+/* ── Botón Cancelar dentro del overlay ──
+   Visible siempre que el overlay está activo. Permite al usuario abortar
+   el OCR si está tardando demasiado (red lenta, servidor caído, etc.). */
+.ocr-loading-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+.ocr-loading-actions .btn {
+  font-size: 0.85rem;
+  padding: 6px 18px;
+  border-radius: 999px;
+}
+
+/* Animaciones */
+@keyframes ocrOverlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ocrOverlaySlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes ocrIconTick {
+  0%   { transform: rotate(-8deg); }
+  100% { transform: rotate( 8deg); }
+}
+
+/* Ajustes específicos para móvil */
+@media (max-width: 576px) {
+  .ocr-loading-card { padding: 22px 20px 18px; }
+  .ocr-loading-time { font-size: 2rem; }
+  .ocr-loading-icon { font-size: 1.9rem; }
+  .fase-titulo { font-size: 0.86rem; }
+  .fase-desc   { font-size: 0.72rem; }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Loader de 3 puntos animados — usado en el botón "Seleccionar Anexo"
+   cuando se carga desde un dispositivo móvil. Reemplaza al spinner +
+   texto "Cargando…" porque ocupa menos ancho y se ve más nativo en cel.
+
+   Cada punto pulsa con un retraso secuencial de 0.16s — esto crea el
+   efecto típico de "··· cargando" que el usuario reconoce al instante.
+   ─────────────────────────────────────────────────────────────────── */
+.dots-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  height: 100%;
+  vertical-align: middle;
+}
+
+.dots-loader .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;          // hereda el color del botón (blanco)
+  opacity: 0.25;
+  animation: dotsLoaderPulse 1.2s infinite ease-in-out;
+}
+
+/* Retraso escalonado para cada punto: 0s, 0.16s, 0.32s */
+.dots-loader .dot:nth-child(1) { animation-delay: 0s; }
+.dots-loader .dot:nth-child(2) { animation-delay: 0.16s; }
+.dots-loader .dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes dotsLoaderPulse {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Toolbar de acciones del comprobante (Capturar, Validar, Guardar, …)
+   En móvil se acomodan en varias filas en lugar de cortarse.
+   ─────────────────────────────────────────────────────────────────── */
+.toolbar-comprobante {
+  row-gap: 4px;             // separación vertical cuando wrappea
+}
+
+@media (max-width: 768px) {
+  .toolbar-comprobante {
+    flex-wrap: wrap !important;
+    justify-content: flex-start;
+    gap: 6px !important;
+  }
+
+  /* En móvil los botones quedan compactos (icon-only): ancho mínimo
+     fijo para que se alineen prolijos en una grilla flexible. */
+  .toolbar-comprobante .general-button {
+    min-width: 42px;
+    height: 36px;
+    padding: 4px 10px;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* El botón "Capturar" sí lleva texto en móvil — necesita un poco
+     más de ancho para que el ícono + texto no se aprieten. */
+  .toolbar-comprobante .btn-capture-image {
+    min-width: 96px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Quitamos el margen derecho del ícono cuando NO hay texto al lado. */
+  .toolbar-comprobante .general-button > i.me-1:only-child {
+    margin-right: 0 !important;
+  }
+}
+
 .form-container .row {
   margin-bottom: 0.5rem;
 }
@@ -239,5 +508,45 @@
     font-size: 0.75rem;
     padding: 6px 12px;
     margin-top: 6px;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   Preview del comprobante PDF — visor PDF.js embebido (no requiere Adobe)
+   El visor `<app-pdf-viewer>` renderiza el PDF en un <canvas> usando
+   JavaScript puro. Sólo necesitamos darle una altura razonable al
+   contenedor para que el host expanda su área visible.
+   ─────────────────────────────────────────────────────────────────── */
+.pdf-preview-wrapper {
+  position: relative;
+  width: 100%;
+  height: 520px;        // desktop: bastante alto para leer cómodo
+  min-height: 380px;
+}
+
+app-pdf-viewer.pdf-viewer-embedded {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* En móvil: PDF a casi pantalla completa para aprovechar el alto del
+   smartphone. El viewport scrolleable interno permite mover la página. */
+@media (max-width: 768px) {
+  .pdf-preview-wrapper {
+    height: 75vh;
+    min-height: 480px;
+  }
+
+  /* En móvil, el image-cropper también necesita más espacio para mostrar
+     el comprobante completo. El cropper interno respeta esta altura. */
+  .preview-image .card-body {
+    max-height: 65vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .preview-image image-cropper {
+    display: block;
+    max-height: 60vh;
   }
 }

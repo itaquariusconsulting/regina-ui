@@ -34,7 +34,7 @@ export interface AnexoSelectorData {
       <div class="anex-header">
         <div>
           <h4 class="m-0">Establecimientos del RUC {{ data.ruc }}</h4>
-          <small class="text-muted">{{ data.razonSocial || '' }} — {{ data.anexos?.length || 0 }} establecimiento(s) disponibles</small>
+          <small class="text-muted">{{ data.razonSocial || '' }} — {{ (data.anexos || []).length }} establecimiento(s) disponibles</small>
         </div>
         <button type="button" class="btn-cerrar" (click)="cancelar()" title="Cerrar">
           <i class="fa-solid fa-xmark"></i>
@@ -332,7 +332,26 @@ export class AnexoSelectorDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.seleccionado = this.data.seleccionPrevia || null;
-    this.filtrados = this.data.anexos || [];
+
+    // Deduplicar defensivamente: si llegan repetidos desde el backend
+    // o desde el caché del frontend, los descartamos.
+    // Clave de dedupe: codigo|tipo|direccion (normalizado).
+    const fuente = this.data.anexos || [];
+    const vistos = new Set<string>();
+    const unicos: EstablecimientoAnexo[] = [];
+    for (const a of fuente) {
+      const key = this.normalize(
+        `${a.codigo || ''}|${a.tipo || ''}|${a.direccion || ''}`
+      );
+      if (key && !vistos.has(key)) {
+        vistos.add(key);
+        unicos.push(a);
+      }
+    }
+    // Reescribimos la lista del dato de entrada para que la búsqueda
+    // posterior trabaje sobre la versión sin duplicados.
+    this.data.anexos = unicos;
+    this.filtrados = unicos;
     this.actualizarPaginacion();
   }
 

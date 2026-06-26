@@ -4,10 +4,28 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { WrapperRequestIA } from '../models/wrappers/wrapper-request-ia';
 import { environment } from '../../environments/environment';
 
-// Interfaz para tipar la respuesta del servicio FastAPI
+/**
+ * Filtros para listar órdenes de pago detectados por el chat IA
+ * (regina-api-2 → OrdenPagoFilterParser). Cada campo es opcional —
+ * solo viene poblado el que se detectó en el mensaje.
+ */
+export interface OrdenPagoFilterIA {
+  numOrden?: string;          // padded a 9 dígitos ('000016179')
+  nombre?: string;
+  apellido?: string;
+  nombreCompleto?: string;
+  anio?: number;
+  mes?: number;               // 1-12
+  mesTexto?: string;          // "junio"
+  centroCosto?: string;
+}
+
+// Interfaz para tipar la respuesta del servicio FastAPI / regina-api-2
 export interface ChatResponse {
   tipo: string;
   respuesta: any;
+  /** Filtros parseados cuando tipo === 'ordenes'. */
+  filtros?: OrdenPagoFilterIA;
   [key: string]: any;
 }
 
