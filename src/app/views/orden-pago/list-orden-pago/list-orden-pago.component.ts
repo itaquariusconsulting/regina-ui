@@ -953,8 +953,7 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     doc.text(this.formatNumber(orden.impOrdPago), capX + capW / 2, y + 14, { align: 'center' });
 
     const totalRendido =
-      (orden.codMoneda === '01' ? (orden.impRendidoSoles ?? 0) : 0) +
-      (orden.impRendidoDolares ?? 0);
+      (orden.codMoneda === '01' ? (orden.impRendidoSoles ?? 0) : (orden.impRendidoDolares ?? 0));
 
     doc.setFillColor(...colors.success);
     doc.rect(capX - capW - 2, y + 2, capW, 7, 'F');

@@ -37,7 +37,7 @@
           <td class="text-start">{{reg.cdesTipoGasto}}</td>
           <td class="text-center">{{reg.cdesMoneda}}</td>
           <td class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
-          <td class="text-end">{{(reg.codMoneda=='01' ? reg.impRendidoSoles ?? 0 : 0) + (reg.impRendidoDolares ?? 0) |
+          <td class="text-end">{{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0)) |
             number: '1.2-2'}}</td>
 
           <td class="text-center">
