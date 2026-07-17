@@ -29,7 +29,9 @@ export const environment = {
   apiUrlMaestros: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
 
   // ── Servidor "marcaciongps" (HTTPS, host externo) ─────────────────────
-  apiUrlUtils:    'https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
+  //apiUrlUtils:    'https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
+  apiUrlUtils:    'https://developer.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
+  
   apiUrlIA:       'https://developer.aquariusconsultores.com:8443/reginaIA-1/ai',
   apiUrlOcr:      'https://developer.aquariusconsultores.com:8443/regina-ia',
 
