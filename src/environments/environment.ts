@@ -9,8 +9,9 @@ export const environment = {
   //   http://localhost:1111/regina-process-dev/api/...
   //apiUrlProcess: 'http://localhost:1111/regina-process-dev/api/',
   //apiUrlMaestros: 'http://localhost:1111/regina-process-dev/api/',
-  apiUrlUtils: "https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/",
-
+  //apiUrlUtils: "https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/",
+  apiUrlUtils:    'https://developer.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
+  
   apiUrlProcess: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlMaestros: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlIA: 'https://developer.aquariusconsultores.com:8443/reginaIA-1/ai',
