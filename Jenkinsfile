@@ -29,7 +29,10 @@ pipeline {
             steps {
                 script { env.SHA = env.GIT_COMMIT.take(7) }
                 echo "Commit a desplegar: ${env.SHA}"
-                bat 'npm ci'
+                // ng-bootstrap 17 declara Angular 18 como peer y el proyecto va en Angular 19.
+                // El arbol nunca ha sido resoluble en estricto; se instala como siempre
+                // se instalo. PENDIENTE: subir @ng-bootstrap/ng-bootstrap a 18.x.
+                bat 'npm ci --legacy-peer-deps'
             }
         }
 
