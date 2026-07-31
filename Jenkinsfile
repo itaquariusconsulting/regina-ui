@@ -49,11 +49,18 @@ pipeline {
                     def dir = fileExists('dist/ren-aquarius/browser/index.html') ?
                               'dist\\ren-aquarius\\browser' : 'dist\\ren-aquarius'
                     echo "Empaquetando desde ${dir}"
+                    // ZipFile::CreateFromDirectory recorre subdirectorios de verdad.
+                    // Compress-Archive con comodin dejaba fuera assets/ y media/,
+                    // y la app se quedaba sin config.ini, fuentes ni imagenes.
                     bat """
                         @echo off
                         if exist ${WAR_NAME}.war del /F /Q ${WAR_NAME}.war
-                        powershell -NoProfile -Command "Compress-Archive -Path '${dir}\\*' -DestinationPath '${WAR_NAME}.zip' -Force"
-                        move /Y ${WAR_NAME}.zip ${WAR_NAME}.war
+                        powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory('%CD%\\${dir}', '%CD%\\${WAR_NAME}.war')"
+                    """
+                    bat """
+                        @echo off
+                        echo --- contenido del WAR (primeras lineas) ---
+                        powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; \$z=[System.IO.Compression.ZipFile]::OpenRead('%CD%\\${WAR_NAME}.war'); \$z.Entries.Count; \$z.Entries | Select-Object -First 15 -ExpandProperty FullName; \$z.Dispose()"
                     """
                 }
             }
