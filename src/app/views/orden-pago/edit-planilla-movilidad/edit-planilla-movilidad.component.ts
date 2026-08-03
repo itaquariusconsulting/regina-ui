@@ -159,20 +159,23 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   auxiliaresPR: MaeAuxiliarDTO[] = [];
   auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
   pagedViajesAux: MaeAuxiliarDTO[] = [];
-  ocupantesSeleccionados: RegSecUser[] = [];
+  // Los ocupantes son PERSONAL (MAE_AUXILIAR, tipo 'PE'), la misma fuente
+  // que usa el alta de usuarios. Antes salian de REG_SEC_USER, que son las
+  // cuentas de acceso al sistema y no el personal de la empresa.
+  ocupantesSeleccionados: MaeAuxiliarDTO[] = [];
   ocupantesModalNombres: string[] = [];
 
   ubigeos: MaeUbigeo[] = [];
   ubigeosGeneral: MaeUbigeo[] = [];
 
-  usuarios: RegSecUser[] = [];
-  pagedUsuariosModal: RegSecUser[] = [];
+  usuarios: MaeAuxiliarDTO[] = [];
+  pagedUsuariosModal: MaeAuxiliarDTO[] = [];
   wrapperRequestUsuario: WrapperRequestUsuario = new WrapperRequestUsuario();
 
-  /** Texto del buscador del modal de ocupantes (filtra por nombre, username o email). */
+  /** Texto del buscador del modal de ocupantes (filtra por nombre, codigo o documento). */
   searchUsuarios: string = '';
   /** Subconjunto de `usuarios` que cumple el filtro actual (sobre este se pagina). */
-  private filteredUsuarios: RegSecUser[] = [];
+  private filteredUsuarios: MaeAuxiliarDTO[] = [];
 
   searchUbigeo: string = '';
   pagedUbigeos: MaeUbigeo[] = [];
@@ -251,7 +254,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       documentos: this.maestrosService.getTiposDocumento(this.empresaId),
       ubigeos: this.maestrosService.getUbigeos(),
       auxiliares: this.maestrosService.getListaAuxiliaresPR(this.empresaId),
-      usuarios: this.regSecUserService.getRegSecUsers(this.wrapperRequestUsuario)
+      // 'PE' = personal. Es el mismo servicio que usa nuevo-usuario.
+      usuarios: this.maestrosService.getListaAuxiliaresPE(this.empresaId)
     }).subscribe({
       next: (res:any) => {
         this.centroCostos = res.centros.resultado;
@@ -442,9 +446,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     } else {
       this.filteredUsuarios = this.usuarios.filter(user => {
         const display = this.getUserDisplayName(user).toLowerCase();
-        const username = (user.userUsername || '').toLowerCase();
-        const email = (user.userEmail || '').toLowerCase();
-        return display.includes(term) || username.includes(term) || email.includes(term);
+        const codigo = (user.codAuxiliar || '').toLowerCase();
+        const documento = (user.numDocIdentidad || '').toLowerCase();
+        const email = (user.numEmail || '').toLowerCase();
+        return display.includes(term) || codigo.includes(term)
+            || documento.includes(term) || email.includes(term);
       });
     }
 
@@ -1164,12 +1170,12 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modalUsuarios?.hide();
   }
 
-  isOcupanteSelected(user: RegSecUser): boolean {
+  isOcupanteSelected(user: MaeAuxiliarDTO): boolean {
     const key = this.getUserKey(user);
     return this.ocupantesSeleccionados.some(x => this.getUserKey(x) === key);
   }
 
-  toggleOcupante(user: RegSecUser): void {
+  toggleOcupante(user: MaeAuxiliarDTO): void {
     const key = this.getUserKey(user);
     const index = this.ocupantesSeleccionados.findIndex(x => this.getUserKey(x) === key);
     if (index >= 0) {
@@ -1226,16 +1232,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.nuevoDetalle.ocupantes = '';
   }
 
-  private getUserKey(user: RegSecUser): string {
-    return String(user.userId ?? user.userUsername ?? user.userEmail ?? user.userName ?? '');
+  private getUserKey(user: MaeAuxiliarDTO): string {
+    return String(user.codAuxiliar ?? user.numDocIdentidad ?? user.desAuxiliar ?? '');
   }
 
-  getUserDisplayName(user: RegSecUser): string {
-    const fullName = [user.userLastName, user.userMiddleName, user.userName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    return fullName || user.userUsername || user.userEmail || `Usuario ${user.userId ?? ''}`.trim();
+  getUserDisplayName(user: MaeAuxiliarDTO): string {
+    const nombre = (user.desAuxiliar || '').trim();
+    return nombre || user.numDocIdentidad || user.codAuxiliar || '';
   }
 
   openUbigeosModal(tipoUbigeo: number): void {
