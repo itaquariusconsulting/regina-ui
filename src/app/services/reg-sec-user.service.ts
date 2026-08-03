@@ -42,21 +42,19 @@ export class RegSecUserService {
   /**
    * Cambia la contraseña de un usuario específico (operación de admin).
    *
-   * Reutiliza el endpoint PATCH `actualizar-parcial` enviando SOLO el
-   * userId y la nueva contraseña, así el backend no toca otros campos
-   * del registro (apellidos, perfil, status, etc.).
+   * Usa el endpoint dedicado PATCH `/api/usuario/{id}/password`.
    *
-   * Si el backend tuviera un endpoint dedicado (ej. `/api/usuario/{id}/password`)
-   * sería preferible cambiarlo aquí para mejor auditoría — por ahora
-   * vamos por PATCH para no romper compatibilidad.
+   * Antes reutilizaba `actualizar-parcial`, que NO toca USER_PASSWORD y que,
+   * al recibir el resto de los campos en null, borraba nombre, apellidos,
+   * username y perfil del usuario. La contraseña nunca cambiaba y el registro
+   * quedaba destruido.
    */
   changeUserPasswordAsAdmin(userId: number, newPassword: string): Observable<Response> {
-    const partial: RegSecUser = new RegSecUser();
-    partial.userId = userId;
-    partial.userPassword = newPassword;
-    return this.http.patch<Response>(`${this.apiUrlAuth}/api/usuario/actualizar-parcial`, partial, {
-      headers: this.getHeaders(),
-    });
+    return this.http.patch<Response>(
+      `${this.apiUrlAuth}/api/usuario/${userId}/password`,
+      { userPassword: newPassword },
+      { headers: this.getHeaders() }
+    );
   }
 
   deleteUser(id: number): Observable<Response> {
@@ -66,16 +64,22 @@ export class RegSecUserService {
   }
 
   private getHeaders(): HttpHeaders {
+    // Se lee en cada llamada: el servicio es singleton, y guardarlo en el campo
+    // hacia que tras un re-login se siguiera enviando el token anterior.
+    const token = sessionStorage.getItem('authToken') ?? this.token;
     return new HttpHeaders({
-      'Authorization': `Bearer ${this.token}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     });
   }
 
   updateThemePreference(userId: number, theme: string): Observable<Response> {
-    const body = { themePreference: theme };
-    return this.http.put<Response>(`${this.apiUrlAuth}/api/theme/update/${userId}/${theme}`, {
-      headers: this.getHeaders()
-    });
+    // El segundo argumento de http.put es el CUERPO, no las opciones: antes se
+    // enviaba el objeto de headers como body y la peticion iba sin Authorization.
+    return this.http.put<Response>(
+      `${this.apiUrlAuth}/api/theme/update/${userId}/${theme}`,
+      {},
+      { headers: this.getHeaders() }
+    );
   }
 }

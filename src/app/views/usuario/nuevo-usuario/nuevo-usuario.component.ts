@@ -165,11 +165,32 @@ export class NuevoUsuarioComponent implements OnInit {
         this.usuario.profileType = this.profileSeleccionado.profileType;
         this.usuario.userEnabled = true;
         this.usuario.userStatus = this.usuario.userEnabled ? AccountStatus.ACTIVE : AccountStatus.INACTIVE;
-        this.regSecUserService.saveRegSecUser(this.usuario).subscribe(
-          (response: Response) => {
-            this.router.navigate(['/list-usuarios']);
+        this.regSecUserService.saveRegSecUser(this.usuario).subscribe({
+          next: (response: Response) => {
+            if (response?.error === 0) {
+              this.router.navigate(['/list-usuarios']);
+              return;
+            }
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '320px',
+              data: {
+                title: 'No se pudo registrar',
+                message: response?.mensaje || 'El servidor rechazo el registro del usuario.',
+                type: 'alert'
+              }
+            });
+          },
+          error: (err) => {
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '320px',
+              data: {
+                title: 'Error',
+                message: err?.error?.mensaje || err?.message || 'No se pudo contactar al servidor.',
+                type: 'alert'
+              }
+            });
           }
-        )
+        })
       }
     });
   }
