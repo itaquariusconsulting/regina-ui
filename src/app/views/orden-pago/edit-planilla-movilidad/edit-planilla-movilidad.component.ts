@@ -266,7 +266,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         this.ubigeos = res.ubigeos.resultado;
         this.ubigeosGeneral = [...this.ubigeos];
         this.auxiliaresPR = res.auxiliares.resultado;
-        this.usuarios = res.usuarios.resultado || [];
+        // Solo personal ACTIVO. El tipo 'PE' ya lo filtra la consulta del
+        // backend contra MAE_REG_TIPO_AUXI; el estado vive en MAE_AUXILIAR.
+        this.usuarios = this.soloPersonalActivo(res.usuarios.resultado || []);
 
         this.buildPaginationUbigeos();
         this.buildPaginationAuxiliares();
@@ -1230,6 +1232,29 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   private resetOcupantes(): void {
     this.ocupantesSeleccionados = [];
     this.nuevoDetalle.ocupantes = '';
+  }
+
+  /**
+   * Deja solo al personal activo y sin repetidos.
+   *
+   * MAE_REG_TIPO_AUXI es una tabla de relacion: una misma persona puede
+   * estar registrada con mas de un tipo, y el INNER JOIN del backend la
+   * devolveria duplicada. Por eso tambien deduplicamos por codAuxiliar.
+   */
+  private soloPersonalActivo(lista: MaeAuxiliarDTO[]): MaeAuxiliarDTO[] {
+    const vistos = new Set<string>();
+
+    return (lista || []).filter(p => {
+      if ((p.tipEstado || '').trim().toUpperCase() !== 'AC') {
+        return false;
+      }
+      const clave = this.getUserKey(p);
+      if (!clave || vistos.has(clave)) {
+        return false;
+      }
+      vistos.add(clave);
+      return true;
+    });
   }
 
   private getUserKey(user: MaeAuxiliarDTO): string {
