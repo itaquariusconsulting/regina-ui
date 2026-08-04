@@ -110,8 +110,17 @@ export class NuevoUsuarioComponent implements OnInit {
     this.usuario.codAuxiliar = this.auxiliarSeleccionado.codAuxiliar;
     this.usuario.userLastName = apellidoPaterno;
     this.usuario.userMiddleName = apellidoMaterno;
-    this.usuario.userUsername = (nombres.substring(0, 1) + apellidoPaterno + apellidoMaterno.substring(0, 1)).toLowerCase();
     this.usuario.userName = nombres;
+
+    // El username por defecto es el NUMERO DE DOCUMENTO del personal.
+    // Antes se armaba con inicial del nombre + apellido paterno + inicial del
+    // materno, lo que generaba colisiones entre homonimos y no era estable si
+    // se corregia un apellido. Si el auxiliar no tiene documento cargado, se
+    // mantiene la convencion anterior para no dejar el campo vacio.
+    const documento = (auxiliar.numDocIdentidad || '').trim();
+    this.usuario.userUsername = documento
+      ? documento
+      : (nombres.substring(0, 1) + apellidoPaterno + apellidoMaterno.substring(0, 1)).toLowerCase();
   }
 
   openModalAuxiliar() {
