@@ -55,7 +55,12 @@ bootstrapApplication(AppComponent, {
   ...appConfig, // spread de tu configuración existente
   providers: [
     ...(appConfig.providers || []), // mantener otros providers si los tienes
-    ...(environment.production ? [provideServiceWorker('ngsw-worker.js')] : []),
+    ...(environment.production
+      ? [provideServiceWorker('ngsw-worker.js', {
+          enabled: true,
+          registrationStrategy: 'registerWhenStable:30000',
+        })]
+      : []),
   ],
 })
   .catch((err) => console.error(err));
