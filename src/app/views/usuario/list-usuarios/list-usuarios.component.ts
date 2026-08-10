@@ -46,6 +46,12 @@ export class ListUsuariosComponent implements OnInit {
 
   usuarios: RegSecUser[] = [];
   pagedUsuarios: RegSecUser[] = [];
+
+  /** La lista ya filtrada por el buscador. La paginacion opera sobre esta. */
+  usuariosFiltrados: RegSecUser[] = [];
+
+  /** Texto del buscador de la grilla. */
+  filtro: string = '';
   wrapperRequestUsuario: WrapperRequestUsuario = new WrapperRequestUsuario();
   isLoading$: Observable<boolean>;
 
@@ -87,6 +93,7 @@ export class ListUsuariosComponent implements OnInit {
         this.consultarEstadoCredenciales();
         if (state.data) {
           this.usuarios = state.data.resultado;
+          this.aplicarFiltro();
         } else {
           this.getUsuarios();
         }
@@ -101,16 +108,41 @@ export class ListUsuariosComponent implements OnInit {
     this.regSecUserService.getRegSecUsers(this.wrapperRequestUsuario).subscribe(
       (response: Response) => {
         this.usuarios = response.resultado || [];
-        this.currentPage = 0;
-        this.buildPagination();
+        this.aplicarFiltro();
         this.loadingService.hide();
       }
     );
   }
 
+  /**
+   * Recalcula la lista visible a partir del texto del buscador. Filtra por
+   * username, apellidos, nombres, correo y perfil. Vuelve a la primera pagina
+   * para no quedar en una que ya no existe con menos resultados.
+   */
+  aplicarFiltro(): void {
+    const q = (this.filtro || '').trim().toLowerCase();
+
+    if (!q) {
+      this.usuariosFiltrados = this.usuarios.slice();
+    } else {
+      this.usuariosFiltrados = this.usuarios.filter(u =>
+        [u.userUsername, u.userLastName, u.userMiddleName, u.userName, u.userEmail, u.profileShortName]
+          .some(v => (v || '').toLowerCase().includes(q))
+      );
+    }
+
+    this.currentPage = 0;
+    this.buildPagination();
+  }
+
+  limpiarFiltro(): void {
+    this.filtro = '';
+    this.aplicarFiltro();
+  }
+
   private buildPagination(): void {
 
-    this.totalItems = this.usuarios.length;
+    this.totalItems = this.usuariosFiltrados.length;
     this.totalPages = Math.max(1, Math.ceil(this.totalItems / this.pageSize));
 
     // Si la lista se achico y la pagina actual quedo fuera de rango, se
@@ -122,7 +154,7 @@ export class ListUsuariosComponent implements OnInit {
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
 
-    this.pagedUsuarios = this.usuarios.slice(start, end);
+    this.pagedUsuarios = this.usuariosFiltrados.slice(start, end);
   }
 
   changePage(page: number): void {
@@ -312,7 +344,7 @@ export class ListUsuariosComponent implements OnInit {
    * estos: no tiene sentido tildar a quien no tiene correo.
    */
   get usuariosConCorreo(): RegSecUser[] {
-    return this.usuarios.filter(u => !!u.userId && !!u.userEmail && !!u.userEmail.trim());
+    return this.usuariosFiltrados.filter(u => !!u.userId && !!u.userEmail && !!u.userEmail.trim());
   }
 
   /** El check de la cabecera esta marcado cuando TODOS los que tienen correo lo estan. */

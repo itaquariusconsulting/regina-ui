@@ -8,3 +8,16 @@
   backdrop-filter: blur(2px);          
   z-index: 9999;
 }
+/* Grilla con scroll vertical y encabezado fijo (reemplaza la paginacion). */
+.table-scroll {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+/* El thead se queda pegado arriba al hacer scroll. El fondo ya es solido
+   (var(--primary-color) en styles.scss), asi que no se transparenta. */
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
