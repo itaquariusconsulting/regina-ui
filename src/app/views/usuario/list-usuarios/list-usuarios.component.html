@@ -47,8 +47,8 @@
   <div *ngIf="puedeEnviarCredenciales && seleccionados.size > 0"
        class="d-flex align-items-center gap-3 small text-muted mt-2">
     <span><strong>{{ seleccionados.size }}</strong> usuario(s) seleccionado(s)</span>
-    <button type="button" class="btn btn-link btn-sm p-0" (click)="seleccionarTodos()">
-      Seleccionar los {{ totalItems }}
+    <button type="button" class="btn btn-link btn-sm p-0" (click)="alternarTodos()">
+      Marcar todos los que tienen correo ({{ usuariosConCorreo.length }})
     </button>
     <button type="button" class="btn btn-link btn-sm p-0 text-danger" (click)="limpiarSeleccion()">
       Limpiar seleccion
@@ -61,9 +61,10 @@
     <thead>
       <th class="text-center" *ngIf="puedeEnviarCredenciales" style="width: 38px;">
         <input type="checkbox" class="form-check-input"
-               [checked]="todaLaPaginaSeleccionada"
-               (change)="alternarPagina()"
-               title="Seleccionar los de esta pagina" />
+               [checked]="todosSeleccionados"
+               [indeterminate]="seleccionParcial"
+               (change)="alternarTodos()"
+               title="Marcar todos los usuarios que tienen correo" />
       </th>
       <th class="text-center">Username</th>
       <th class="text-center">Apellido Paterno</th>

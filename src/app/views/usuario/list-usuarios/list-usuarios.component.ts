@@ -306,22 +306,35 @@ export class ListUsuariosComponent implements OnInit {
     }
   }
 
-  /** El tilde de la cabecera actua sobre la pagina visible, no sobre todo. */
-  get todaLaPaginaSeleccionada(): boolean {
-    const conId = this.pagedUsuarios.filter(u => !!u.userId);
-    return conId.length > 0 && conId.every(u => this.seleccionados.has(u.userId!));
+  /**
+   * Usuarios de TODA la lista (no solo la pagina) que tienen correo. Son los
+   * unicos a los que el envio les llega, asi que el 'marcar todos' opera sobre
+   * estos: no tiene sentido tildar a quien no tiene correo.
+   */
+  get usuariosConCorreo(): RegSecUser[] {
+    return this.usuarios.filter(u => !!u.userId && !!u.userEmail && !!u.userEmail.trim());
   }
 
-  alternarPagina(): void {
-    if (this.todaLaPaginaSeleccionada) {
-      this.pagedUsuarios.forEach(u => u.userId && this.seleccionados.delete(u.userId));
+  /** El check de la cabecera esta marcado cuando TODOS los que tienen correo lo estan. */
+  get todosSeleccionados(): boolean {
+    const conCorreo = this.usuariosConCorreo;
+    return conCorreo.length > 0 && conCorreo.every(u => this.seleccionados.has(u.userId!));
+  }
+
+  /** Estado intermedio: algunos si, pero no todos. Pinta el check a rayas. */
+  get seleccionParcial(): boolean {
+    const total = this.usuariosConCorreo.length;
+    const marcados = this.usuariosConCorreo.filter(u => this.seleccionados.has(u.userId!)).length;
+    return marcados > 0 && marcados < total;
+  }
+
+  /** Marca o desmarca a TODOS los que tienen correo, en todas las paginas. */
+  alternarTodos(): void {
+    if (this.todosSeleccionados) {
+      this.usuariosConCorreo.forEach(u => this.seleccionados.delete(u.userId!));
     } else {
-      this.pagedUsuarios.forEach(u => u.userId && this.seleccionados.add(u.userId));
+      this.usuariosConCorreo.forEach(u => this.seleccionados.add(u.userId!));
     }
-  }
-
-  seleccionarTodos(): void {
-    this.usuarios.forEach(u => u.userId && this.seleccionados.add(u.userId));
   }
 
   limpiarSeleccion(): void {
