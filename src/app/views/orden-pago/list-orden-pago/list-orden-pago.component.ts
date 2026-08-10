@@ -216,9 +216,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response: Response) => {
           this.ordenes = response.resultado || [];
-          if (this.isAdminUser == false) {
-            this.ordenes = this.ordenes.filter(filtro => filtro.tipEstado == "PR" || filtro.tipEstado == "LQ");
-          }
+          // El usuario normal ve TODAS sus ordenes (PE, EM, PR, LQ). El backend
+          // ya se las limita a las suyas por su auxiliar. Antes se filtraba a solo
+          // PR y LQ, lo que le escondia sus PENDIENTES (PE) y no podia rendirlas.
           this.ordenesGeneral = this.ordenes;
           this.currentPage = 0;
           this.buildPagination();
@@ -444,9 +444,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response: Response) => {
           this.ordenes = response.resultado || [];
-          if (this.isAdminUser == false) {
-            this.ordenes = this.ordenes.filter(filtro => filtro.tipEstado == "PR" || filtro.tipEstado == "LQ")
-          }
+          // El usuario normal ve TODAS sus ordenes (PE, EM, PR, LQ). El backend
+          // ya se las limita a las suyas por su auxiliar. Antes se filtraba a solo
+          // PR y LQ, lo que le escondia sus PENDIENTES (PE) y no podia rendirlas.
           this.ordenesGeneral = this.ordenes;
           this.currentPage = 0;
           this.buildPagination();
