@@ -17,6 +17,15 @@ import {
   ChangePasswordDialogData,
   ChangePasswordDialogResult,
 } from '../../../components/dialogs/change-password-dialog.component';
+import {
+  EnviarCredencialesDialogComponent,
+  EnviarCredencialesDialogData,
+  EnviarCredencialesDialogResult,
+} from '../../../components/dialogs/enviar-credenciales-dialog.component';
+import {
+  ResultadoCredencialesDialogComponent,
+  ResultadoEnvioCredencial,
+} from '../../../components/dialogs/resultado-credenciales-dialog.component';
 
 @Component({
   selector: 'app-list-usuarios',
@@ -47,6 +56,16 @@ export class ListUsuariosComponent implements OnInit {
    */
   isAdminUser: boolean = false;
 
+  /** USER_ID del que esta usando la pantalla. Lo exige el backend. */
+  usuarioActualId: number | null = null;
+
+  /** Lo responde el backend: admin + servidor de correo configurado. */
+  puedeEnviarCredenciales = false;
+  correoConfigurado = false;
+
+  /** Usuarios tildados para el envio. Sobrevive al cambio de pagina. */
+  seleccionados = new Set<number>();
+
   pageSize = 8;
   currentPage = 0;
   totalItems = 0;
@@ -64,6 +83,8 @@ export class ListUsuariosComponent implements OnInit {
         // Se guarda con la misma convención que el resto de la app
         // (booleano `userAdmin` en RegSecUser).
         this.isAdminUser = !!user.userAdmin;
+        this.usuarioActualId = user.userId ?? null;
+        this.consultarEstadoCredenciales();
         if (state.data) {
           this.usuarios = state.data.resultado;
         } else {
@@ -90,7 +111,13 @@ export class ListUsuariosComponent implements OnInit {
   private buildPagination(): void {
 
     this.totalItems = this.usuarios.length;
-    this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+    this.totalPages = Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+
+    // Si la lista se achico y la pagina actual quedo fuera de rango, se
+    // retrocede: si no, la tabla aparece vacia sin explicacion.
+    if (this.currentPage >= this.totalPages) {
+      this.currentPage = this.totalPages - 1;
+    }
 
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
@@ -206,7 +233,13 @@ export class ListUsuariosComponent implements OnInit {
         next: (res: Response) => {
           this.loadingService.hide();
           if (res.error === 0) {
-            this.usuarios = this.usuarios.filter(u => u.userId !== user.userId);
+            // Se relee del servidor en lugar de filtrar el arreglo local: el
+            // borrado toca tres tablas y la lista podria quedar desincronizada.
+            //
+            // Antes solo se filtraba `usuarios`, pero la tabla renderiza
+            // `pagedUsuarios`, que arma buildPagination(). Como no se volvia a
+            // llamar, el usuario borrado seguia visible hasta recargar.
+            this.getUsuarios();
             this.dialog.open(ConfirmDialogComponent, {
               width: '280px',
               data: {
@@ -239,5 +272,137 @@ export class ListUsuariosComponent implements OnInit {
         }
       });
     });
+  }
+
+  // ------------------------------------------------------------------
+  // Envio de credenciales
+  // ------------------------------------------------------------------
+
+  private consultarEstadoCredenciales(): void {
+    if (!this.usuarioActualId) { return; }
+
+    this.regSecUserService.getEstadoCredenciales(this.usuarioActualId).subscribe({
+      next: (res: Response) => {
+        const estado = res?.resultado || {};
+        this.puedeEnviarCredenciales = !!estado.esAdministrador;
+        this.correoConfigurado = !!estado.correoConfigurado;
+      },
+      // Si el backend desplegado todavia no tiene el endpoint, la pantalla
+      // sigue funcionando: simplemente no aparece el boton.
+      error: () => { this.puedeEnviarCredenciales = false; },
+    });
+  }
+
+  estaSeleccionado(userId?: number): boolean {
+    return !!userId && this.seleccionados.has(userId);
+  }
+
+  alternarSeleccion(user: RegSecUser): void {
+    if (!user.userId) { return; }
+    if (this.seleccionados.has(user.userId)) {
+      this.seleccionados.delete(user.userId);
+    } else {
+      this.seleccionados.add(user.userId);
+    }
+  }
+
+  /** El tilde de la cabecera actua sobre la pagina visible, no sobre todo. */
+  get todaLaPaginaSeleccionada(): boolean {
+    const conId = this.pagedUsuarios.filter(u => !!u.userId);
+    return conId.length > 0 && conId.every(u => this.seleccionados.has(u.userId!));
+  }
+
+  alternarPagina(): void {
+    if (this.todaLaPaginaSeleccionada) {
+      this.pagedUsuarios.forEach(u => u.userId && this.seleccionados.delete(u.userId));
+    } else {
+      this.pagedUsuarios.forEach(u => u.userId && this.seleccionados.add(u.userId));
+    }
+  }
+
+  seleccionarTodos(): void {
+    this.usuarios.forEach(u => u.userId && this.seleccionados.add(u.userId));
+  }
+
+  limpiarSeleccion(): void {
+    this.seleccionados.clear();
+  }
+
+  onEnviarCredenciales(): void {
+
+    if (!this.puedeEnviarCredenciales || !this.usuarioActualId) { return; }
+
+    const ids = Array.from(this.seleccionados);
+    if (ids.length === 0) { return; }
+
+    const sinCorreo = this.usuarios
+      .filter(u => u.userId && ids.includes(u.userId))
+      .filter(u => !u.userEmail || !u.userEmail.trim()).length;
+
+    const correoAdmin = this.usuarios.find(u => u.userId === this.usuarioActualId)?.userEmail || '';
+
+    const ref = this.dialog.open<
+      EnviarCredencialesDialogComponent,
+      EnviarCredencialesDialogData,
+      EnviarCredencialesDialogResult | null
+    >(EnviarCredencialesDialogComponent, {
+      width: '520px',
+      data: { cantidad: ids.length, sinCorreo, correoAdmin },
+      disableClose: true,
+    });
+
+    ref.afterClosed().subscribe(opciones => {
+      if (!opciones) { return; }
+
+      this.loadingService.show();
+
+      this.regSecUserService.enviarCredenciales({
+        solicitanteUserId: this.usuarioActualId!,
+        userIds: ids,
+        modoContrasena: opciones.modoContrasena,
+        contrasenaFija: opciones.contrasenaFija,
+        correoDePrueba: opciones.correoDePrueba,
+      }).subscribe({
+        next: (res: Response) => {
+          this.loadingService.hide();
+
+          const filas: ResultadoEnvioCredencial[] = res?.resultado || [];
+
+          if (filas.length > 0) {
+            this.dialog.open(ResultadoCredencialesDialogComponent, {
+              width: '760px',
+              data: filas,
+            });
+            // Solo se limpia lo que efectivamente salio: lo que fallo queda
+            // tildado para poder reintentarlo sin volver a buscarlo.
+            filas.filter(f => f.enviado).forEach(f => this.seleccionados.delete(f.userId));
+          } else {
+            this.dialog.open(ConfirmDialogComponent, {
+              width: '320px',
+              data: {
+                title: 'Sin envios',
+                type: 'alert',
+                message: res?.mensaje || 'No se envio ningun correo.',
+              },
+            });
+          }
+        },
+        error: (err) => {
+          this.loadingService.hide();
+          this.dialog.open(ConfirmDialogComponent, {
+            width: '340px',
+            data: {
+              title: 'No se pudo enviar',
+              type: 'alert',
+              message: err?.error?.mensaje || err?.message || 'No se pudo contactar al servidor.',
+            },
+          });
+        },
+      });
+    });
+  }
+
+  onCargaMasiva(): void {
+    this.router.navigate(['/carga-masiva-usuarios']);
   }
 }

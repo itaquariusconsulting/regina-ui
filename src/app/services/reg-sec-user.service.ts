@@ -82,4 +82,79 @@ export class RegSecUserService {
       { headers: this.getHeaders() }
     );
   }
+
+  // ------------------------------------------------------------------
+  // Credenciales y carga masiva
+  // ------------------------------------------------------------------
+
+  /**
+   * Pregunta al backend si este usuario puede enviar credenciales y si hay
+   * servidor de correo. La pantalla esconde el boton segun la respuesta; el
+   * backend igual vuelve a validarlo antes de enviar.
+   */
+  getEstadoCredenciales(solicitanteUserId: number): Observable<Response> {
+    return this.http.get<Response>(
+      `${this.apiUrlAuth}/api/usuario/credenciales/estado?solicitanteUserId=${solicitanteUserId}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  enviarCredenciales(payload: {
+    solicitanteUserId: number;
+    userIds: number[];
+    modoContrasena: 'ALEATORIA' | 'FIJA';
+    contrasenaFija?: string;
+    correoDePrueba?: string;
+  }): Observable<Response> {
+    return this.http.post<Response>(
+      `${this.apiUrlAuth}/api/usuario/credenciales/enviar`,
+      payload,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  /**
+   * Sube el Excel de usuarios. Con soloValidar = true no escribe nada: el
+   * backend devuelve fila por fila lo que pasaria.
+   *
+   * Ojo: aca NO se usa getHeaders(). El Content-Type lo tiene que poner el
+   * navegador para incluir el boundary del multipart; si se fuerza a
+   * application/json el archivo no llega.
+   */
+  cargarUsuariosDesdeExcel(archivo: File, opciones: {
+    solicitanteUserId: number;
+    codEmpresa: string;
+    codSucursal: string;
+    perfil: string;
+    contrasena?: string;
+    soloValidar: boolean;
+  }): Observable<Response> {
+
+    const datos = new FormData();
+    datos.append('archivo', archivo);
+    datos.append('solicitanteUserId', String(opciones.solicitanteUserId));
+    datos.append('codEmpresa', opciones.codEmpresa);
+    datos.append('codSucursal', opciones.codSucursal);
+    datos.append('perfil', opciones.perfil);
+    datos.append('soloValidar', String(opciones.soloValidar));
+    if (opciones.contrasena) {
+      datos.append('contrasena', opciones.contrasena);
+    }
+
+    const token = sessionStorage.getItem('authToken') ?? this.token;
+
+    return this.http.post<Response>(
+      `${this.apiUrlAuth}/api/usuario/carga-masiva`,
+      datos,
+      { headers: new HttpHeaders({ 'Authorization': `Bearer ${token}` }) }
+    );
+  }
+
+  descargarPlantillaUsuarios(): Observable<Blob> {
+    const token = sessionStorage.getItem('authToken') ?? this.token;
+    return this.http.get(`${this.apiUrlAuth}/api/usuario/carga-masiva/plantilla`, {
+      headers: new HttpHeaders({ 'Authorization': `Bearer ${token}` }),
+      responseType: 'blob'
+    });
+  }
 }

@@ -1,0 +1,136 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Carga masiva de usuarios</div>
+  </div>
+
+  <div class="bar-buttons-top d-flex justify-content-end w-100">
+    <button class="general-button btn-secondary me-2" (click)="descargarPlantilla()">
+      <i class="fas fa-download"></i>
+      Descargar plantilla
+    </button>
+    <button class="general-button btn-secondary" (click)="onBack()">
+      <i class="fas fa-arrow-left"></i>
+      Regresar
+    </button>
+  </div>
+
+  <!-- Paso 1: el archivo y las opciones -->
+  <div class="card mt-3">
+    <div class="card-body">
+
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Archivo Excel</label>
+          <input type="file" class="form-control general-input"
+                 accept=".xlsx,.xls" (change)="onArchivoSeleccionado($event)" />
+          <small class="text-muted d-block mt-1">
+            Se reconocen las columnas por su nombre, sin importar el orden ni las
+            tildes: codigo de auxiliar, documento (o DNI), apellidos y nombres
+            (o el nombre completo en una sola celda), correo, perfil y sucursal.
+          </small>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Empresa</label>
+          <input type="text" class="form-control general-input"
+                 [(ngModel)]="codEmpresa" maxlength="4" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Sucursal</label>
+          <input type="text" class="form-control general-input"
+                 [(ngModel)]="codSucursal" maxlength="3" />
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Perfil por defecto</label>
+          <input type="text" class="form-control general-input"
+                 [(ngModel)]="perfil" maxlength="50" />
+          <small class="text-muted">Si el Excel trae columna Perfil, manda esa.</small>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Contrasena inicial</label>
+          <input type="text" class="form-control general-input"
+                 [(ngModel)]="contrasena" maxlength="60"
+                 placeholder="aquariusconsulting" />
+          <small class="text-muted d-block mt-1">
+            Se guarda cifrada. Despues conviene mandar las credenciales desde el
+            listado, que genera una distinta por persona.
+          </small>
+        </div>
+
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <button class="general-button btn-secondary me-2"
+                [disabled]="!archivo" (click)="validar()">
+          <i class="fas fa-magnifying-glass"></i>
+          Validar sin cargar
+        </button>
+        <button class="general-button btn-primary"
+                [disabled]="!yaValidado || yaCargado || cantidad('LISTO') === 0"
+                (click)="cargar()">
+          <i class="fas fa-upload"></i>
+          Cargar {{ cantidad('LISTO') > 0 ? cantidad('LISTO') : '' }} usuario(s)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Paso 2: el resultado -->
+  <div *ngIf="filas.length > 0" class="mt-3">
+
+    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <span class="badge bg-primary" *ngIf="cantidad('LISTO') > 0">
+        Listos: {{ cantidad('LISTO') }}
+      </span>
+      <span class="badge bg-success" *ngIf="cantidad('CARGADO') > 0">
+        Cargados: {{ cantidad('CARGADO') }}
+      </span>
+      <span class="badge bg-warning text-dark" *ngIf="cantidad('OMITIDO') > 0">
+        Omitidos: {{ cantidad('OMITIDO') }}
+      </span>
+      <span class="badge bg-danger" *ngIf="cantidad('ERROR') > 0">
+        Con error: {{ cantidad('ERROR') }}
+      </span>
+      <span class="text-muted small ms-2">{{ mensaje }}</span>
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover table-sm">
+        <thead>
+          <th class="text-center">Fila</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Auxiliar</th>
+          <th class="text-center">Usuario</th>
+          <th class="text-center">Apellidos y nombres</th>
+          <th class="text-center">Correo</th>
+          <th class="text-center">Perfil</th>
+          <th class="text-center">Detalle</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of filas">
+            <td class="text-center">{{ f.fila }}</td>
+            <td class="text-center" [ngClass]="claseEstado(f.estado)">{{ f.estado }}</td>
+            <td class="text-center">{{ f.codAuxiliar || '-' }}</td>
+            <td class="text-center">{{ f.usuario }}</td>
+            <td class="text-start">{{ f.apePaterno }} {{ f.apeMaterno }} {{ f.nombres }}</td>
+            <td class="text-start small">{{ f.correo || '-' }}</td>
+            <td class="text-center">{{ f.perfil }}</td>
+            <td class="text-start small">{{ f.detalle }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

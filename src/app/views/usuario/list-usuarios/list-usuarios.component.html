@@ -7,6 +7,24 @@
     <div class="title-f6">Lista de Usuarios</div>
   </div>
   <div class="bar-buttons-top d-flex justify-content-end w-100">
+
+    <!-- Solo para administradores. El backend vuelve a validarlo. -->
+    <button *ngIf="puedeEnviarCredenciales" (click)="onCargaMasiva()"
+      class="general-button btn-secondary me-2" title="Dar de alta usuarios desde un Excel">
+      <i class="fas fa-file-excel"></i>
+      Carga masiva
+    </button>
+
+    <button *ngIf="puedeEnviarCredenciales" (click)="onEnviarCredenciales()"
+      class="general-button btn-primary me-2"
+      [disabled]="seleccionados.size === 0"
+      [title]="seleccionados.size === 0
+                 ? 'Selecciona al menos un usuario'
+                 : 'Enviar credenciales a los seleccionados'">
+      <i class="fas fa-paper-plane"></i>
+      Enviar credenciales<span *ngIf="seleccionados.size > 0"> ({{ seleccionados.size }})</span>
+    </button>
+
     <button (click)="onNewUser()" class="general-button btn-primary me-2"
       *hasPermission="{ route: '/list-usuarios', action: 'permitCreate' }">
       <i class="fas fa-plus"></i>
@@ -17,24 +35,62 @@
       Regresar
     </button>
   </div>
+
+  <!-- Avisos del envio de credenciales -->
+  <div *ngIf="puedeEnviarCredenciales && !correoConfigurado"
+       class="alert alert-warning py-2 px-3 small mt-2 mb-0">
+    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+    El servidor de correo todavia no esta configurado, asi que el envio de
+    credenciales no va a salir. Avisar a Sistemas.
+  </div>
+
+  <div *ngIf="puedeEnviarCredenciales && seleccionados.size > 0"
+       class="d-flex align-items-center gap-3 small text-muted mt-2">
+    <span><strong>{{ seleccionados.size }}</strong> usuario(s) seleccionado(s)</span>
+    <button type="button" class="btn btn-link btn-sm p-0" (click)="seleccionarTodos()">
+      Seleccionar los {{ totalItems }}
+    </button>
+    <button type="button" class="btn btn-link btn-sm p-0 text-danger" (click)="limpiarSeleccion()">
+      Limpiar seleccion
+    </button>
+  </div>
 </div>
+
 <div class="table-container table-responsive">
   <table class="table global-table table-striped table-hover">
     <thead>
+      <th class="text-center" *ngIf="puedeEnviarCredenciales" style="width: 38px;">
+        <input type="checkbox" class="form-check-input"
+               [checked]="todaLaPaginaSeleccionada"
+               (change)="alternarPagina()"
+               title="Seleccionar los de esta pagina" />
+      </th>
       <th class="text-center">Username</th>
       <th class="text-center">Apellido Paterno</th>
       <th class="text-center">Apellido Materno</th>
       <th class="text-center">Nombres</th>
+      <th class="text-center" *ngIf="puedeEnviarCredenciales">Correo</th>
       <th class="text-center">Estado</th>
       <th class="text-center">Perfil</th>
       <th class="text-center">Acciones</th>
     </thead>
     <tbody>
       <tr *ngFor="let reg of pagedUsuarios">
+        <td class="text-center" *ngIf="puedeEnviarCredenciales">
+          <input type="checkbox" class="form-check-input"
+                 [checked]="estaSeleccionado(reg.userId)"
+                 (change)="alternarSeleccion(reg)" />
+        </td>
         <td class="text-center">{{reg.userUsername}}</td>
         <td class="text-start">{{reg.userLastName}}</td>
         <td class="text-start">{{reg.userMiddleName}}</td>
         <td class="text-start">{{reg.userName}}</td>
+        <td class="text-start small" *ngIf="puedeEnviarCredenciales">
+          <span *ngIf="reg.userEmail">{{ reg.userEmail }}</span>
+          <span *ngIf="!reg.userEmail" class="text-danger">
+            <i class="fa-solid fa-circle-exclamation me-1"></i>sin correo
+          </span>
+        </td>
         <td class="text-center">{{reg.userStatus}}</td>
         <td class="text-center">{{reg.profileShortName}}</td>
         <td class="text-center">
@@ -43,9 +99,9 @@
             <i class="fa fa-edit"></i>
           </button>
 
-          <!-- 🆕 Cambiar contraseña — SOLO visible si el usuario logueado
-               es admin. La doble protección (HTML + check en TS) evita que
-               un usuario malicioso forzando el DOM dispare la acción. -->
+          <!-- Cambiar contrasena: solo si el usuario logueado es admin. La
+               doble proteccion (HTML + check en TS) evita que se dispare
+               forzando el DOM. -->
           <button *ngIf="isAdminUser"
                   (click)="onChangePassword(reg)"
                   type="button"
