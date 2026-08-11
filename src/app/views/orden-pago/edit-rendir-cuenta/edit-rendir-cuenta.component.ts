@@ -625,6 +625,7 @@ export class EditRendirCuentaComponent implements OnInit {
       },
       (error) => {
         console.error('Error al cargar rubros', error);
+        this.loadingService.hide();
       }
     );
   }
@@ -632,14 +633,19 @@ export class EditRendirCuentaComponent implements OnInit {
   getTiposGasto(codRubro: string): void {
     this.maestrosService.getTiposGasto(this.codEmpresa, codRubro).subscribe(
       (response: Response) => {
-        this.tiposGasto = response.resultado;
-        var filtro: string = "";
+        const todosLosTipos: MaeTipoGasto[] = response.resultado || [];
+        let filtro: string = "";
         if (this.orden.codCCostos?.startsWith('10')) {
           filtro = "010";
         } else {
-          filtro = "0" + this.orden.codCCostos?.substring(0, 1) + this.orden.codCCostos?.substring(2, 3);
+          filtro = "0" + (this.orden.codCCostos?.substring(0, 1) ?? '') + (this.orden.codCCostos?.substring(2, 3) ?? '');
         }
-        this.tiposGasto = this.tiposGasto.filter(tg => tg.desTipoGasto?.startsWith(filtro));
+        const filtrados = todosLosTipos.filter(tg => tg.desTipoGasto?.startsWith(filtro));
+        // Si el filtro por centro de costos no deja ninguno (p. ej. centros
+        // administrativos como 19901001, cuyo prefijo no matchea ningun tipo),
+        // se muestran TODOS para que la orden se pueda rendir igual, en vez de
+        // quedar sin opciones. Antes esto ademas reventaba en tiposGasto[0].
+        this.tiposGasto = filtrados.length > 0 ? filtrados : todosLosTipos;
         /*
         if (this.indMovilidad !== 'S') {
           if (this.codTipoGastoDefault?.length == 0) {
@@ -651,11 +657,12 @@ export class EditRendirCuentaComponent implements OnInit {
           this.ordenPagoDet.codTipoGasto = this.codTipoGastoMovilidad;
         }
           */
-        this.ordenPagoDet.codTipoGasto = this.tiposGasto[0].codTipoGasto;
+        this.ordenPagoDet.codTipoGasto = this.tiposGasto.length > 0 ? this.tiposGasto[0].codTipoGasto : '';
         this.onChangeTipoGasto();
       },
       (error) => {
         console.error('Error al cargar tipos de gasto', error);
+        this.loadingService.hide();
       }
     );
   }
