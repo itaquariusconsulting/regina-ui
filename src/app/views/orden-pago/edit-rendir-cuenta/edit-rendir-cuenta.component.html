@@ -246,7 +246,20 @@
     </div>
 
     <div class="row mt-1">
-        <h6 class="h6-header">DATOS REALES DEL PROVEEDOR</h6>
+        <h6 class="h6-header d-flex align-items-center flex-wrap gap-2">
+            DATOS REALES DEL PROVEEDOR
+            <button *ngIf="!ingresoManual" type="button"
+                    class="btn btn-sm btn-outline-secondary py-0"
+                    title="Llenar los datos del proveedor a mano (si SUNAT no responde)"
+                    (click)="activarIngresoManual()">
+                <i class="fas fa-pen me-1"></i>Ingreso manual
+            </button>
+            <span *ngIf="ingresoManual" class="badge bg-warning text-dark">
+                <i class="fas fa-triangle-exclamation me-1"></i>Ingreso manual (verificado a mano)
+                <a class="ms-2 text-decoration-underline" style="cursor: pointer;"
+                   (click)="desactivarIngresoManual()">volver a SUNAT</a>
+            </span>
+        </h6>
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
@@ -268,9 +281,12 @@
                 </small>
             </label>
             <div class="input-group">
-                <input class="form-control general-input" name="proveedor" id="proveedor"
+                <input *ngIf="!ingresoManual" class="form-control general-input" name="proveedor" id="proveedor"
                     [value]="nombreProveedor"
                     [title]="tituloProveedor" />
+                <input *ngIf="ingresoManual" class="form-control general-input" name="proveedorManual" id="proveedorManual"
+                    [(ngModel)]="padronRuc.razonSocial"
+                    placeholder="Razon social del proveedor" />
                 <button type="button"
                         class="btn btn-outline-secondary"
                         title="Ver / copiar razón social registrada en SUNAT"
@@ -282,13 +298,13 @@
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Estado</label>
-            <input readonly class="form-control general-input" name="estado" id="estado"
+            <input [readonly]="!ingresoManual" class="form-control general-input" name="estado" id="estado"
                 [(ngModel)]="padronRuc.estado" />
         </div>
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Condición</label>
-            <input readonly class="form-control general-input" name="condicion" id="condicion"
+            <input [readonly]="!ingresoManual" class="form-control general-input" name="condicion" id="condicion"
                 [(ngModel)]="padronRuc.condicion" />
         </div>
     </div>

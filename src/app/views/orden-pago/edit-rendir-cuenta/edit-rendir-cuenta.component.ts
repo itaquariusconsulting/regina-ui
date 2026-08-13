@@ -192,6 +192,14 @@ export class EditRendirCuentaComponent implements OnInit {
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   validaComprobante: boolean = false;
+
+  /**
+   * Ingreso manual del proveedor: se enciende cuando SUNAT no responde o
+   * devuelve datos invalidos, o cuando el usuario lo fuerza con el boton.
+   * En este modo los campos del proveedor se vuelven editables y el guardado
+   * NO exige la validacion SUNAT (queda como "verificado manualmente").
+   */
+  ingresoManual: boolean = false;
   wrapper: WrapperComprobanteSunat = new WrapperComprobanteSunat();
   /**
    * Nombre a mostrar en el campo "Proveedor".
@@ -1116,6 +1124,10 @@ export class EditRendirCuentaComponent implements OnInit {
     this.hasValidRules = false;
     this.hasValidState();
     this.mensaje = message;
+
+    // SUNAT no respondio: se habilita el ingreso manual para no bloquear la
+    // rendicion. El usuario completa los datos del proveedor a mano.
+    this.ingresoManual = true;
   }
 
   async onSelectFile(event: Event): Promise<void> {
@@ -2096,6 +2108,17 @@ export class EditRendirCuentaComponent implements OnInit {
     this.getMonedas();
   }
 
+  /** El usuario fuerza el ingreso manual del proveedor. */
+  activarIngresoManual(): void {
+    this.ingresoManual = true;
+    this.mensaje = '';
+  }
+
+  /** Vuelve al modo normal (validacion contra SUNAT). */
+  desactivarIngresoManual(): void {
+    this.ingresoManual = false;
+  }
+
   isSaveDisabled(): boolean {
     const docNum = (this.dataImagen.documentNumber || '').trim();
     const subTotal = Number(this.subTotal);
@@ -2114,7 +2137,8 @@ export class EditRendirCuentaComponent implements OnInit {
     // 🔒 El comprobante debe haber sido validado con SUNAT (botón "Validar Comprobante").
     // `validaComprobante` arranca en false y solo se vuelve true cuando SUNAT
     // responde estadoCp === '1' en validarComprobante().
-    if (!this.validaComprobante) {
+    // En ingreso manual no se exige la validacion SUNAT del comprobante.
+    if (!this.ingresoManual && !this.validaComprobante) {
       return true;
     }
 
@@ -2146,7 +2170,10 @@ export class EditRendirCuentaComponent implements OnInit {
       return true;
     }
 
-    return !this.validate || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
+    // En ingreso manual, las reglas de SUNAT (this.validate) no bloquean;
+    // se siguen exigiendo numero de documento y montos.
+    const okReglas = this.ingresoManual ? true : this.validate;
+    return !okReglas || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
   }
 
   changeImporte(importe: Event | number) {
