@@ -1537,10 +1537,26 @@ export class EditRendirCuentaComponent implements OnInit {
     return '';
   }
 
+  private recortarBasura(nombre: string): string {
+    let s = (nombre || '');
+    // Corta la parte "de documento" que el OCR pega al nombre cuando el recuadro
+    // FACTURA/BOLETA queda en la misma linea (ej: "CASTILLO ... FACTURA ELECTRONICA").
+    const cortes = [
+      /\bFACTURA\b/i, /\bBOLETA\b/i, /\bNOTA\s+DE\s+(CR|D)/i, /\bGU[IÍ]A\b/i,
+      /\bR\.?\s*U\.?\s*C\b/i, /\b[FBE]\d{3}\s*-\s*\d/i, /\bCOPIA\b/i, /\bSUNAT\b/i,
+    ];
+    for (const re of cortes) {
+      const m = s.match(re);
+      if (m && m.index !== undefined && m.index > 0) { s = s.slice(0, m.index); }
+    }
+    return s.replace(/\s+/g, ' ').trim();
+  }
+
   private limpiarNombreProveedor(candidato: string, rawText: string): string {
-    const c = (candidato || '').trim();
+    const c = this.recortarBasura((candidato || '').trim());
     if (c && !this.esFraseNoNombre(c)) return c;
-    return this.mejorNombreDeRawText(rawText) || (this.esFraseNoNombre(c) ? '' : c);
+    const mejor = this.recortarBasura(this.mejorNombreDeRawText(rawText));
+    return mejor || (this.esFraseNoNombre(c) ? '' : c);
   }
 
   private mapDetectedData(detected: any): boolean {
