@@ -1494,6 +1494,55 @@ export class EditRendirCuentaComponent implements OnInit {
     });
   }
 
+  private readonly FRASES_NO_NOMBRE = [
+    'FACTURA ELECTRONICA', 'BOLETA DE VENTA ELECTRONICA', 'BOLETA DE VENTA',
+    'BOLETA ELECTRONICA', 'NOTA DE CREDITO ELECTRONICA', 'NOTA DE CREDITO',
+    'NOTA DE DEBITO', 'GUIA DE REMISION', 'REPRESENTACION IMPRESA',
+    'COPIA SUNAT', 'COPIA EMISOR', 'COPIA ADQUIRENTE', 'COPIA', 'SUNAT',
+    'ADQUIRENTE', 'CLIENTE', 'FACTURA', 'BOLETA', 'RUC'
+  ];
+
+  private normNombre(s: string): string {
+    return (s || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private esFraseNoNombre(txt: string): boolean {
+    const n = this.normNombre(txt);
+    if (!n) return true;
+    return this.FRASES_NO_NOMBRE.some(f => n === f || n.startsWith(f + ' '));
+  }
+
+  private mejorNombreDeRawText(rawText: string): string {
+    const lineas = (rawText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    // 1) preferir una linea con sufijo de razon social (empresas)
+    const conSufijo = lineas.find(l =>
+      /\b(S\.?A\.?C|E\.?I\.?R\.?L|S\.?R\.?L|S\.?A\.?A|S\.?A)\.?\b/i.test(l) &&
+      !this.esFraseNoNombre(l) && !/\d{6,}/.test(l));
+    if (conSufijo) return conSufijo.slice(0, 120);
+    // 2) primera linea "nombre-like" del encabezado (persona natural, etc.)
+    for (const l of lineas.slice(0, 10)) {
+      if (l.length < 4) continue;
+      if (this.esFraseNoNombre(l)) continue;
+      if (/\bR\.?U\.?C\b|\d{11}/i.test(l)) continue;
+      if (/^[A-Z]\d{3}\s*-/.test(l)) continue;
+      if (/^(AV|JR|CAL|CALLE|PSJE?|PASAJE|URB|MZ|MZA|LT|LTE|NRO|INT|KM)\b\.?/i.test(l)) continue;
+      if (!/[A-Za-zÀ-ſ]{4,}/.test(l)) continue;
+      return l.slice(0, 120);
+    }
+    return '';
+  }
+
+  private limpiarNombreProveedor(candidato: string, rawText: string): string {
+    const c = (candidato || '').trim();
+    if (c && !this.esFraseNoNombre(c)) return c;
+    return this.mejorNombreDeRawText(rawText) || (this.esFraseNoNombre(c) ? '' : c);
+  }
+
   private mapDetectedData(detected: any): boolean {
     console.log("Detected RAW TEXT:", detected.rawText);
     this.dataImagen.documentType = detected.documentType;
@@ -1542,7 +1591,7 @@ export class EditRendirCuentaComponent implements OnInit {
       }
     }
 
-    this.dataImagen.issuerName = detected.issuerName;
+    this.dataImagen.issuerName = this.limpiarNombreProveedor(detected.issuerName, detected.rawText);
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
 
@@ -1608,7 +1657,7 @@ export class EditRendirCuentaComponent implements OnInit {
     // Se preservará en handleRucResponse si SUNAT no devuelve uno propio.
     // Además lo asignamos a padronRuc para que el campo Proveedor lo muestre
     // de inmediato, aunque luego sea reemplazado por la respuesta de SUNAT.
-    this.commercialNameOcr = (detected.commercialName || '').trim();
+    this.commercialNameOcr = this.limpiarNombreProveedor(detected.commercialName, detected.rawText);
     // Filtro: no pegar la dirección del documento como nombre comercial.
     if (this.commercialNameOcr && this.pareceDireccion(this.commercialNameOcr)) {
       this.commercialNameOcr = '';
