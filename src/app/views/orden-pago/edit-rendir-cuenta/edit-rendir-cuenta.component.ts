@@ -1283,6 +1283,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
         if (isValidDoc) {
           this.onGetDatosRuc();
+          this.autoValidarComprobante();
         }
 
         // Si el overlay fue minimizado mientras el OCR procesaba en
@@ -2623,6 +2624,18 @@ export class EditRendirCuentaComponent implements OnInit {
 
     const pattern = /^[A-Za-z0-9]{1,4}-\d{15}$/;
     return pattern.test(value.trim());
+  }
+
+  private autoValidarComprobante(): void {
+    // Auto-dispara la validacion del comprobante al terminar el OCR, para que
+    // Estado/Condicion se llenen solos sin pulsar "Validar". Solo si el OCR
+    // trajo lo minimo necesario (RUC, serie, numero y monto).
+    const { numeroSerie, numero } = this.parseNroDocumento(this.dataImagen.documentNumber ?? '');
+    const monto = Number(this.dataImagen.amount);
+    if (this.ruc && numeroSerie && numero && monto > 0) {
+      if (!this.total || this.total <= 0) { this.total = monto; }
+      this.validarComprobante();
+    }
   }
 
   validarComprobante() {
