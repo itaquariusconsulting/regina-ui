@@ -2634,11 +2634,11 @@ export class EditRendirCuentaComponent implements OnInit {
     const monto = Number(this.dataImagen.amount);
     if (this.ruc && numeroSerie && numero && monto > 0) {
       if (!this.total || this.total <= 0) { this.total = monto; }
-      this.validarComprobante();
+      this.validarComprobante(true);
     }
   }
 
-  validarComprobante() {
+  validarComprobante(silencioso: boolean = false) {
     const { numeroSerie, numero } = this.parseNroDocumento(this.dataImagen.documentNumber ?? '');
 
     this.wrapper.rucConsultante = sessionStorage.getItem("ruc") ?? '';
@@ -2728,12 +2728,16 @@ export class EditRendirCuentaComponent implements OnInit {
         }
 
         this.validaComprobante = info.valido;
-        Swal.fire({
-          title: info.titulo,
-          html,
-          icon: info.tipo,
-          confirmButtonText: 'OK',
-        });
+        // En modo automatico (silencioso) no mostramos el popup cuando todo
+        // esta OK; solo si es manual, o si el comprobante NO es valido.
+        if (!silencioso || !info.valido) {
+          Swal.fire({
+            title: info.titulo,
+            html,
+            icon: info.tipo,
+            confirmButtonText: 'OK',
+          });
+        }
       },
       error: (err) => {
         this.validaComprobante = false;     // Error de red → tampoco habilita
@@ -2741,12 +2745,14 @@ export class EditRendirCuentaComponent implements OnInit {
                       || err?.error?.detalle
                       || err?.message
                       || 'No fue posible conectarse con el servicio de validación de SUNAT. Intente nuevamente en unos segundos.';
-        Swal.fire({
-          title: 'Error al validar el comprobante',
-          text: detalle,
-          icon: 'error',
-          confirmButtonText: 'OK',
-        });
+        if (!silencioso) {
+          Swal.fire({
+            title: 'Error al validar el comprobante',
+            text: detalle,
+            icon: 'error',
+            confirmButtonText: 'OK',
+          });
+        }
       }
     });
   }
