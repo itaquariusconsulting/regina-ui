@@ -2705,6 +2705,15 @@ export class EditRendirCuentaComponent implements OnInit {
           </div>
         `;
 
+        // Rellena Estado/Condicion del proveedor con lo que devolvio SUNAT en
+        // la validacion del comprobante (fuente confiable) y limpia el aviso del
+        // padron ("No se pudo consultar SUNAT") si la validacion fue correcta.
+        if (info.valido && this.padronRuc) {
+          if (estadoRucTxt) { this.padronRuc.estado = estadoRucTxt; }
+          if (condDomiTxt)  { this.padronRuc.condicion = condDomiTxt; }
+          if (estadoRucTxt || condDomiTxt) { this.mensaje = ''; }
+        }
+
         this.validaComprobante = info.valido;
         Swal.fire({
           title: info.titulo,
