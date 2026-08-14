@@ -1113,14 +1113,9 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private handleRucError(error?: HttpErrorResponse): void {
     let message = error?.error.mensaje || 'No se pudo consultar SUNAT. Intente nuevamente.';
-    this.dialog.open(ConfirmDialogComponent, {
-      width: '280px',
-      data: {
-        title: 'Error',
-        message,
-        type: 'alert'
-      }
-    });
+    // Popup removido: no interrumpir al abrir la rendicion cuando el padron no
+    // responde. Se cae a ingreso manual y Estado/Condicion se llenan al validar
+    // el comprobante.
     this.hasValidRules = false;
     this.hasValidState();
     this.mensaje = message;
