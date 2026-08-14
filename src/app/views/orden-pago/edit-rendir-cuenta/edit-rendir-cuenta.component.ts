@@ -1665,6 +1665,13 @@ export class EditRendirCuentaComponent implements OnInit {
     if (this.commercialNameOcr) {
       this.padronRuc.nombreComercial = this.commercialNameOcr;
     }
+    // En modo "Ingreso manual" el campo Proveedor usa razonSocial; si SUNAT no
+    // la devuelve, la pre-llenamos con el nombre detectado (ya limpiado) para
+    // que no quede vacio. Si luego SUNAT responde, handleRucResponse la reemplaza.
+    const nombreOcr = (this.commercialNameOcr || this.dataImagen.issuerName || '').trim();
+    if (nombreOcr && !(this.padronRuc.razonSocial || '').trim()) {
+      this.padronRuc.razonSocial = nombreOcr;
+    }
 
     this.cargarItems(this.dataImagen.items);
     return true;
