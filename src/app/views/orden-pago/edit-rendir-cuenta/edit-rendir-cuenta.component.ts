@@ -38,6 +38,8 @@ import { SunatAnexosService } from '../../../services/sunat-anexos.service';
 import { EstablecimientoAnexo, RucAnexosResponse } from '../../../models/establecimiento-anexo';
 import { AnexoSelectorDialogComponent, AnexoSelectorData } from '../../../components/dialogs/anexo-selector-dialog.component';
 import { Response } from '../../../models/response';
+import { parseNroComprobante, formatearNroDocumento } from '../../../shared/utils/comprobante-numero.util';
+import type { NroComprobante } from '../../../shared/utils/comprobante-numero.util';
 import { MaeRubro } from '../../../models/mae-rubro';
 import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
@@ -568,18 +570,11 @@ export class EditRendirCuentaComponent implements OnInit {
     // dos modos del SQL en DocumentoExistenteRepository.
     wrapper.numRuc = (this.ruc || '').trim();
 
-    let serie = '';
-    let numero = '';
-
-    if (this.dataImagen.documentNumber) {
-      const partes = this.dataImagen.documentNumber.split('-');
-      if (partes.length === 2) {
-        serie = partes[0];
-        numero = partes[1].padStart(15, '0');
-      }
-    }
-    wrapper.numDocumento = numero;
-    wrapper.numSerieDoc = serie;
+    // Mismo parseo tolerante que usa la validacion SUNAT; a la BD va el
+    // correlativo relleno a 15 (formato historico de la tabla).
+    const docNro = parseNroComprobante(this.dataImagen.documentNumber);
+    wrapper.numDocumento = docNro.ok ? docNro.numeroPadded : '';
+    wrapper.numSerieDoc = docNro.serie;
 
     return new Promise<number>((resolve) => {
       this.ordenPagoDetService.onBuscarDocumento(wrapper).subscribe(
@@ -918,12 +913,23 @@ export class EditRendirCuentaComponent implements OnInit {
     }
   }
 
+  /**
+   * Al salir del campo "Nro. Documento" se normaliza lo que el usuario escribio
+   * al formato interno SERIE-000000000000001. Acepta "f002 11092", "F00211092",
+   * "F002 N° 11092", etc. Si no se puede interpretar, se respeta lo tipeado
+   * (solo en mayusculas) para no borrarle el dato.
+   */
   changeNumDocumento() {
-    const partes = this.dataImagen.documentNumber?.split('-');
-    if (partes?.length === 2) {
-      const serie = partes[0];
-      const numero = partes[1].padStart(15, '0');
-      this.dataImagen.documentNumber = (serie + "-" + numero).toUpperCase();
+    const anterior = this.dataImagen.documentNumber ?? '';
+    const normalizado = formatearNroDocumento(
+      anterior,
+      this.devolverDocumento(this.codDocumentoGeneral),
+    );
+    this.dataImagen.documentNumber = normalizado;
+
+    // Si cambio el numero, la validacion previa contra SUNAT ya no sirve.
+    if (normalizado !== anterior) {
+      this.validaComprobante = false;
     }
   }
 
@@ -1113,9 +1119,14 @@ export class EditRendirCuentaComponent implements OnInit {
 
   private handleRucError(error?: HttpErrorResponse): void {
     let message = error?.error.mensaje || 'No se pudo consultar SUNAT. Intente nuevamente.';
-    // Popup removido: no interrumpir al abrir la rendicion cuando el padron no
-    // responde. Se cae a ingreso manual y Estado/Condicion se llenan al validar
-    // el comprobante.
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '280px',
+      data: {
+        title: 'Error',
+        message,
+        type: 'alert'
+      }
+    });
     this.hasValidRules = false;
     this.hasValidState();
     this.mensaje = message;
@@ -1278,7 +1289,6 @@ export class EditRendirCuentaComponent implements OnInit {
 
         if (isValidDoc) {
           this.onGetDatosRuc();
-          this.autoValidarComprobante();
         }
 
         // Si el overlay fue minimizado mientras el OCR procesaba en
@@ -1494,71 +1504,6 @@ export class EditRendirCuentaComponent implements OnInit {
     });
   }
 
-  private readonly FRASES_NO_NOMBRE = [
-    'FACTURA ELECTRONICA', 'BOLETA DE VENTA ELECTRONICA', 'BOLETA DE VENTA',
-    'BOLETA ELECTRONICA', 'NOTA DE CREDITO ELECTRONICA', 'NOTA DE CREDITO',
-    'NOTA DE DEBITO', 'GUIA DE REMISION', 'REPRESENTACION IMPRESA',
-    'COPIA SUNAT', 'COPIA EMISOR', 'COPIA ADQUIRENTE', 'COPIA', 'SUNAT',
-    'ADQUIRENTE', 'CLIENTE', 'FACTURA', 'BOLETA', 'RUC'
-  ];
-
-  private normNombre(s: string): string {
-    return (s || '')
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  private esFraseNoNombre(txt: string): boolean {
-    const n = this.normNombre(txt);
-    if (!n) return true;
-    return this.FRASES_NO_NOMBRE.some(f => n === f || n.startsWith(f + ' '));
-  }
-
-  private mejorNombreDeRawText(rawText: string): string {
-    const lineas = (rawText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    // 1) preferir una linea con sufijo de razon social (empresas)
-    const conSufijo = lineas.find(l =>
-      /\b(S\.?A\.?C|E\.?I\.?R\.?L|S\.?R\.?L|S\.?A\.?A|S\.?A)\.?\b/i.test(l) &&
-      !this.esFraseNoNombre(l) && !/\d{6,}/.test(l));
-    if (conSufijo) return conSufijo.slice(0, 120);
-    // 2) primera linea "nombre-like" del encabezado (persona natural, etc.)
-    for (const l of lineas.slice(0, 10)) {
-      if (l.length < 4) continue;
-      if (this.esFraseNoNombre(l)) continue;
-      if (/\bR\.?U\.?C\b|\d{11}/i.test(l)) continue;
-      if (/^[A-Z]\d{3}\s*-/.test(l)) continue;
-      if (/^(AV|JR|CAL|CALLE|PSJE?|PASAJE|URB|MZ|MZA|LT|LTE|NRO|INT|KM)\b\.?/i.test(l)) continue;
-      if (!/[A-Za-zÀ-ſ]{4,}/.test(l)) continue;
-      return l.slice(0, 120);
-    }
-    return '';
-  }
-
-  private recortarBasura(nombre: string): string {
-    let s = (nombre || '');
-    // Corta la parte "de documento" que el OCR pega al nombre cuando el recuadro
-    // FACTURA/BOLETA queda en la misma linea (ej: "CASTILLO ... FACTURA ELECTRONICA").
-    const cortes = [
-      /\bFACTURA\b/i, /\bBOLETA\b/i, /\bNOTA\s+DE\s+(CR|D)/i, /\bGU[IÍ]A\b/i,
-      /\bR\.?\s*U\.?\s*C\b/i, /\b[FBE]\d{3}\s*-\s*\d/i, /\bCOPIA\b/i, /\bSUNAT\b/i,
-    ];
-    for (const re of cortes) {
-      const m = s.match(re);
-      if (m && m.index !== undefined && m.index > 0) { s = s.slice(0, m.index); }
-    }
-    return s.replace(/\s+/g, ' ').trim();
-  }
-
-  private limpiarNombreProveedor(candidato: string, rawText: string): string {
-    const c = this.recortarBasura((candidato || '').trim());
-    if (c && !this.esFraseNoNombre(c)) return c;
-    const mejor = this.recortarBasura(this.mejorNombreDeRawText(rawText));
-    return mejor || (this.esFraseNoNombre(c) ? '' : c);
-  }
-
   private mapDetectedData(detected: any): boolean {
     console.log("Detected RAW TEXT:", detected.rawText);
     this.dataImagen.documentType = detected.documentType;
@@ -1596,18 +1541,30 @@ export class EditRendirCuentaComponent implements OnInit {
       this.documentoSeleccionado = elegido || new MaeDocumento();
     }
 
-    this.dataImagen.documentNumber = detected.documentNumber;
-    if (this.dataImagen.documentNumber) {
-      const partes = this.dataImagen.documentNumber.split('-');
-      if (partes.length === 2) {
-        const serie = partes[0];
-        const numero = partes[1].padStart(15, '0');
-
-        this.dataImagen.documentNumber = `${serie}-${numero}`;
-      }
+    // Numero de comprobante: primero se intenta con lo que devolvio el OCR y,
+    // si eso no da serie+numero, se rastrilla el texto crudo completo. Asi un
+    // "FOO2 - OOOO11O92" o un "F002\n11092" mal cortado igual se recupera.
+    const tipoDocDetectado = this.devolverDocumento(this.codDocumentoGeneral);
+    let docOcr = parseNroComprobante(detected.documentNumber, tipoDocDetectado);
+    if (!docOcr.ok && detected?.rawText) {
+      const porTexto = parseNroComprobante(detected.rawText, tipoDocDetectado);
+      if (porTexto.ok) { docOcr = porTexto; }
     }
 
-    this.dataImagen.issuerName = this.limpiarNombreProveedor(detected.issuerName, detected.rawText);
+    if (docOcr.ok) {
+      this.dataImagen.documentNumber = docOcr.formateado;
+      if (docOcr.reparado || docOcr.advertencias.length) {
+        console.info('[OCR] numero de comprobante interpretado', docOcr);
+      }
+    } else {
+      // No se pudo interpretar: se deja lo que vino (o vacio) para que el
+      // usuario lo complete a mano; el guard de validarComprobante lo avisa.
+      this.dataImagen.documentNumber = (detected.documentNumber ?? '').toString().trim().toUpperCase();
+      console.warn('[OCR] no se pudo interpretar el numero de comprobante',
+        { valor: detected.documentNumber, advertencias: doc.advertencias });
+    }
+
+    this.dataImagen.issuerName = detected.issuerName;
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
 
@@ -1673,20 +1630,13 @@ export class EditRendirCuentaComponent implements OnInit {
     // Se preservará en handleRucResponse si SUNAT no devuelve uno propio.
     // Además lo asignamos a padronRuc para que el campo Proveedor lo muestre
     // de inmediato, aunque luego sea reemplazado por la respuesta de SUNAT.
-    this.commercialNameOcr = this.limpiarNombreProveedor(detected.commercialName, detected.rawText);
+    this.commercialNameOcr = (detected.commercialName || '').trim();
     // Filtro: no pegar la dirección del documento como nombre comercial.
     if (this.commercialNameOcr && this.pareceDireccion(this.commercialNameOcr)) {
       this.commercialNameOcr = '';
     }
     if (this.commercialNameOcr) {
       this.padronRuc.nombreComercial = this.commercialNameOcr;
-    }
-    // En modo "Ingreso manual" el campo Proveedor usa razonSocial; si SUNAT no
-    // la devuelve, la pre-llenamos con el nombre detectado (ya limpiado) para
-    // que no quede vacio. Si luego SUNAT responde, handleRucResponse la reemplaza.
-    const nombreOcr = (this.commercialNameOcr || this.dataImagen.issuerName || '').trim();
-    if (nombreOcr && !(this.padronRuc.razonSocial || '').trim()) {
-      this.padronRuc.razonSocial = nombreOcr;
     }
 
     this.cargarItems(this.dataImagen.items);
@@ -1946,8 +1896,9 @@ export class EditRendirCuentaComponent implements OnInit {
 
     if (existe == 0) {
 
-      const numserie = this.dataImagen.documentNumber?.split('-')[0] ?? '';
-      const numdoc = this.dataImagen.documentNumber?.split('-')[1] ?? '';
+      const docNro = parseNroComprobante(this.dataImagen.documentNumber);
+      const numserie = docNro.serie;
+      const numdoc = docNro.ok ? docNro.numeroPadded : '';
 
       this.ordenPagoDet.codEmpresa = this.codEmpresa;
       this.ordenPagoDet.numOrden = this.orden.numOrden;
@@ -2686,36 +2637,74 @@ export class EditRendirCuentaComponent implements OnInit {
     }
   }
 
+  /**
+   * El numero es valido si el parser tolerante logra sacar serie y correlativo.
+   * (Antes se exigia el formato exacto SERIE-15 digitos, lo que rechazaba
+   * numeros correctos escritos de otra forma.)
+   */
   private isDocumentNumberValid(value: string): boolean {
     if (!value) return false;
-
-    const pattern = /^[A-Za-z0-9]{1,4}-\d{15}$/;
-    return pattern.test(value.trim());
+    return parseNroComprobante(value).ok;
   }
 
-  private autoValidarComprobante(): void {
-    // Auto-dispara la validacion del comprobante al terminar el OCR, para que
-    // Estado/Condicion se llenen solos sin pulsar "Validar". Solo si el OCR
-    // trajo lo minimo necesario (RUC, serie, numero y monto).
-    const { numeroSerie, numero } = this.parseNroDocumento(this.dataImagen.documentNumber ?? '');
-    const monto = Number(this.dataImagen.amount);
-    if (this.ruc && numeroSerie && numero && monto > 0) {
-      if (!this.total || this.total <= 0) { this.total = monto; }
-      this.validarComprobante(true);
+  validarComprobante() {
+    // El parseo tolerante vive en comprobante-numero.util.ts y es el mismo
+    // algoritmo que usa el OCR, asi que lo que lee el OCR y lo que valida el
+    // frontend nunca discrepan.
+    const docNro: NroComprobante = parseNroComprobante(
+      this.dataImagen.documentNumber ?? '',
+      this.devolverDocumento(this.codDocumentoGeneral),
+    );
+
+    // 🔒 GUARD: sin serie o sin numero SUNAT responde 422 ("el campo
+    // 'numeroSerie' es obligatorio"), que al usuario le llega como un
+    // "No se pudo validar el comprobante" que no explica nada. Cortamos antes
+    // y le decimos exactamente que le falta.
+    if (!docNro.ok) {
+      this.validaComprobante = false;
+      const detalle = docNro.serie && !docNro.numero
+        ? 'Se reconocio la serie <b>' + docNro.serie + '</b> pero no el numero correlativo.'
+        : (!docNro.serie && docNro.numero
+          ? 'Se reconocio el numero <b>' + docNro.numero + '</b> pero no la serie.'
+          : 'No se pudo leer la serie ni el numero del comprobante.');
+
+      Swal.fire({
+        title: 'Falta el numero de comprobante',
+        html: `
+          <div style="text-align:left; font-family: var(--app-font-family, Arial);">
+            <p>${detalle}</p>
+            <p style="margin-bottom:6px;">Escribalo en el campo <b>Nro. Documento</b> con el formato
+               <b>SERIE-NUMERO</b> (por ejemplo <b>F002-11092</b>) y vuelva a validar.</p>
+            <div style="border-top:1px solid #dee2e6; padding-top:8px; font-size:0.85em; color:#666;">
+              Leido del documento: <code>${(this.dataImagen.documentNumber || '(vacio)')}</code>
+            </div>
+          </div>`,
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      }).then(() => {
+        document.getElementById('nrodoc')?.focus();
+      });
+
+      console.warn('[validarComprobante] numero de comprobante no interpretable',
+        { valor: this.dataImagen.documentNumber, advertencias: docNro.advertencias });
+      return;
     }
-  }
 
-  validarComprobante(silencioso: boolean = false) {
-    const { numeroSerie, numero } = this.parseNroDocumento(this.dataImagen.documentNumber ?? '');
+    // Deja el campo en el formato interno SERIE-000000000000001.
+    this.dataImagen.documentNumber = docNro.formateado;
 
     this.wrapper.rucConsultante = sessionStorage.getItem("ruc") ?? '';
     this.wrapper.numRuc = this.ruc;
     this.wrapper.codComp = this.documentos.filter(doc=>doc.codDocumento==this.codDocumentoGeneral)[0].codSunat;
-    this.wrapper.numeroSerie = numeroSerie;
-    this.wrapper.numero = numero;
+    this.wrapper.numeroSerie = docNro.serie;
+    // SUNAT espera el correlativo SIN ceros a la izquierda.
+    this.wrapper.numero = docNro.numero;
     this.wrapper.fechaEmision = this.formatFecha(this.modelIni);
     this.wrapper.monto = String(this.total);
 
+    if (docNro.reparado || docNro.advertencias.length) {
+      console.info('[validarComprobante] numero interpretado', docNro);
+    }
     console.log("Wrapper : ", this.wrapper);
 
     // Resetea el flag mientras se ejecuta la validación contra SUNAT.
@@ -2795,16 +2784,12 @@ export class EditRendirCuentaComponent implements OnInit {
         }
 
         this.validaComprobante = info.valido;
-        // En modo automatico (silencioso) no mostramos el popup cuando todo
-        // esta OK; solo si es manual, o si el comprobante NO es valido.
-        if (!silencioso || !info.valido) {
-          Swal.fire({
-            title: info.titulo,
-            html,
-            icon: info.tipo,
-            confirmButtonText: 'OK',
-          });
-        }
+        Swal.fire({
+          title: info.titulo,
+          html,
+          icon: info.tipo,
+          confirmButtonText: 'OK',
+        });
       },
       error: (err) => {
         this.validaComprobante = false;     // Error de red → tampoco habilita
@@ -2812,30 +2797,27 @@ export class EditRendirCuentaComponent implements OnInit {
                       || err?.error?.detalle
                       || err?.message
                       || 'No fue posible conectarse con el servicio de validación de SUNAT. Intente nuevamente en unos segundos.';
-        if (!silencioso) {
-          Swal.fire({
-            title: 'Error al validar el comprobante',
-            text: detalle,
-            icon: 'error',
-            confirmButtonText: 'OK',
-          });
-        }
+        Swal.fire({
+          title: 'Error al validar el comprobante',
+          text: detalle,
+          icon: 'error',
+          confirmButtonText: 'OK',
+        });
       }
     });
   }
 
+  /**
+   * Separa serie y numero de lo que haya en el campo "Nro. Documento".
+   *
+   * Delega en `parseNroComprobante` (comprobante-numero.util.ts), que tolera
+   * guiones largos, etiquetas N°/Nro, serie pegada al numero, saltos de linea,
+   * ceros a la izquierda y las confusiones tipicas del OCR (O/0, I/1, S/5).
+   * Se mantiene la firma anterior para no romper a los llamadores.
+   */
   parseNroDocumento(nroDocumento: string): { numeroSerie: string; numero: string } {
-    const valor = (nroDocumento || '').trim();
-    const idx = valor.indexOf('-');
-
-    if (idx === -1) {
-      return { numeroSerie: '', numero: valor };
-    }
-
-    const numeroSerie = valor.substring(0, idx).trim();
-    const numero = valor.substring(idx + 1).trim();
-
-    return { numeroSerie, numero };
+    const r = parseNroComprobante(nroDocumento);
+    return { numeroSerie: r.serie, numero: r.numero };
   }
 
   formatFecha(fecha: NgbDateStruct): string {
