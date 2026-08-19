@@ -1118,15 +1118,31 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   private handleRucError(error?: HttpErrorResponse): void {
-    let message = error?.error.mensaje || 'No se pudo consultar SUNAT. Intente nuevamente.';
-    this.dialog.open(ConfirmDialogComponent, {
-      width: '280px',
-      data: {
-        title: 'Error',
-        message,
-        type: 'alert'
-      }
+    const message = error?.error?.mensaje
+      || 'No se pudo consultar el padron de SUNAT. Puede completar los datos del proveedor a mano.';
+
+    // Antes esto abria un dialogo que habia que cerrar en cada subida. No lo
+    // amerita: la consulta al padron es informativa (estado y condicion del
+    // RUC) y la validacion del comprobante devuelve esos mismos datos de una
+    // fuente mas confiable. Ademas el OCR ya trae razon social y direccion.
+    // Queda como aviso en linea, sin interrumpir.
+    console.warn('[padron RUC] no se pudo consultar', {
+      status: error?.status,
+      url: error?.url,
+      detalle: error?.error,
     });
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: 'Padron SUNAT no disponible',
+      text: 'Complete los datos del proveedor a mano si hiciera falta.',
+      showConfirmButton: false,
+      timer: 4000,
+      timerProgressBar: true,
+    });
+
     this.hasValidRules = false;
     this.hasValidState();
     this.mensaje = message;
@@ -1640,7 +1656,38 @@ export class EditRendirCuentaComponent implements OnInit {
     }
 
     this.cargarItems(this.dataImagen.items);
+
+    // Con el formulario ya lleno, se valida contra SUNAT sin que el usuario
+    // tenga que apretar nada. Si falta algun dato no se llama a SUNAT: el
+    // guard lo detecta y se avisa en silencio (el usuario lo vera al darle a
+    // Validar, con la lista de lo que falta).
+    this.validarComprobanteTrasEscanear();
+
     return true;
+  }
+
+  /**
+   * Dispara la validacion de SUNAT despues de que el OCR lleno el formulario.
+   *
+   * Se hace en modo silencioso: si el comprobante es correcto aparece un
+   * toast y el boton Guardar se habilita; solo interrumpe con dialogo si
+   * SUNAT lo rechaza, que es cuando el usuario tiene que hacer algo.
+   */
+  private validarComprobanteTrasEscanear(): void {
+    const docNro = parseNroComprobante(
+      this.dataImagen.documentNumber ?? '',
+      this.devolverDocumento(this.codDocumentoGeneral),
+    );
+
+    const faltantes = this.faltantesParaSunat(docNro);
+    if (faltantes.length) {
+      console.info('[validacion automatica] no se llama a SUNAT, faltan datos', faltantes);
+      return;
+    }
+
+    // setTimeout(0) para dejar que Angular termine de asentar el formulario
+    // (this.total, this.ruc y el tipo de documento se acaban de asignar).
+    setTimeout(() => this.validarComprobante(true), 0);
   }
 
   /**
@@ -2785,7 +2832,13 @@ export class EditRendirCuentaComponent implements OnInit {
     return null;
   }
 
-  validarComprobante() {
+  /**
+   * @param silencioso true cuando la dispara el escaneo y no el usuario: en
+   *        ese caso el exito se informa con un toast en vez de un dialogo, y
+   *        los datos incompletos no interrumpen. El rechazo de SUNAT si
+   *        interrumpe siempre, porque exige una decision.
+   */
+  validarComprobante(silencioso: boolean = false) {
     // El parseo tolerante vive en comprobante-numero.util.ts y es el mismo
     // algoritmo que usa el OCR, asi que lo que lee el OCR y lo que valida el
     // frontend nunca discrepan.
@@ -2800,6 +2853,11 @@ export class EditRendirCuentaComponent implements OnInit {
     const faltantes = this.faltantesParaSunat(docNro);
     if (faltantes.length) {
       this.validaComprobante = false;
+
+      if (silencioso) {
+        console.info('[validarComprobante] datos incompletos, sin avisar', faltantes);
+        return;
+      }
 
       Swal.fire({
         title: faltantes.length === 1 ? 'Falta un dato para validar' : `Faltan ${faltantes.length} datos para validar`,
@@ -2954,6 +3012,23 @@ export class EditRendirCuentaComponent implements OnInit {
         }
 
         this.validaComprobante = info.valido;
+
+        // En automatico, un comprobante correcto no merece un dialogo que
+        // haya que cerrar; uno rechazado si, porque el usuario debe decidir.
+        if (silencioso && info.valido) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: correccion ? 'Validado (se corrigio la lectura)' : 'Comprobante validado por SUNAT',
+            text: correccion ? `${correccion.antes} -> ${correccion.ahora}` : info.titulo,
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+          });
+          return;
+        }
+
         Swal.fire({
           title: info.titulo,
           html,
@@ -2963,6 +3038,20 @@ export class EditRendirCuentaComponent implements OnInit {
       },
       error: (err) => {
         this.validaComprobante = false;     // Error de red → tampoco habilita
+
+        if (silencioso) {
+          // La validacion automatica no interrumpe por un problema de red:
+          // el usuario puede reintentar con el boton cuando quiera.
+          console.warn('[validacion automatica] fallo la consulta a SUNAT', err);
+          Swal.fire({
+            toast: true, position: 'top-end', icon: 'warning',
+            title: 'No se pudo validar automaticamente',
+            text: 'Use el boton Validar cuando quiera reintentar.',
+            showConfirmButton: false, timer: 4000, timerProgressBar: true,
+          });
+          return;
+        }
+
         const detalle = err?.error?.mensaje
                       || err?.error?.detalle
                       || err?.message
