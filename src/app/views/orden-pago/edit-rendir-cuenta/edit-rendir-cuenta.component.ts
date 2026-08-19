@@ -1561,7 +1561,7 @@ export class EditRendirCuentaComponent implements OnInit {
       // usuario lo complete a mano; el guard de validarComprobante lo avisa.
       this.dataImagen.documentNumber = (detected.documentNumber ?? '').toString().trim().toUpperCase();
       console.warn('[OCR] no se pudo interpretar el numero de comprobante',
-        { valor: detected.documentNumber, advertencias: doc.advertencias });
+        { valor: detected.documentNumber, advertencias: docOcr.advertencias });
     }
 
     this.dataImagen.issuerName = detected.issuerName;
