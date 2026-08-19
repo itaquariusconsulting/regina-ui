@@ -12,7 +12,7 @@ import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.co
 import { normalizarArchivoCamara, comprimirImagenParaOcr } from '../../../shared/utils/mobile-file.util';
 import { formatHttpError, errorHtml } from '../../../shared/utils/error-detail.util';
 import { LoadingService } from '../../../services/loading.service';
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, firstValueFrom } from 'rxjs';
 import { SunatService } from '../../../services/sunat-service';
 import { Router } from '@angular/router';
 import { PadronRuc } from '../../../models/padron-ruc';
@@ -38,8 +38,8 @@ import { SunatAnexosService } from '../../../services/sunat-anexos.service';
 import { EstablecimientoAnexo, RucAnexosResponse } from '../../../models/establecimiento-anexo';
 import { AnexoSelectorDialogComponent, AnexoSelectorData } from '../../../components/dialogs/anexo-selector-dialog.component';
 import { Response } from '../../../models/response';
-import { parseNroComprobante, formatearNroDocumento } from '../../../shared/utils/comprobante-numero.util';
-import type { NroComprobante } from '../../../shared/utils/comprobante-numero.util';
+import { parseNroComprobante, formatearNroDocumento, generarVariantesComprobante, LARGO_PADDING } from '../../../shared/utils/comprobante-numero.util';
+import type { NroComprobante, VarianteComprobante } from '../../../shared/utils/comprobante-numero.util';
 import { MaeRubro } from '../../../models/mae-rubro';
 import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
 import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
@@ -2715,6 +2715,76 @@ export class EditRendirCuentaComponent implements OnInit {
     return faltan;
   }
 
+  /**
+   * Cuantas lecturas alternativas se le consultan a SUNAT como maximo. Cada
+   * una es una llamada con su token, asi que no conviene pasarse.
+   */
+  private readonly MAX_VARIANTES_SUNAT = 12;
+
+  /**
+   * SUNAT dijo que el comprobante NO EXISTE. Antes de darlo por perdido se
+   * reconsultan las lecturas que el OCR pudo haber confundido (E por F, 1 por
+   * 7, 0 por 8...), ordenadas por probabilidad.
+   *
+   * Si alguna existe, esa ES la correcta: SUNAT valida RUC + serie + numero +
+   * fecha + monto a la vez, asi que un acierto con los otros cuatro campos
+   * iguales no es casualidad. Por eso se aplica sola, sin preguntar.
+   */
+  private async reintentarConVariantes(docNro: NroComprobante):
+      Promise<{ variante: VarianteComprobante; response: Response } | null> {
+
+    const variantes = generarVariantesComprobante(
+      docNro.serie, docNro.numero, this.MAX_VARIANTES_SUNAT);
+
+    if (!variantes.length) { return null; }
+
+    Swal.fire({
+      title: 'Revisando la lectura del comprobante',
+      html: `<div style="text-align:left; font-family: var(--app-font-family, Arial);">
+               <p>SUNAT no encontro <b>${docNro.serie}-${docNro.numero}</b>.</p>
+               <p id="varianteProgreso" style="font-size:0.9em; color:#555;">
+                 Probando lecturas alternativas (1 de ${variantes.length})...</p>
+             </div>`,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    for (let i = 0; i < variantes.length; i++) {
+      const v = variantes[i];
+
+      const progreso = document.getElementById('varianteProgreso');
+      if (progreso) {
+        progreso.textContent = `Probando ${v.serie}-${v.numero} (${i + 1} de ${variantes.length})...`;
+      }
+
+      const intento: WrapperComprobanteSunat = {
+        ...this.wrapper,
+        numeroSerie: v.serie,
+        numero: v.numero,
+      };
+
+      try {
+        const resp: any = await firstValueFrom(this.sunatService.validarComprobante(intento));
+        const estado = String(resp?.resultado?.data?.estadoCp ?? '');
+
+        // 1 = ACEPTADO, 3 = AUTORIZADO. Cualquier otro estado no confirma nada.
+        if (estado === '1' || estado === '3') {
+          Swal.close();
+          console.info('[SUNAT] lectura corregida por reintento',
+            { leido: `${docNro.serie}-${docNro.numero}`, correcto: `${v.serie}-${v.numero}`, motivo: v.motivo });
+          return { variante: v, response: resp as Response };
+        }
+      } catch (e) {
+        // Una variante que falla no aborta la busqueda: se sigue con la siguiente.
+        console.warn('[SUNAT] fallo la consulta de una variante', v, e);
+      }
+    }
+
+    Swal.close();
+    return null;
+  }
+
   validarComprobante() {
     // El parseo tolerante vive en comprobante-numero.util.ts y es el mismo
     // algoritmo que usa el OCR, asi que lo que lee el OCR y lo que valida el
@@ -2778,7 +2848,31 @@ export class EditRendirCuentaComponent implements OnInit {
     this.validaComprobante = false;
 
     this.sunatService.validarComprobante(this.wrapper).subscribe({
-      next: (response: Response) => {
+      next: async (respuestaOriginal: Response) => {
+        let response = respuestaOriginal;
+        let correccion: { antes: string; ahora: string; motivo: string } | null = null;
+
+        // Si SUNAT dice que no existe, puede ser una mala lectura del OCR y no
+        // un comprobante inexistente: se reconsultan las variantes plausibles.
+        if (String((response?.resultado as any)?.data?.estadoCp ?? '') === '0') {
+          const hallazgo = await this.reintentarConVariantes(docNro);
+
+          if (hallazgo) {
+            response = hallazgo.response;
+            correccion = {
+              antes: `${docNro.serie}-${docNro.numero}`,
+              ahora: `${hallazgo.variante.serie}-${hallazgo.variante.numero}`,
+              motivo: hallazgo.variante.motivo,
+            };
+
+            // Se completa el formulario con la lectura correcta.
+            this.wrapper.numeroSerie = hallazgo.variante.serie;
+            this.wrapper.numero = hallazgo.variante.numero;
+            this.dataImagen.documentNumber =
+              `${hallazgo.variante.serie}-${hallazgo.variante.numero.padStart(LARGO_PADDING, '0')}`;
+          }
+        }
+
         const respuestaSunat = response.resultado;
         const data = respuestaSunat?.data ?? {};
         const estadoCp = String(data.estadoCp ?? '');
@@ -2831,8 +2925,18 @@ export class EditRendirCuentaComponent implements OnInit {
         }
         if (data.observaciones)   detalles.push(`<b>Observaciones:</b> ${data.observaciones}`);
 
+        const avisoCorreccion = correccion
+          ? `<div style="background:#fff3cd; border:1px solid #ffe69c; border-radius:4px;
+                        padding:8px; margin-bottom:10px; font-size:0.9em;">
+               El OCR habia leido <b>${correccion.antes}</b>. SUNAT no lo encontro y si encontro
+               <b>${correccion.ahora}</b> con el mismo RUC, fecha e importe (${correccion.motivo}),
+               asi que se corrigio el Nro. Documento.
+             </div>`
+          : '';
+
         const html = `
           <div style="text-align:left; font-family: var(--app-font-family, Arial);">
+            ${avisoCorreccion}
             <p style="margin-bottom:${detalles.length ? '10px' : '0'};">${info.mensaje}</p>
             ${detalles.length ? `<div style="border-top:1px solid #dee2e6; padding-top:8px; font-size:0.9em; color:#555;">
               ${detalles.join('<br>')}

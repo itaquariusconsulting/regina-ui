@@ -342,3 +342,139 @@ export function formatearNroDocumento(valor: string | null | undefined,
   const r = parseNroComprobante(valor, tipoDoc);
   return r.ok ? r.formateado : (valor ?? '').toString().trim().toUpperCase();
 }
+
+// ---------------------------------------------------------------------------
+// Variantes por confusion del OCR
+// ---------------------------------------------------------------------------
+
+/**
+ * Una serie/numero alternativo que vale la pena reconsultar cuando SUNAT
+ * responde que el comprobante NO EXISTE.
+ */
+export interface VarianteComprobante {
+  serie: string;
+  numero: string;
+  /** Que cambio respecto del original, para poder explicarselo al usuario. */
+  motivo: string;
+  /** Cuantos caracteres se cambiaron. */
+  distancia: number;
+  /** Probabilidad relativa de la confusion (1 = certeza). Ordena la lista. */
+  peso: number;
+}
+
+/**
+ * Letras que el OCR confunde en la CABECERA de la serie, con su probabilidad
+ * relativa. E y F son el par mas comun: son la misma forma salvo el trazo
+ * inferior, y ambas son series validas en Peru, asi que no se puede corregir a
+ * ciegas — solo proponer.
+ */
+const PESO_LETRA_SERIE: Record<string, Record<string, number>> = {
+  F: { E: 0.90, P: 0.40, T: 0.30 },
+  E: { F: 0.90, C: 0.35, B: 0.30 },
+  B: { E: 0.35, R: 0.30, P: 0.25 },
+  R: { P: 0.35, B: 0.30, K: 0.20 },
+  P: { F: 0.40, R: 0.35, B: 0.25 },
+  T: { F: 0.30, I: 0.25, J: 0.20 },
+  C: { E: 0.35, G: 0.40, O: 0.30 },
+  G: { C: 0.40, B: 0.25 },
+  N: { M: 0.30, H: 0.25 },
+};
+
+/** Digitos que el OCR confunde entre si, con su probabilidad relativa. */
+const PESO_DIGITO: Record<string, Record<string, number>> = {
+  '0': { '8': 0.55, '9': 0.30, '6': 0.25 },
+  '1': { '7': 0.60, '2': 0.45, '4': 0.30 },
+  '2': { '1': 0.45, '7': 0.35, '3': 0.25 },
+  '3': { '8': 0.50, '9': 0.35, '5': 0.30 },
+  '4': { '1': 0.35, '9': 0.30, '7': 0.25 },
+  '5': { '6': 0.50, '8': 0.40, '3': 0.30 },
+  '6': { '5': 0.50, '8': 0.45, '0': 0.30 },
+  '7': { '1': 0.60, '2': 0.35, '9': 0.25 },
+  '8': { '0': 0.55, '3': 0.50, '6': 0.45 },
+  '9': { '0': 0.35, '8': 0.40, '4': 0.25 },
+};
+
+/** El correlativo suele leerse mejor que la serie: se penaliza un poco. */
+const PENALIDAD_CORRELATIVO = 0.70;
+
+interface SubDigito { texto: string; peso: number; }
+
+/** Sustituciones de un solo caracter dentro de un tramo numerico. */
+function sustitucionesDigito(texto: string): SubDigito[] {
+  const salida: SubDigito[] = [];
+  for (let i = 0; i < texto.length; i++) {
+    const alts = PESO_DIGITO[texto[i]];
+    if (!alts) { continue; }
+    for (const [alt, peso] of Object.entries(alts)) {
+      salida.push({ texto: texto.slice(0, i) + alt + texto.slice(i + 1), peso });
+    }
+  }
+  return salida;
+}
+
+/**
+ * Arma la lista de series/numeros alternativos para reconsultar a SUNAT cuando
+ * el comprobante "no existe".
+ *
+ * Cada variante cuesta una llamada (con su token), asi que el ORDEN es lo que
+ * importa: se genera todo el espacio de confusiones plausibles y se ordena por
+ * probabilidad, no por distancia. Un cambio doble muy probable (E->F mas 1->2,
+ * que es el caso real de F002 leido como E001) va antes que un cambio simple
+ * improbable.
+ *
+ * Cubre: la letra de la serie, un digito de la serie, letra + digito de la
+ * serie, y un digito del correlativo. Nunca devuelve el original ni repite.
+ */
+export function generarVariantesComprobante(serie: string, numero: string,
+                                            max = 14): VarianteComprobante[] {
+  const candidatos: VarianteComprobante[] = [];
+  const vistos = new Set<string>([`${serie}|${numero}`]);
+
+  const agregar = (s: string, n: string, motivo: string, distancia: number, peso: number) => {
+    const clave = `${s}|${n}`;
+    if (vistos.has(clave)) { return; }
+    vistos.add(clave);
+    candidatos.push({ serie: s, numero: n, motivo, distancia, peso });
+  };
+
+  if (!serie || !numero) { return []; }
+
+  const esNumerica = /^\d+$/.test(serie);
+  const cabeza = serie[0];
+  const cola = serie.slice(1);
+  const cabezasAlt = esNumerica ? {} : (PESO_LETRA_SERIE[cabeza] ?? {});
+  const colaEsNumerica = /^\d+$/.test(cola);
+
+  // 1. solo la letra de la serie
+  for (const [alt, peso] of Object.entries(cabezasAlt)) {
+    agregar(alt + cola, numero, `la serie empieza con ${alt}, no con ${cabeza}`, 1, peso);
+  }
+
+  // 2. un digito de la serie
+  if (esNumerica) {
+    for (const sub of sustitucionesDigito(serie)) {
+      agregar(sub.texto, numero, `la serie es ${sub.texto}`, 1, sub.peso);
+    }
+  } else if (colaEsNumerica) {
+    for (const sub of sustitucionesDigito(cola)) {
+      agregar(cabeza + sub.texto, numero, `la serie es ${cabeza}${sub.texto}`, 1, sub.peso);
+    }
+  }
+
+  // 3. letra + un digito de la serie (imagen pareja de mala)
+  if (colaEsNumerica) {
+    for (const [alt, pesoLetra] of Object.entries(cabezasAlt)) {
+      for (const sub of sustitucionesDigito(cola)) {
+        agregar(alt + sub.texto, numero, `la serie es ${alt}${sub.texto}`, 2, pesoLetra * sub.peso);
+      }
+    }
+  }
+
+  // 4. un digito del correlativo
+  for (const sub of sustitucionesDigito(numero)) {
+    agregar(serie, sub.texto, `el correlativo es ${sub.texto}`, 1, sub.peso * PENALIDAD_CORRELATIVO);
+  }
+
+  candidatos.sort((a, b) => (b.peso - a.peso) || (a.distancia - b.distancia));
+  return candidatos.slice(0, max);
+}
