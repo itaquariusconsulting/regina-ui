@@ -32,6 +32,18 @@ export const LARGO_PADDING = 15;
 
 const LETRAS_SERIE_VALIDAS = new Set(['F', 'B', 'E', 'R', 'T', 'N', 'P', 'G', 'C']);
 
+/**
+ * Letra OBLIGATORIA de la serie segun el tipo de comprobante electronico.
+ * Es regla de SUNAT: una factura lleva serie F###, una boleta B###. Si el
+ * documento dice FACTURA y la serie salio con otra letra, no es una serie
+ * rara: es una mala lectura del OCR (el titulo es texto grande y se lee bien;
+ * la serie es chica y ahi se confunden E/F, P/F, B/8).
+ */
+const LETRA_OBLIGATORIA: Record<string, string> = {
+  'FACTURA': 'F',
+  'BOLETA': 'B',
+};
+
 const LETRA_POR_TIPO: Record<string, Set<string>> = {
   'FACTURA': new Set(['F', 'E']),
   'BOLETA': new Set(['B', 'E']),
@@ -302,6 +314,49 @@ function extraerCandidatos(texto: string, tipoDoc?: string | null): NroComproban
  * texto completo del OCR o lo que el usuario tipeo en el campo.
  * Nunca lanza: si no encuentra nada devuelve `ok: false` y el motivo.
  */
+/**
+ * Acepta cualquier forma de nombrar el tipo y devuelve la canonica: la vista
+ * manda la descripcion del catalogo ("FACTURA DE COMPRAS"), el OCR manda
+ * "FACTURA" o incluso solo "F".
+ */
+function tipoNormalizado(tipoDoc?: string | null): string | null {
+  if (!tipoDoc) { return null; }
+  const t = normalizarTexto(tipoDoc);
+  if (t.includes('NOTA') && t.includes('CREDITO')) { return 'NOTA DE CREDITO'; }
+  if (t.includes('NOTA') && t.includes('DEBITO')) { return 'NOTA DE DEBITO'; }
+  if (t.includes('FACTURA') || t === 'F') { return 'FACTURA'; }
+  if (t.includes('BOLETA') || t === 'B') { return 'BOLETA'; }
+  if (t.includes('RECIBO') || t === 'R') { return 'RECIBO'; }
+  return null;
+}
+
+/**
+ * Corrige la primera letra de la serie cuando el tipo de comprobante la
+ * determina: en un documento que dice FACTURA, una serie leida como E003 es
+ * en realidad F003.
+ *
+ * No toca series numericas (comprobantes fisicos) ni notas de credito/debito,
+ * que heredan la letra del comprobante que modifican.
+ */
+function forzarLetraPorTipo(r: NroComprobante, tipoDoc?: string | null): NroComprobante {
+  if (!r.ok || !r.serie) { return r; }
+
+  const canonico = tipoNormalizado(tipoDoc);
+  const esperada = canonico ? LETRA_OBLIGATORIA[canonico] : undefined;
+  if (!esperada) { return r; }
+
+  if (r.serie[0] === esperada || /^\d+$/.test(r.serie)) { return r; }
+
+  const original = r.serie;
+  r.serie = esperada + r.serie.slice(1);
+  r.formateado = `${r.serie}-${r.numeroPadded}`;
+  r.reparado = true;
+  r.advertencias.push(
+    `el documento es ${canonico} y la serie se leyo ${original}: corregida a ` +
+    `${r.serie}, porque SUNAT exige que empiece con ${esperada}`);
+  return r;
+}
+
 export function parseNroComprobante(entrada: string | null | undefined,
                                     tipoDoc?: string | null): NroComprobante {
   if (!entrada || !String(entrada).trim()) {
@@ -329,7 +384,7 @@ export function parseNroComprobante(entrada: string | null | undefined,
   }
 
   mejor.confianza = Math.max(0, Math.min(100, mejor.confianza));
-  return mejor;
+  return forzarLetraPorTipo(mejor, tipoDoc);
 }
 
 /**

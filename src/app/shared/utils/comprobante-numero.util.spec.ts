@@ -94,6 +94,22 @@ describe('parseNroComprobante', () => {
     });
   });
 
+  it('corrige la letra de la serie segun el tipo de comprobante', () => {
+    // regla de SUNAT: factura -> F###, boleta -> B###. Si el documento dice
+    // FACTURA, una serie leida como E003 es una mala lectura del OCR.
+    expect(parseNroComprobante('E003-20487', 'FACTURA').serie).toBe('F003');
+    expect(parseNroComprobante('E003-20487', 'FACTURA DE COMPRAS').serie).toBe('F003');
+    expect(parseNroComprobante('P002-11092', 'FACTURA').serie).toBe('F002');
+    expect(parseNroComprobante('E001-345', 'BOLETAS DE VENTAS').serie).toBe('B001');
+  });
+
+  it('no fuerza la letra cuando el tipo no la determina', () => {
+    expect(parseNroComprobante('E001-9').serie).toBe('E001');
+    expect(parseNroComprobante('E001-9', 'RECIBO POR HONORARIOS').serie).toBe('E001');
+    expect(parseNroComprobante('001-0001234', 'FACTURA').serie).toBe('001');
+    expect(parseNroComprobante('F003-20487', 'NOTA CREDITO COMPRA CON IGV').serie).toBe('F003');
+  });
+
   it('acepta null y undefined sin lanzar', () => {
     expect(parseNroComprobante(null).ok).toBeFalse();
     expect(parseNroComprobante(undefined).ok).toBeFalse();
