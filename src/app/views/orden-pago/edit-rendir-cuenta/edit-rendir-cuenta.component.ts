@@ -2647,6 +2647,74 @@ export class EditRendirCuentaComponent implements OnInit {
     return parseNroComprobante(value).ok;
   }
 
+  /**
+   * Devuelve el documento del catalogo que esta seleccionado, buscando primero
+   * en la lista filtrada y despues en el catalogo completo. Antes se hacia
+   * `this.documentos.filter(...)[0].codSunat`, que revienta si la lista quedo
+   * vacia por el filtro por tipo.
+   */
+  private getDocumentoSeleccionado(): MaeDocumento | undefined {
+    const cod = this.codDocumentoGeneral;
+    if (!cod) { return undefined; }
+    return this.documentos.find(d => d.codDocumento == cod)
+        ?? this.documentosGeneral.find(d => d.codDocumento == cod);
+  }
+
+  /**
+   * Revisa TODO lo que la API de SUNAT exige, antes de salir a la red.
+   *
+   * SUNAT responde 422 con un solo campo por vez ("el campo 'numeroSerie' es
+   * obligatorio", despues "el tipo de comprobante es incorrecto: null", etc.),
+   * asi que sin esto el usuario descubre los errores de a uno y cada vuelta le
+   * cuesta un viaje al servidor. Aca se juntan todos y se le muestran juntos.
+   *
+   * Devuelve la lista de lo que falta, en el orden en que conviene corregirlo.
+   * Lista vacia = se puede validar.
+   */
+  private faltantesParaSunat(docNro: NroComprobante): string[] {
+    const faltan: string[] = [];
+
+    const rucConsultante = (sessionStorage.getItem('ruc') ?? '').trim();
+    const rucProveedor = (this.ruc || '').trim();
+    const doc = this.getDocumentoSeleccionado();
+    const monto = Number(this.total);
+
+    if (!/^\d{11}$/.test(rucConsultante)) {
+      faltan.push('El <b>RUC de la empresa</b> no esta en la sesion (SUNAT lo exige como consultante). Vuelva a iniciar sesion.');
+    }
+
+    if (!rucProveedor) {
+      faltan.push('Falta el <b>RUC del proveedor</b>.');
+    } else if (!/^\d{11}$/.test(rucProveedor)) {
+      faltan.push(`El <b>RUC del proveedor</b> no tiene 11 digitos (${rucProveedor}).`);
+    }
+
+    if (!doc) {
+      faltan.push('No hay un <b>tipo de documento</b> seleccionado.');
+    } else if (!(doc.codSunat || '').trim()) {
+      faltan.push(`El documento <b>${doc.desDocumento || doc.codDocumento}</b> no tiene codigo SUNAT: `
+        + 'no es un comprobante que SUNAT valide. Elija factura, boleta o nota de credito/debito.');
+    }
+
+    if (!docNro.serie && !docNro.numero) {
+      faltan.push('No se pudo leer la <b>serie ni el numero</b> del comprobante.');
+    } else if (!docNro.serie) {
+      faltan.push(`Se reconocio el numero <b>${docNro.numero}</b> pero no la <b>serie</b>.`);
+    } else if (!docNro.numero) {
+      faltan.push(`Se reconocio la serie <b>${docNro.serie}</b> pero no el <b>numero correlativo</b>.`);
+    }
+
+    if (!this.modelIni || !this.modelIni.year || !this.modelIni.month || !this.modelIni.day) {
+      faltan.push('Falta la <b>fecha de emision</b>.');
+    }
+
+    if (!Number.isFinite(monto) || monto <= 0) {
+      faltan.push('El <b>importe total</b> esta en cero; SUNAT valida el comprobante contra su monto.');
+    }
+
+    return faltan;
+  }
+
   validarComprobante() {
     // El parseo tolerante vive en comprobante-numero.util.ts y es el mismo
     // algoritmo que usa el OCR, asi que lo que lee el OCR y lo que valida el
@@ -2656,37 +2724,35 @@ export class EditRendirCuentaComponent implements OnInit {
       this.devolverDocumento(this.codDocumentoGeneral),
     );
 
-    // 🔒 GUARD: sin serie o sin numero SUNAT responde 422 ("el campo
-    // 'numeroSerie' es obligatorio"), que al usuario le llega como un
-    // "No se pudo validar el comprobante" que no explica nada. Cortamos antes
-    // y le decimos exactamente que le falta.
-    if (!docNro.ok) {
+    // 🔒 GUARD: si falta cualquier dato que SUNAT exige, no se llama a la API.
+    // El 422 de SUNAT le llega al usuario como un "No se pudo validar el
+    // comprobante" que no explica nada.
+    const faltantes = this.faltantesParaSunat(docNro);
+    if (faltantes.length) {
       this.validaComprobante = false;
-      const detalle = docNro.serie && !docNro.numero
-        ? 'Se reconocio la serie <b>' + docNro.serie + '</b> pero no el numero correlativo.'
-        : (!docNro.serie && docNro.numero
-          ? 'Se reconocio el numero <b>' + docNro.numero + '</b> pero no la serie.'
-          : 'No se pudo leer la serie ni el numero del comprobante.');
 
       Swal.fire({
-        title: 'Falta el numero de comprobante',
+        title: faltantes.length === 1 ? 'Falta un dato para validar' : `Faltan ${faltantes.length} datos para validar`,
         html: `
           <div style="text-align:left; font-family: var(--app-font-family, Arial);">
-            <p>${detalle}</p>
-            <p style="margin-bottom:6px;">Escribalo en el campo <b>Nro. Documento</b> con el formato
-               <b>SERIE-NUMERO</b> (por ejemplo <b>F002-11092</b>) y vuelva a validar.</p>
+            <ul style="margin:0 0 10px 0; padding-left:18px;">
+              ${faltantes.map(f => `<li style="margin-bottom:6px;">${f}</li>`).join('')}
+            </ul>
             <div style="border-top:1px solid #dee2e6; padding-top:8px; font-size:0.85em; color:#666;">
-              Leido del documento: <code>${(this.dataImagen.documentNumber || '(vacio)')}</code>
+              Nro. Documento leido: <code>${this.dataImagen.documentNumber || '(vacio)'}</code>
             </div>
           </div>`,
         icon: 'warning',
         confirmButtonText: 'OK',
       }).then(() => {
-        document.getElementById('nrodoc')?.focus();
+        if (!docNro.ok) { document.getElementById('nrodoc')?.focus(); }
       });
 
-      console.warn('[validarComprobante] numero de comprobante no interpretable',
-        { valor: this.dataImagen.documentNumber, advertencias: docNro.advertencias });
+      console.warn('[validarComprobante] datos incompletos para SUNAT', {
+        faltantes,
+        nroDocumento: this.dataImagen.documentNumber,
+        advertencias: docNro.advertencias,
+      });
       return;
     }
 
@@ -2695,7 +2761,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.wrapper.rucConsultante = sessionStorage.getItem("ruc") ?? '';
     this.wrapper.numRuc = this.ruc;
-    this.wrapper.codComp = this.documentos.filter(doc=>doc.codDocumento==this.codDocumentoGeneral)[0].codSunat;
+    this.wrapper.codComp = (this.getDocumentoSeleccionado()?.codSunat ?? '').trim();
     this.wrapper.numeroSerie = docNro.serie;
     // SUNAT espera el correlativo SIN ceros a la izquierda.
     this.wrapper.numero = docNro.numero;
