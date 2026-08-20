@@ -687,7 +687,15 @@ export class EditRendirCuentaComponent implements OnInit {
         const filtrados = this.filtrarDocumentosCompra(todos);
         this.documentos = filtrados;
         this.documentosGeneral = filtrados;
-        this.documentoSeleccionado = this.documentos[0];
+        // Documento por defecto: el que dice el config.ini
+        // (COD_DOCUMENTO_GENERAL, normalmente FC = factura de compras). Antes
+        // se tomaba this.documentos[0], que es el primero del catalogo por
+        // orden alfabetico: por eso arrancaba en "ANTICIPO CLIENTE", que ni
+        // siquiera tiene codigo SUNAT y hacia fallar la validacion.
+        const codPorDefecto = this.configService.get('COD_DOCUMENTO_GENERAL');
+        this.documentoSeleccionado =
+          filtrados.find(d => d.codDocumento === codPorDefecto) ?? filtrados[0];
+
         this.ordenPagoDet.codDocumento = this.documentoSeleccionado?.codDocumento;
         this.codDocumentoGeneral = this.documentoSeleccionado?.codDocumento ?? 'SD';
         this.ordenPagoDet.codCuentaDocumento = this.orden.codMoneda == '01' ? this.documentoSeleccionado?.codCuentaSoles : this.documentoSeleccionado?.codCuentaDolares;
@@ -719,14 +727,34 @@ export class EditRendirCuentaComponent implements OnInit {
    *   2. Códigos puramente de salida (EXPORTACION, EXP) se descartan.
    *   3. Documentos sin descripción o sin codDocumento también se filtran.
    */
+  /**
+   * Codigos SUNAT que NO se ofrecen para rendir un gasto.
+   *   07 nota de credito, 08 nota de debito -> las registra contabilidad, no
+   *      el empleado que rinde
+   *   00 "otros" -> es un comodin del ERP, no un comprobante real
+   */
+  private readonly COD_SUNAT_EXCLUIDOS = ['00', '07', '08'];
+
+  /**
+   * Deja en el selector solo los documentos que sirven para sustentar un
+   * gasto rendido.
+   *
+   * El maestro viene de MAE_DOCUMENTO, que es el catalogo del ERP contable:
+   * trae letras, pagares, cheques, anticipos, notas de contabilidad y demas
+   * instrumentos que no son comprobantes de pago. El filtro anterior solo
+   * quitaba los que decian VENTA, asi que todo eso quedaba a la vista.
+   *
+   * Criterio: tiene que tener COD_SUNAT —o sea, ser un comprobante que SUNAT
+   * reconoce— y no ser nota de credito/debito ni documento de venta.
+   */
   private filtrarDocumentosCompra(docs: MaeDocumento[]): MaeDocumento[] {
     if (!docs || !docs.length) return [];
 
-    const norm = (s: string | undefined | null): string => {
-      if (!s) return '';
-      return s.toString()
+    const norm = (v: string | undefined | null): string => {
+      if (!v) return '';
+      return v.toString()
         .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .toUpperCase()
         .replace(/\s+/g, ' ')
         .trim();
@@ -734,16 +762,29 @@ export class EditRendirCuentaComponent implements OnInit {
 
     return docs.filter(d => {
       if (!d?.codDocumento || !d?.desDocumento) return false;
+
+      // 1. Tiene que ser un comprobante reconocido por SUNAT.
+      const codSunat = (d.codSunat || '').trim();
+      if (!codSunat) return false;
+      if (this.COD_SUNAT_EXCLUIDOS.includes(codSunat)) return false;
+
+      // 2. Fuera los de venta y exportacion (esta pantalla es de gastos).
+      //
+      //    Con una salvedad importante, porque el nombre del ERP engania:
+      //    "BOLETAS DE VENTAS" (COD_SUNAT 03) es el comprobante que le dan al
+      //    empleado en un restaurante o una tienda. "Venta" ahi describe el
+      //    documento, no una operacion de la empresa. Es el caso mas comun de
+      //    una rendicion, asi que las boletas se conservan siempre.
       const desc = norm(d.desDocumento);
+      const esBoletaDeVenta = codSunat === '03';
+      const esVenta = /\b(VENTA|VENTAS|VENT|EXPORTACI[OÓ]N|EXPORTACION|EXP)\b/.test(desc);
+      const esCompra = /\b(COMPRA|COMPRAS)\b/.test(desc);
+      if (esVenta && !esCompra && !esBoletaDeVenta) return false;
 
-      // Excluir: cualquier documento de VENTA o EXPORTACION,
-      // pero conservar los que mencionan COMPRA (ej. "BV POR COMPRAS").
-      const esVenta = /\b(VENTA|VENTAS|EXPORTACI[OÓ]N|EXPORTACION|EXP\b)/.test(desc);
-      const esCompra = /\b(COMPRA|COMPRAS)/.test(desc);
+      // 3. Fuera las notas de credito y debito por descripcion, por si alguna
+      //    quedo con un COD_SUNAT distinto en el maestro.
+      if (/\bNOTA\s+(DE\s+)?(CREDITO|DEBITO)\b/.test(desc)) return false;
 
-      if (esVenta && !esCompra) {
-        return false;
-      }
       return true;
     });
   }
