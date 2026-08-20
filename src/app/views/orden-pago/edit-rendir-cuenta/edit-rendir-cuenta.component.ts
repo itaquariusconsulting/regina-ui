@@ -2227,62 +2227,88 @@ export class EditRendirCuentaComponent implements OnInit {
     this.ingresoManual = false;
   }
 
-  isSaveDisabled(): boolean {
+  /**
+   * Motivos por los que Guardar esta deshabilitado, en texto para el usuario.
+   *
+   * Antes esto era una cadena de nueve `if` que devolvian true sin explicar
+   * cual: el usuario veia el boton apagado con el formulario aparentemente
+   * completo y no tenia como saber que faltaba. Ahora la lista es la unica
+   * fuente: `isSaveDisabled()` es simplemente "hay motivos", y el mismo texto
+   * se muestra en el tooltip y debajo del boton.
+   */
+  motivosParaNoGuardar(): string[] {
+    const motivos: string[] = [];
+
     const docNum = (this.dataImagen.documentNumber || '').trim();
     const subTotal = Number(this.subTotal);
     const total = Number(this.total);
-    const isDocNumValid = this.isDocumentNumberValid(docNum);
 
-    // Mes/Año de declaración obligatorios
     if (!this.mesDeclaracion || !this.anioDeclaracion) {
-      return true;
-    }
-    // % IGV válido
-    if (this.igvPercent === null || this.igvPercent === undefined || this.igvPercent < 0 || this.igvPercent > 100) {
-      return true;
+      motivos.push('Falta elegir el mes y año de declaración.');
     }
 
-    // 🔒 El comprobante debe haber sido validado con SUNAT (botón "Validar Comprobante").
-    // `validaComprobante` arranca en false y solo se vuelve true cuando SUNAT
-    // responde estadoCp === '1' en validarComprobante().
-    // En ingreso manual no se exige la validacion SUNAT del comprobante.
+    if (this.igvPercent === null || this.igvPercent === undefined
+        || this.igvPercent < 0 || this.igvPercent > 100) {
+      motivos.push('El % de IGV no es válido (debe estar entre 0 y 100).');
+    }
+
+    // En ingreso manual no se exige la validacion de SUNAT.
     if (!this.ingresoManual && !this.validaComprobante) {
-      return true;
+      motivos.push('El comprobante todavía no fue validado por SUNAT.');
     }
 
-    // 🔒 Debe existir un archivo (PDF o imagen) cargado para rendir el gasto.
-    // Sin sustento físico no se permite guardar.
     if (!this.selectedFile) {
-      return true;
+      motivos.push('Falta cargar el archivo del comprobante.');
     }
 
-    // 🔔 El Establecimiento Anexo es SUGERIDO pero NO obligatorio.
-    // Anteriormente bloqueábamos el guardado si había anexos disponibles
-    // y el usuario no eligió ninguno; eso impedía rendir comprobantes
-    // cuando SUNAT estaba caído o el RUC tenía datos incompletos.
-    // Ahora simplemente lo dejamos pasar — la advertencia visual debajo
-    // del campo Dirección le recuerda al usuario que puede seleccionarlo.
-
-    // 🔒 Regla SUNAT: RUC que inicia con "20" (persona jurídica) solo puede
-    // emitir facturas. Si el comprobante es boleta/recibo/nota, bloqueamos.
+    // Regla SUNAT: un RUC que empieza con 20 solo emite facturas.
     if (this.bloqueoTipoDoc) {
-      return true;
+      motivos.push(this.mensajeTipoDoc
+        || 'El tipo de documento no corresponde al RUC del proveedor.');
     }
 
-    // 🔒 Si la fecha del comprobante es anterior a la fecha de la OP,
-    // bloqueamos el guardado hasta que el usuario corrija la fecha.
-    // El Swal se dispara en `changeDate()` y en `mapDetectedData()`
-    // (cuando la fecha viene del OCR). El usuario ve la advertencia y
-    // tiene que corregir la fecha para poder guardar.
     if (!this.fechaDocValida) {
-      return true;
+      motivos.push('La fecha del comprobante es anterior a la fecha de la orden de pago.');
     }
 
-    // En ingreso manual, las reglas de SUNAT (this.validate) no bloquean;
-    // se siguen exigiendo numero de documento y montos.
-    const okReglas = this.ingresoManual ? true : this.validate;
-    return !okReglas || !docNum || !isDocNumValid || subTotal === 0 || total === 0;
+    if (!docNum) {
+      motivos.push('Falta el Nro. de Documento.');
+    } else if (!this.isDocumentNumberValid(docNum)) {
+      motivos.push(`El Nro. de Documento no se entiende: ${docNum}`);
+    }
+
+    if (!total) {
+      motivos.push('El importe total está en cero.');
+    }
+
+    if (!subTotal) {
+      motivos.push('El subtotal está en cero (se calcula del total y el % de IGV).');
+    }
+
+    // Las reglas del padron (this.validate) YA NO bloquean el guardado.
+    //
+    // Dos razones: el padron es una fuente informativa —estado y condicion del
+    // RUC— y hoy ni siquiera responde (302 desde sai-web-utils); y sobre todo,
+    // si SUNAT ya valido el comprobante contra RUC, serie, numero, fecha y
+    // monto, esa es una comprobacion mas fuerte que la del padron. Bloquear
+    // por el padron dejaba rendiciones correctas sin poder guardarse.
+    // El aviso sigue visible en `this.mensaje`, debajo del proveedor.
+
+    return motivos;
   }
+
+  /** Texto para el tooltip del boton Guardar. */
+  motivoGuardar(): string {
+    const motivos = this.motivosParaNoGuardar();
+    return motivos.length
+      ? 'No se puede guardar todavía:\n• ' + motivos.join('\n• ')
+      : 'Guardar la rendición';
+  }
+
+  isSaveDisabled(): boolean {
+    return this.motivosParaNoGuardar().length > 0;
+  }
+
 
   changeImporte(importe: Event | number) {
     const raw = typeof importe === 'number' ? importe : Number(importe as any);

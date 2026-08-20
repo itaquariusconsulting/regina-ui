@@ -126,10 +126,22 @@
             </ng-container>
 
             <button [disabled]="isSaveDisabled()" (click)="onSaveAuxiliar()" type="button"
+                [title]="motivoGuardar()"
                 class="general-button btn-primary btn-sm">
                 <i class="fas fa-save"></i>
                 {{isDesktop ? 'Guardar' : ''}}
             </button>
+
+            <!-- Por que no se puede guardar. Antes el boton quedaba apagado sin
+                 explicacion y habia que adivinar cual de las condiciones fallaba. -->
+            <small *ngIf="isSaveDisabled()" class="text-warning d-block mt-1"
+                   style="font-size:0.78rem; max-width:420px;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {{ motivosParaNoGuardar()[0] }}
+                <span *ngIf="motivosParaNoGuardar().length > 1">
+                    (y {{ motivosParaNoGuardar().length - 1 }} más — pase el cursor sobre Guardar)
+                </span>
+            </small>
 
             <button (click)="onBack()" class="general-button btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i>
