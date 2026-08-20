@@ -1599,7 +1599,18 @@ export class EditRendirCuentaComponent implements OnInit {
     }
 
     if (this.dataImagen.documentType) {
-      this.documentos = this.documentosGeneral.filter(doc => doc.codDocumento?.substring(0, 1) == (this.dataImagen.documentType!));
+      // OJO: la letra que detecta el OCR sirve para PRESELECCIONAR el tipo,
+      // NO para recortar el combo.
+      //
+      // Antes aca se hacia `this.documentos = filtrar por primera letra`, y el
+      // selector quedaba con lo poco que compartiera esa letra: con un tipo
+      // detectado como "N" el usuario veia solo INVOICE, sin manera de elegir
+      // FACTURA DE COMPRAS. En ingreso manual era peor todavia, porque el
+      // recorte quedaba puesto de un escaneo anterior.
+      //
+      // El combo siempre muestra el catalogo completo de comprobantes que
+      // sustentan gasto; abajo se elige cual viene marcado por defecto.
+      this.documentos = this.documentosGeneral;
 
       // ───── 1) Auto-selección por defecto según tipo detectado ────────
       // Regla de negocio (obs. usuario):
@@ -2261,6 +2272,10 @@ export class EditRendirCuentaComponent implements OnInit {
   activarIngresoManual(): void {
     this.ingresoManual = true;
     this.mensaje = '';
+
+    // En manual el usuario elige todo: el combo tiene que ofrecer el catalogo
+    // completo, sin el recorte que pudiera haber dejado un escaneo previo.
+    this.documentos = this.documentosGeneral;
   }
 
   /** Vuelve al modo normal (validacion contra SUNAT). */
