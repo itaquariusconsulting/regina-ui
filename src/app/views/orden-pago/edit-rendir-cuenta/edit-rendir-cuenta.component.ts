@@ -390,6 +390,13 @@ export class EditRendirCuentaComponent implements OnInit {
   private commercialNameOcr: string = '';
 
   /**
+   * true cuando la razon social que se muestra la puso el OCR y no el padron
+   * de SUNAT. Sirve para que la respuesta oficial la pueda reemplazar sin
+   * dudar, y para saber de donde salio el dato al depurar.
+   */
+  razonSocialDeOcr: boolean = false;
+
+  /**
    * Marca el flujo como entrada manual tras un OCR no legible.
    * Cuando es true, las validaciones que dependen del OCR pueden relajarse
    * y la UI puede destacar que el usuario está llenando los campos a mano.
@@ -942,7 +949,20 @@ export class EditRendirCuentaComponent implements OnInit {
       this.hasValidState();
       return;
     }
+    const razonProvisional = this.razonSocialDeOcr
+      ? (this.padronRuc?.razonSocial || '').trim()
+      : '';
+
     this.padronRuc = response.resultado;
+
+    // El padron es la fuente oficial: su razon social reemplaza a la del OCR.
+    // Pero si el padron no la trae, se conserva la que ya habia leido el OCR
+    // en vez de dejar el campo vacio.
+    if (!(this.padronRuc?.razonSocial || '').trim() && razonProvisional) {
+      this.padronRuc.razonSocial = razonProvisional;
+    } else {
+      this.razonSocialDeOcr = false;
+    }
 
     // Si SUNAT devolvió una "dirección" disfrazada como nombre comercial
     // (caso típico Plaza Vea, Tottus: "AV. SAN BORJA NORTE 1234, SAN BORJA"),
@@ -1148,8 +1168,17 @@ export class EditRendirCuentaComponent implements OnInit {
     this.mensaje = message;
 
     // SUNAT no respondio: se habilita el ingreso manual para no bloquear la
-    // rendicion. El usuario completa los datos del proveedor a mano.
+    // rendicion. El usuario completa los datos del proveedor a mano — pero si
+    // el OCR ya leyo la razon social, se queda como esta y no hay nada que
+    // completar.
     this.ingresoManual = true;
+
+    const razonOcr = (this.dataImagen?.issuerName || '').trim();
+    if (razonOcr && !(this.padronRuc?.razonSocial || '').trim()) {
+      this.padronRuc.razonSocial = razonOcr;
+      this.razonSocialDeOcr = true;
+      console.info('[padron RUC] se conserva la razon social leida por el OCR:', razonOcr);
+    }
   }
 
   async onSelectFile(event: Event): Promise<void> {
@@ -1581,6 +1610,19 @@ export class EditRendirCuentaComponent implements OnInit {
     }
 
     this.dataImagen.issuerName = detected.issuerName;
+
+    // El nombre del proveedor que se muestra sale de padronRuc.razonSocial, y
+    // ese lo llena la consulta al padron. Si el padron no responde —hoy
+    // devuelve 302— el campo quedaba vacio aunque el OCR SI hubiera leido el
+    // nombre. Se usa el del OCR como valor provisional; si despues el padron
+    // contesta, su razon social lo reemplaza por ser la fuente oficial.
+    const razonOcr = (detected.issuerName || '').trim();
+    if (razonOcr && !(this.padronRuc?.razonSocial || '').trim()
+        && !this.pareceDireccion(razonOcr)) {
+      this.padronRuc.razonSocial = razonOcr;
+      this.razonSocialDeOcr = true;
+    }
+
     this.dataImagen.issuerAddress = detected.issuerAddress;
     this.dataImagen.documentDate = detected.documentDate;
 
