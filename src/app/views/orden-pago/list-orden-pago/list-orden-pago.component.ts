@@ -542,11 +542,35 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     }
   }
 
-  isActionEnabled(state: string, action: string): boolean {
+  isActionEnabled(state: string, action: string, orden?: OrdenPago): boolean {
     if (!state) {
       return false;
     }
+
+    // Una orden ya rendida no se vuelve a rendir. El ERP no se entera de
+    // esto —su TIP_ESTADO sigue en 'PE' hasta que contabilidad liquide—, asi
+    // que sin esta comprobacion el usuario veria habilitado "Rendir cuenta"
+    // sobre algo que ya mando, y armaria una segunda rendicion sobre la
+    // misma orden. Ver el detalle si se puede: es solo lectura.
+    if (orden?.estadoRendicion === 'RENDIDA'
+        && (action === 'rendir_cuenta' || action === 'planilla_movillidad')) {
+      return false;
+    }
+
     return this.stateActions[state]?.[action] || false;
+  }
+
+  /** true si la orden ya se rindio desde REGINA. */
+  estaRendida(orden: OrdenPago): boolean {
+    return orden?.estadoRendicion === 'RENDIDA';
+  }
+
+  /** Por que el boton de rendir esta apagado, para el tooltip. */
+  tituloRendirCuenta(orden: OrdenPago): string {
+    if (this.estaRendida(orden)) {
+      return 'Esta orden ya fue rendida y enviada a contabilidad.';
+    }
+    return 'Rendir cuenta';
   }
 
   abrirModalDoc() {

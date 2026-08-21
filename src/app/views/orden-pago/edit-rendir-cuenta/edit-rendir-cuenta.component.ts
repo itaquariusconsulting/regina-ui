@@ -50,6 +50,8 @@ import { OrdenPagoDetProv } from '../../../models/orden-pago-det-prov';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { DocumentoService } from '../../../services/documento.service';
 import { OrdenPagoDetService } from '../../../services/orden-pago-det.service';
+import { RendicionService } from '../../../services/rendicion.service';
+import { RendicionDetDTO, RendicionImpuestoDTO } from '../../../models/rendicion';
 import { MaeAuxiliarDTO } from '../../../models/mae-auxiliar-dto';
 import { WrapperUploadDocumento } from '../../../models/wrappers/wrapper-upload-documento';
 import { ConfigService } from '../../../services/config.service';
@@ -111,6 +113,7 @@ export class EditRendirCuentaComponent implements OnInit {
     private deviceService: DeviceService,
     private documentoService: DocumentoService,
     private ordenPagoDetService: OrdenPagoDetService,
+    private rendicionService: RendicionService,
     private ordenPagoDetProvService: OrdenPagoDetProvService,
     private configService: ConfigService,
     private config: NgbDatepickerConfig,
@@ -194,6 +197,15 @@ export class EditRendirCuentaComponent implements OnInit {
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
   validaComprobante: boolean = false;
+
+  /**
+   * El estadoCp que devolvio SUNAT (0..4), tal cual.
+   *
+   * `validaComprobante` dice si el comprobante sirve o no; esto dice POR QUE.
+   * Se guarda con el comprobante para que despues se pueda explicar un
+   * rechazo sin tener que volver a consultar SUNAT.
+   */
+  estadoSunat: string = '';
 
   /**
    * Ingreso manual del proveedor: se enciende cuando SUNAT no responde o
@@ -2104,50 +2116,11 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDet.impImponSoles = totalPorcentaje > 0 ? this.ordenPagoDet.impSoles / totalPorcentaje : this.ordenPagoDet.impSoles;
       this.ordenPagoDet.impImponDolares = totalPorcentaje > 0 ? this.ordenPagoDet.impDolares / totalPorcentaje : this.ordenPagoDet.impDolares;
 
-      this.ordenPagoDetService.saveOrdenPagoDet(this.ordenPagoDet).subscribe(
-        (response: Response) => {
-          const error: number = response.error ?? 0;
-          if (error == 1) {
-
-            this.dialog.open(ConfirmDialogComponent, {
-              width: '280px',
-              data: {
-                title: 'Error',
-                message: "Error al guardar la Rendición de Cuenta",
-                type: 'alert'
-              }
-            });
-          } else {
-
-            this.nroItemOp = response.resultado;
-
-            let wrapper: WrapperUploadDocumento = new WrapperUploadDocumento();
-
-            wrapper.file = this.selectedFile;
-            wrapper.anioPeriodo = this.orden.anoPeriodo;
-            wrapper.mesPeriodo = this.orden.codPeriodo;
-            wrapper.codEmpresa = this.orden.codEmpresa;
-            wrapper.codSucursal = this.orden.codSucursal;
-            wrapper.extension = this.selectedFile ? this.getFileExtension(this.selectedFile) : '';
-            wrapper.numOrden = this.orden.numOrden;
-            wrapper.numItem = this.nroItemOp;
-            wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
-            wrapper.serDocumento = this.ordenPagoDet.numSerieDoc;
-            wrapper.numDocumento = this.ordenPagoDet.numDocumento;
-
-            if (!this.selectedFile) {
-              this.onSaveImpuestos();
-              return;
-            }
-
-            this.documentoService.uploadFile(wrapper).subscribe(
-              (response: any) => {
-                this.onSaveImpuestos();
-              }
-            )
-          }
-        }
-      )
+      // El comprobante ya NO va directo a contabilidad. Entra a la antesala
+      // de REGINA, donde el usuario todavia puede corregirlo o eliminarlo si
+      // lo subio por error. Viaja al ERP recien cuando pre-cierra la
+      // rendicion, y ahi si queda firme.
+      this.guardarEnAntesala();
     } else {
       this.dialog.open(ConfirmDialogComponent, {
         width: '280px',
@@ -2160,78 +2133,215 @@ export class EditRendirCuentaComponent implements OnInit {
     }
   }
 
-  onSaveImpuestos() {
-    this.ordenPagoDetProvs = [];
-    for (let e = 0; e < this.impuestos.length; e++) {
-      const ordenPagoDetProv = new OrdenPagoDetProv();
-      ordenPagoDetProv.impImpuestoBase = (this.ordenPagoDet.impSoles ?? 0) - ((this.ordenPagoDet.impSoles ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
-      ordenPagoDetProv.impImpuestoSecun = (this.ordenPagoDet.impDolares ?? 0) - ((this.ordenPagoDet.impDolares ?? 0) / (1 + (this.impuestos[e].numPorcentaje ?? 0) / 100));
-      ordenPagoDetProv.codEmpresa = this.codEmpresa;
-      ordenPagoDetProv.codSucursal = this.orden.codSucursal || '001';
-      ordenPagoDetProv.numOrden = this.orden.numOrden;
-      ordenPagoDetProv.anoProceso = sessionStorage.getItem('periodo_year') || '';
-      ordenPagoDetProv.mesProceso = sessionStorage.getItem('periodo_month') || '';
-      ordenPagoDetProv.codDocumento = this.ordenPagoDet.codDocumento;
-      ordenPagoDetProv.codImpuesto = this.impuestos[e].codImpuesto;
-      ordenPagoDetProv.indAfecto = 'S';
+  /**
+   * Guarda el comprobante en la antesala de REGINA.
+   *
+   * Tres pasos, en este orden:
+   *
+   *   1. se graba el comprobante y sus impuestos en una sola llamada;
+   *   2. se sube el archivo escaneado, nombrado con el id que devolvio
+   *      REGINA;
+   *   3. se anota en el comprobante donde quedo el archivo.
+   *
+   * El nombre del archivo es el punto delicado. Contabilidad los nombra por
+   * NUM_ITEM_OP, pero ese numero no existe todavia: lo asigna el ERP recien
+   * al publicar. Por eso aca se usa el id de REGINA con una "R" adelante, y
+   * el backend lo renombra al convenio del ERP durante el pre-cierre. Asi la
+   * pantalla de contabilidad sigue encontrando los comprobantes como
+   * siempre.
+   */
+  private guardarEnAntesala(): void {
 
-      // 🆕 Campos OBLIGATORIOS que antes no se enviaban y por los que el
-      // INSERT en CXP_IMPUESTO_PROV fallaba silenciosamente:
-      //
-      //   - numItemOp     → ítem del detalle de OP (lo tenemos en nroItemOp
-      //                     después de guardar el detalle).
-      //   - codSucProv    → la sucursal proveedor (misma que codSucursal en
-      //                     este flujo, en BD se ve '001').
-      //   - numProvision  → si aplica el flujo de provisión, se hereda; si
-      //                     no, el backend lo dejará NULL y el correlativo
-      //                     auto-generado bastará.
-      //
-      // numCorrelativo NO se envía: lo genera el backend con MAX+1 padded
-      // a 7 dígitos (más seguro contra colisiones entre usuarios).
-      ordenPagoDetProv.numItemOp = this.nroItemOp || '001';
-      ordenPagoDetProv.codSucProv = this.orden.codSucursal || '001';
-      // numProvision se deja undefined → el backend lo guardará como NULL.
-      // (En el registro de ejemplo de la BD viene '0000003', pero ese flujo
-      // de provisión NO existe en rendir-cuenta. La columna admite NULL.)
+    const comprobante = this.armarComprobanteDeRendicion();
 
-      this.ordenPagoDetProvs.push(ordenPagoDetProv);
-    }
+    this.rendicionService.agregar(comprobante, this.usuarioActual()).subscribe({
+      next: (guardado: RendicionDetDTO) => {
 
-    // Si por alguna razón no hay impuestos en el detalle, no llamamos al
-    // backend (evita un INSERT vacío que también provocaba ruido en logs).
-    if (this.ordenPagoDetProvs.length === 0) {
-      console.warn('[onSaveImpuestos] no hay impuestos en el detalle, salto el INSERT');
+        this.nroItemOp = String(guardado.idRendDet ?? '');
+
+        if (!this.selectedFile || !guardado.idRendDet) {
+          this.onBack();
+          return;
+        }
+
+        const wrapper: WrapperUploadDocumento = new WrapperUploadDocumento();
+        wrapper.file = this.selectedFile;
+        wrapper.anioPeriodo = this.orden.anoPeriodo;
+        wrapper.mesPeriodo = this.orden.codPeriodo;
+        wrapper.codEmpresa = this.orden.codEmpresa;
+        wrapper.codSucursal = this.orden.codSucursal;
+        wrapper.extension = this.getFileExtension(this.selectedFile);
+        wrapper.numOrden = this.orden.numOrden;
+        wrapper.numItem = `R${guardado.idRendDet}`;
+        wrapper.tipoDocumento = this.ordenPagoDet.codDocumento;
+        wrapper.serDocumento = this.ordenPagoDet.numSerieDoc;
+        wrapper.numDocumento = this.ordenPagoDet.numDocumento;
+
+        this.documentoService.uploadFile(wrapper).subscribe({
+          next: (resp: any) => this.anotarArchivo(guardado, resp),
+          error: (err: any) => {
+            // El comprobante ya quedo guardado; lo que fallo es el archivo.
+            // Se le dice al usuario exactamente eso, para que no vuelva a
+            // cargar todo pensando que se perdio.
+            console.error('[rendir-cuenta] fallo la subida del archivo:', err);
+            Swal.fire({
+              icon: 'warning',
+              title: 'El comprobante se guardó, pero el archivo no subió',
+              text: 'Puede volver a adjuntarlo editando el comprobante en la rendición.',
+              confirmButtonText: 'Entendido',
+            }).then(() => this.onBack());
+          }
+        });
+      },
+      error: (err: any) => this.avisarErrorAlGuardar(err)
+    });
+  }
+
+  /**
+   * Deja anotado en REGINA donde quedo el archivo escaneado.
+   *
+   * Es lo que permite despues borrarlo cuando el usuario elimina el
+   * comprobante, y renombrarlo al publicar. Si esta anotacion falla, el
+   * comprobante sigue estando bien: lo unico que se pierde es el vinculo con
+   * el archivo, y eso no justifica hacerle repetir la carga al usuario.
+   */
+  private anotarArchivo(guardado: RendicionDetDTO, respuestaUpload: any): void {
+    const archivo = respuestaUpload?.archivo;
+    const ruta = respuestaUpload?.ruta;
+
+    if (!archivo || !guardado.idRendDet) {
       this.onBack();
       return;
     }
 
-    this.ordenPagoDetProvService.saveOrdenPagoDetProv(this.ordenPagoDetProvs).subscribe({
-      next: (response: any) => {
-        console.log('✅ Impuesto Prov guardado:', response);
-        this.onBack();
-      },
-      // 🆕 Antes este error se tragaba silenciosamente — por eso parecía
-      // que "se guardaba" cuando en realidad fallaba en BD.
-      error: (err: any) => {
-        console.error('❌ Error guardando CXP_IMPUESTO_PROV:', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'No se pudo guardar el impuesto',
-          html: `<div style="text-align:left;font-size:0.85rem;">
-                   <p>El detalle de la orden se guardó, pero el registro en
-                      <strong>CXP_IMPUESTO_PROV</strong> falló.</p>
-                   <p><strong>Detalle del servidor:</strong></p>
-                   <pre style="background:#f8f9fa;padding:8px;border-radius:4px;
-                               white-space:pre-wrap;word-break:break-word;
-                               font-size:0.75rem;max-height:30vh;overflow:auto;">${
-                     (err?.error?.mensaje || err?.message || JSON.stringify(err)).toString()
-                       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                   }</pre>
-                 </div>`,
-          confirmButtonText: 'Entendido',
-          width: 600,
-        });
+    guardado.archivoNombre = archivo;
+    guardado.archivoRuta = ruta;
+
+    this.rendicionService.actualizar(guardado.idRendDet, guardado, this.usuarioActual())
+      .subscribe({
+        next: () => this.onBack(),
+        error: (err: any) => {
+          console.error('[rendir-cuenta] no se pudo anotar el archivo:', err);
+          this.onBack();
+        }
+      });
+  }
+
+  /**
+   * Arma el comprobante que se manda a la antesala.
+   *
+   * Son los mismos campos que antes viajaban al ERP —`this.ordenPagoDet`, ya
+   * completo— mas lo que es propio de REGINA y hasta ahora se perdia: el RUC
+   * y la razon social del emisor, la tasa de IGV que uso el usuario, que dijo
+   * SUNAT y si el ingreso fue manual. Guardarlo permite explicar despues por
+   * que un comprobante quedo como quedo, sin volver a consultar nada.
+   */
+  private armarComprobanteDeRendicion(): RendicionDetDTO {
+    const comprobante: RendicionDetDTO = Object.assign(
+      new RendicionDetDTO(), this.ordenPagoDet);
+
+    comprobante.idRendDet = undefined;
+    comprobante.numItemOp = undefined;      // lo asigna el ERP al publicar
+
+    comprobante.rucEmisor = (this.ruc || '').trim();
+    comprobante.razonSocialEmisor = this.nombreProveedor || undefined;
+    comprobante.igvTasa = (this.igvPercent ?? 0) / 100;
+
+    comprobante.indValidadoSunat = this.validaComprobante ? 'S' : 'N';
+    comprobante.estSunat = this.estadoSunat || undefined;
+    comprobante.fecValidaSunat = this.validaComprobante
+      ? new Date().toISOString()
+      : undefined;
+
+    comprobante.indIngresoManual = this.ingresoManual ? 'S' : 'N';
+
+    comprobante.impuestos = this.armarImpuestos();
+
+    return comprobante;
+  }
+
+  /**
+   * Los impuestos del comprobante, calculados del importe y del % de cada
+   * uno.
+   *
+   * Ya no se guardan aparte: viajan dentro del comprobante y REGINA los
+   * escribe en la misma operacion. Antes eran dos llamadas al backend, y
+   * cuando la segunda fallaba el comprobante quedaba guardado sin su IGV —el
+   * asiento salia mal armado y nadie se enteraba hasta el cierre del mes.
+   *
+   * NUM_CORRELATIVO y NUM_ITEM_OP no se llenan aca a proposito: son del ERP y
+   * se calculan al publicar.
+   */
+  private armarImpuestos(): RendicionImpuestoDTO[] {
+    const impuestos: RendicionImpuestoDTO[] = [];
+
+    for (const impuesto of this.impuestos) {
+      const tasa = 1 + ((impuesto.numPorcentaje ?? 0) / 100);
+
+      const linea = new RendicionImpuestoDTO();
+      linea.impImpuestoBase = (this.ordenPagoDet.impSoles ?? 0)
+        - ((this.ordenPagoDet.impSoles ?? 0) / tasa);
+      linea.impImpuestoSecun = (this.ordenPagoDet.impDolares ?? 0)
+        - ((this.ordenPagoDet.impDolares ?? 0) / tasa);
+
+      linea.anoProceso = sessionStorage.getItem('periodo_year') || undefined;
+      linea.mesProceso = sessionStorage.getItem('periodo_month') || undefined;
+      linea.codDocumento = this.ordenPagoDet.codDocumento;
+      linea.codImpuesto = impuesto.codImpuesto;
+      linea.indAfecto = 'S';
+      linea.codSucLiq = this.orden.codSucursal || '001';
+      linea.codSucProv = this.orden.codSucursal || '001';
+
+      impuestos.push(linea);
+    }
+
+    return impuestos;
+  }
+
+  /** El id del usuario de la sesion, o undefined si no se pudo leer. */
+  private usuarioActual(): number | undefined {
+    try {
+      const guardado = sessionStorage.getItem('user');
+      if (!guardado) {
+        return undefined;
       }
+      const userId = JSON.parse(guardado)?.userId;
+      return typeof userId === 'number' ? userId : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Explica por que no se pudo guardar.
+   *
+   * El backend responde 409 cuando la operacion no corresponde —la rendicion
+   * ya se cerro, el comprobante esta duplicado— y en esos casos manda un
+   * mensaje escrito para el usuario. Se lo muestra tal cual; inventar uno
+   * generico seria peor.
+   */
+  private avisarErrorAlGuardar(err: any): void {
+    console.error('[rendir-cuenta] error al guardar en la antesala:', err);
+
+    const mensajeDelBackend = err?.error?.mensaje;
+
+    if (err?.status === 409 && mensajeDelBackend) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No se puede guardar',
+        text: mensajeDelBackend,
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
+    const b = formatHttpError(err, 'Guardado del comprobante en la rendición');
+    Swal.fire({
+      icon: 'error',
+      title: b.title,
+      html: errorHtml(b),
+      width: 600,
+      confirmButtonText: 'Entendido',
     });
   }
 
@@ -3136,6 +3246,7 @@ export class EditRendirCuentaComponent implements OnInit {
         }
 
         this.validaComprobante = info.valido;
+        this.estadoSunat = estadoCp;
 
         // En automatico, un comprobante correcto no merece un dialogo que
         // haya que cerrar; uno rechazado si, porque el usuario debe decidir.

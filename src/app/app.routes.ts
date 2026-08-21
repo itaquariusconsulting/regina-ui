@@ -3,6 +3,7 @@ import { LoginComponent } from './views/login/login.component';
 import { DefaultLayoutComponent } from './components/layout/default-layout/default-layout.component';
 import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-orden-pago.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
+import { ListOpRendidasComponent } from './views/orden-pago/list-op-rendidas/list-op-rendidas.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { NuevoUsuarioComponent } from './views/usuario/nuevo-usuario/nuevo-usuario.component';
 import { CargaMasivaUsuariosComponent } from './views/usuario/carga-masiva-usuarios/carga-masiva-usuarios.component';
@@ -75,6 +76,13 @@ export const routes: Routes = [
       {
         path: 'list-orders-detail',
         component: ListOrdenPagoDetComponent
+      },
+      {
+        // Pantalla de contabilidad: las OP que el usuario ya rindio, para
+        // continuar con la liquidacion. El acceso se controla por el menu y
+        // los permisos, no por la ruta.
+        path: 'list-op-rendidas',
+        component: ListOpRendidasComponent
       },
       {
         path: 'planilla-movilidad',

@@ -125,3 +125,43 @@ app-pdf-viewer.pdf-doc-viewer {
 .global-table {
     font-size: 0.8rem !important;
 }
+
+/* -------------------------------------------------------------------------
+   Estado de la rendicion.
+
+   Es la unica pista visual de por que la pantalla tiene o no botones: en
+   preparacion se puede eliminar y enviar; una vez en contabilidad, no. Va
+   arriba, al lado del filtro, donde se lee antes de buscar el boton que
+   falta.
+   ------------------------------------------------------------------------- */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+
+  &::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &.abierta {
+    color: #0a6c3d;
+    background: #e6f6ed;
+    border-color: #bfe6d0;
+  }
+
+  &.cerrada {
+    color: #5a6270;
+    background: #eef0f3;
+    border-color: #d8dce2;
+  }
+}

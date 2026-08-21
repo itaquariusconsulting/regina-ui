@@ -47,6 +47,16 @@
       'status-lq': reg.tipEstado === 'LQ'
     }">{{reg.tipEstado}}
             </span>
+            <!--
+              El estado del ERP y el de REGINA son cosas distintas: TIP_ESTADO
+              sigue en 'PE' hasta que contabilidad liquide, aunque el usuario
+              ya haya rendido. Sin esta marca, el boton de rendir apagado no
+              tendria explicacion en pantalla.
+            -->
+            <span *ngIf="estaRendida(reg)" class="marca-rendida"
+                  title="El usuario ya envió esta rendición a contabilidad.">
+              Rendida
+            </span>
           </td>
           <td class="text-center">
             <div class="row-actions">
@@ -55,8 +65,8 @@
                 *hasPermission="{ route: '/list-orders', action: 'permitView' }">
                 <i class="fas fa-book-open"></i>
               </button>
-              <button (click)="openEditRendirCuenta(reg)" type="button" title="Rendir cuenta"
-                [disabled]="!isActionEnabled(reg.tipEstado!, 'rendir_cuenta')" class="row-btn row-btn--primary"
+              <button (click)="openEditRendirCuenta(reg)" type="button" [title]="tituloRendirCuenta(reg)"
+                [disabled]="!isActionEnabled(reg.tipEstado!, 'rendir_cuenta', reg)" class="row-btn row-btn--primary"
                 *hasPermission="{ route: '/list-orders', action: 'permitCreate' }">
                 <i class="fa fa-plus"></i>
               </button>
@@ -66,7 +76,7 @@
                 <i class="fa-solid fa-circle-info"></i>
               </button>
               <button (click)="onPlanillaMovilidad(reg)" title="Planilla de Movilidad" type="button"
-                [disabled]="!isActionEnabled(reg.tipEstado!, 'planilla_movillidad')" class="row-btn row-btn--info"
+                [disabled]="!isActionEnabled(reg.tipEstado!, 'planilla_movillidad', reg)" class="row-btn row-btn--info"
                 *hasPermission="{ route: '/list-orders', action: 'permitCreate' }">
                 <i class="fa-solid fa-car"></i>
               </button>

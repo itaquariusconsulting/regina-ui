@@ -1,0 +1,133 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Órdenes de Pago Rendidas</div>
+  </div>
+
+  <!-- Filtros: Nro de OP, persona, año y mes. -->
+  <div class="filtros-rendidas">
+    <div class="filtro">
+      <label class="form-label">Nro. de OP</label>
+      <input type="text" class="form-control" placeholder="Ej.: 000016183"
+             [(ngModel)]="filtro.numOrden" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Persona</label>
+      <input type="text" class="form-control" placeholder="Nombre o código de auxiliar"
+             [(ngModel)]="filtro.persona" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Año</label>
+      <select class="form-select" [(ngModel)]="filtro.anio">
+        <option value="">Todos</option>
+        <option *ngFor="let a of anios" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Mes</label>
+      <select class="form-select" [(ngModel)]="filtro.mes">
+        <option *ngFor="let m of meses" [value]="m.valor">{{ m.etiqueta }}</option>
+      </select>
+    </div>
+
+    <div class="filtro-acciones">
+      <button (click)="buscar()" class="general-button btn-primary">
+        <i class="fa fa-search"></i>Buscar
+      </button>
+      <button (click)="limpiar()" class="general-button btn-secondary" title="Quitar todos los filtros">
+        <i class="fa fa-eraser"></i>Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumen: lo que contabilidad quiere saber antes de mirar la tabla. -->
+  <div class="resumen-rendidas" *ngIf="buscoAlgunaVez && rendidas.length">
+    <span><strong>{{ rendidas.length }}</strong> rendida(s)</span>
+    <span class="separador">·</span>
+    <span><strong>{{ pendientesDeLiquidar }}</strong> pendiente(s) de liquidar</span>
+  </div>
+
+  <div class="table-container table-responsive">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <th class="text-center">Orden</th>
+        <th class="text-center">Periodo</th>
+        <th class="text-start">Persona</th>
+        <th class="text-center">Fecha OP</th>
+        <th class="text-center">Rendida el</th>
+        <th class="text-center">Compr.</th>
+        <th class="text-end">Entregado</th>
+        <th class="text-end">Rendido</th>
+        <th class="text-end">Diferencia</th>
+        <th class="text-center">Estado</th>
+      </thead>
+      <tbody>
+        <tr *ngFor="let op of pagina">
+          <td class="text-center">{{ op.numOrden }}</td>
+          <td class="text-center">{{ mesEtiqueta(op.codPeriodo) }} {{ op.anoPeriodo }}</td>
+          <td class="text-start">{{ op.desAuxiliar || op.codAuxiliar }}</td>
+          <td class="text-center">{{ op.fecOrden | date: 'dd-MM-yyyy' }}</td>
+          <td class="text-center">{{ op.fecRendicion | date: 'dd-MM-yyyy' }}</td>
+          <td class="text-center">{{ op.numComprobantes ?? '-' }}</td>
+          <td class="text-end">{{ op.desMoneda }} {{ op.impOrdPago | number: '1.2-2' }}</td>
+          <td class="text-end">{{ op.desMoneda }} {{ importeRendido(op) | number: '1.2-2' }}</td>
+
+          <!--
+            La diferencia es el numero que contabilidad mira primero: positivo
+            es dinero por devolver, negativo es gasto de mas. Cero no se
+            resalta, que es como deberia estar la mayoria.
+          -->
+          <td class="text-end"
+              [class.dif-sobra]="diferencia(op) > 0"
+              [class.dif-falta]="diferencia(op) < 0">
+            {{ diferencia(op) | number: '1.2-2' }}
+          </td>
+
+          <td class="text-center">
+            <span class="marca-liq" *ngIf="estaLiquidada(op)" title="Contabilidad ya la liquidó.">
+              Liquidada
+            </span>
+            <span class="marca-pend" *ngIf="!estaLiquidada(op)" title="Esperando la liquidación de contabilidad.">
+              Por liquidar
+            </span>
+          </td>
+        </tr>
+
+        <tr *ngIf="buscoAlgunaVez && !rendidas.length">
+          <td colspan="10" class="text-center text-muted py-4">
+            No hay órdenes rendidas con esos filtros.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-footer bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+         *ngIf="totalPaginas > 1">
+      <span class="text-muted small">
+        Mostrando Página <strong>{{ paginaActual + 1 }}</strong> de
+        <strong>{{ totalPaginas }}</strong> (Total: {{ rendidas.length }})
+      </span>
+
+      <nav aria-label="Paginación">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="paginaActual === 0">
+            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">&laquo; Anterior</button>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link border-0 text-dark fw-bold">{{ paginaActual + 1 }}</span>
+          </li>
+          <li class="page-item" [class.disabled]="paginaActual >= totalPaginas - 1">
+            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente &raquo;</button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

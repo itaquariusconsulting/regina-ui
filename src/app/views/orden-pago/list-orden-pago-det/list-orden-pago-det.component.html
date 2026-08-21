@@ -12,6 +12,27 @@
       <input (input)="filtrar()" type="text" class="form-control" placeholder="Filtrar..."
         [(ngModel)]="filtrarDetalle" />
     </div>
+    <!-- Estado de la rendicion. Es lo que explica por que hay o no botones. -->
+    <span class="badge-estado ms-2 align-self-center"
+          [class.abierta]="desdeAntesala && estadoRendicion === 'ABIERTA'"
+          [class.cerrada]="!desdeAntesala || estadoRendicion === 'RENDIDA'"
+          [title]="desdeAntesala && estadoRendicion === 'ABIERTA'
+            ? 'Todavía no llegó a contabilidad: puede eliminar comprobantes y volver a cargarlos.'
+            : 'Ya está en contabilidad. No se modifica ni se reabre.'">
+      {{ textoEstado }}
+    </span>
+
+    <!--
+      Enviar a contabilidad. Es irreversible, asi que solo aparece mientras la
+      rendicion esta en preparacion y tiene algo que enviar; la confirmacion
+      fuerte esta en preCerrar().
+    -->
+    <button *ngIf="puedePreCerrar" (click)="preCerrar()"
+            class="general-button btn-danger"
+            title="Envía la rendición a contabilidad. Después de esto no se puede modificar ni reabrir.">
+      <i class="fas fa-paper-plane"></i>Enviar a contabilidad
+    </button>
+
     <button (click)="onBack()" class="general-button btn-secondary">
       <i class="fas fa-arrow-left"></i>Regresar
     </button>
@@ -28,6 +49,7 @@
         <th class="text-center">Documento</th>
         <th class="text-center">Moneda</th>
         <th class="text-center">Importe</th>
+        <th class="text-center" *ngIf="puedeEditar"></th>
       </thead>
       <tbody>
         <ng-container *ngFor="let reg of pagedDetalles">
@@ -54,12 +76,26 @@
                 {{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number:'1.2-2'}}
               </td>
 
+              <!--
+                Eliminar el comprobante que se subio por error. Solo mientras
+                la rendicion no haya salido a contabilidad; despues no hay
+                boton porque no hay vuelta atras.
+              -->
+              <td data-col="acciones" class="text-center" *ngIf="puedeEditar">
+                <button type="button"
+                        class="general-button btn-danger btn-sm"
+                        (click)="eliminarComprobante(reg, $event)"
+                        title="Eliminar este comprobante de la rendición">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+
             </ng-container>
           </tr>
 
           <!-- fila expandida -->
           <tr class="row-detail p-3" *ngIf="expandedRow === reg && reg.codDocumento">
-            <td colspan="9" class="bg-light p-3">
+            <td [attr.colspan]="puedeEditar ? 10 : 9" class="bg-light p-3">
               <div class="row">
                 <div class="col-md-1">
                   <label class="form-label"><strong>Orden:</strong></label>
@@ -102,8 +138,9 @@
                 <div class="col-md-1 text-center">
                   <label class="form-label"><strong>Documento:</strong></label>
                   <div>
-                    <button (click)="abrirModalDoc(reg)" title="Ver Documento" type="button"
+                    <button (click)="abrirModalDoc(reg, $event)" title="Ver Documento" type="button"
                       *hasPermission="{ route: '/list-orders', action: 'permitView' }"
+                      [disabled]="!tieneArchivo(reg)"
                       class="general-button btn-success btn-sm"><i class="fa-solid fa-file"></i></button>
                   </div>
                 </div>

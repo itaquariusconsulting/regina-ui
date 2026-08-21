@@ -80,3 +80,24 @@
   }
   .row-actions { gap: 4px; }
 }
+
+/* -------------------------------------------------------------------------
+   Marca de orden ya rendida.
+
+   Va al lado del estado del ERP y no en su lugar: son dos cosas distintas.
+   TIP_ESTADO sigue en 'PE' hasta que contabilidad liquide, aunque el usuario
+   ya haya mandado su rendicion.
+   ------------------------------------------------------------------------- */
+.marca-rendida {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: #0a6c3d;
+  background: #e6f6ed;
+  border: 1px solid #bfe6d0;
+}
