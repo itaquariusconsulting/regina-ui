@@ -484,6 +484,35 @@ export class ListOrdenPagoDetComponent implements OnInit {
     return aux;
   }
 
+  /**
+   * El RUC del emisor del comprobante.
+   *
+   * Antes esta columna salia del maestro de auxiliares, buscando por
+   * COD_AUXILIAR. Eso fallaba de dos maneras: si el auxiliar no estaba en esa
+   * lista la celda quedaba vacia, y cuando estaba mostraba el RUC del
+   * auxiliar —que no siempre es el que emitio el comprobante.
+   *
+   * Ahora REGINA guarda el RUC leido del propio documento, asi que ese manda.
+   * El maestro queda de respaldo para las rendiciones viejas, que no tienen
+   * ese dato.
+   */
+  rucDelComprobante(reg: RendicionDetDTO): string {
+    const delDocumento = (reg.rucEmisor ?? '').trim();
+    if (delDocumento) {
+      return delDocumento;
+    }
+    return (this.onDevuelveAuxiliar(reg.codAuxiliar || '').numRuc ?? '').trim();
+  }
+
+  /** El nombre del proveedor, con el mismo criterio que el RUC. */
+  proveedorDelComprobante(reg: RendicionDetDTO): string {
+    const delDocumento = (reg.razonSocialEmisor ?? '').trim();
+    if (delDocumento) {
+      return delDocumento;
+    }
+    return (this.onDevuelveAuxiliar(reg.codAuxiliar || '').desAuxiliar ?? '').trim();
+  }
+
   abrirModalDoc(reg: RendicionDetDTO, event?: Event) {
     event?.stopPropagation();
     this.limpiarDocumentoPreview();

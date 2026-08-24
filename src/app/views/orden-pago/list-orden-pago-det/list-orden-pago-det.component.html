@@ -56,7 +56,11 @@
 
           <!-- fila principal -->
           <tr (click)="toggleRow(reg)" style="cursor:pointer">
-            <ng-container *ngIf="onDevuelveAuxiliar(reg.codAuxiliar || '') as aux">
+            <!--
+              Ya no hace falta envolver la fila para resolver el auxiliar: el
+              RUC y el proveedor salen del propio comprobante, y el maestro
+              solo se consulta como respaldo dentro del componente.
+            -->
               <td data-col="expand" class="text-center">
                 <ng-container *ngIf="reg.codDocumento; else noExpand">
                   {{expandedRow === reg ? '▼' : '▶'}}
@@ -67,8 +71,8 @@
               </td>
               <td data-col="orden" class="text-center">{{reg.numOrden}}</td>
               <td data-col="item" class="text-center">{{reg.numItemOp}}</td>
-              <td data-col="ruc" class="text-center">{{aux.numRuc}}</td>
-              <td data-col="prov" class="text-start">{{aux.desAuxiliar}}</td>
+              <td data-col="ruc" class="text-center">{{ rucDelComprobante(reg) }}</td>
+              <td data-col="prov" class="text-start">{{ proveedorDelComprobante(reg) }}</td>
               <td data-col="fecha" class="text-center">{{reg.fecDocumento | date:'dd-MM-yyyy'}}</td>
               <td data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
               <td data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
@@ -90,7 +94,6 @@
                 </button>
               </td>
 
-            </ng-container>
           </tr>
 
           <!-- fila expandida -->
