@@ -1191,34 +1191,30 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   private handleRucError(error?: HttpErrorResponse): void {
-    const message = error?.error?.mensaje
-      || 'No se pudo consultar el padron de SUNAT. Puede completar los datos del proveedor a mano.';
 
-    // Antes esto abria un dialogo que habia que cerrar en cada subida. No lo
-    // amerita: la consulta al padron es informativa (estado y condicion del
-    // RUC) y la validacion del comprobante devuelve esos mismos datos de una
-    // fuente mas confiable. Ademas el OCR ya trae razon social y direccion.
-    // Queda como aviso en linea, sin interrumpir.
+    // El padron no le dice NADA al usuario, y por eso ya no se le avisa.
+    //
+    // Historia de este metodo: primero abria un dialogo que habia que cerrar
+    // en cada subida, despues quedo como toast mas aviso en linea. Las dos
+    // versiones molestaban por lo mismo: el padron hoy responde 302 siempre,
+    // asi que el aviso salta SIEMPRE, y termina siendo ruido que el usuario
+    // aprende a ignorar — con lo cual tampoco sirve el dia que avise de algo
+    // real.
+    //
+    // Ademas no aporta: el padron solo trae estado y condicion del RUC, y la
+    // validacion del comprobante contra SUNAT —que corre sola al terminar el
+    // escaneo— devuelve esos mismos datos de una fuente mas confiable. La
+    // razon social y la direccion ya vienen del OCR.
+    //
+    // Queda solo en la consola, que es donde sirve para diagnosticar.
     console.warn('[padron RUC] no se pudo consultar', {
       status: error?.status,
       url: error?.url,
       detalle: error?.error,
     });
 
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'info',
-      title: 'Padron SUNAT no disponible',
-      text: 'Complete los datos del proveedor a mano si hiciera falta.',
-      showConfirmButton: false,
-      timer: 4000,
-      timerProgressBar: true,
-    });
-
     this.hasValidRules = false;
     this.hasValidState();
-    this.mensaje = message;
 
     // SUNAT no respondio: se habilita el ingreso manual para no bloquear la
     // rendicion. El usuario completa los datos del proveedor a mano — pero si
@@ -1786,14 +1782,50 @@ export class EditRendirCuentaComponent implements OnInit {
     );
 
     const faltantes = this.faltantesParaSunat(docNro);
+
     if (faltantes.length) {
+      // Antes esto se salteaba en silencio, y era peor de lo que parece: el
+      // usuario ve que el comprobante se escaneo bien, da por hecho que
+      // valido, y despues encuentra el boton Grabar apagado sin nada en
+      // pantalla que lo explique.
+      //
+      // El aviso es discreto y solo sale cuando hay algo que corregir, asi
+      // que no se convierte en ruido de fondo.
       console.info('[validacion automatica] no se llama a SUNAT, faltan datos', faltantes);
+      this.avisarQueFaltaParaValidar(faltantes);
       return;
     }
 
     // setTimeout(0) para dejar que Angular termine de asentar el formulario
     // (this.total, this.ruc y el tipo de documento se acaban de asignar).
     setTimeout(() => this.validarComprobante(true), 0);
+  }
+
+  /**
+   * Avisa que la validacion automatica no pudo correr, y por que.
+   *
+   * Los textos de `faltantesParaSunat` traen etiquetas <b> porque estan
+   * pensados para el dialogo grande; aca se limpian, porque un toast con
+   * markup se ve roto.
+   */
+  private avisarQueFaltaParaValidar(faltantes: string[]): void {
+    const limpio = (t: string) => t.replace(/<[^>]+>/g, '');
+
+    const detalle = faltantes.length === 1
+      ? limpio(faltantes[0])
+      : faltantes.slice(0, 2).map(limpio).join(' ')
+        + (faltantes.length > 2 ? ` (+${faltantes.length - 2} mas)` : '');
+
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'warning',
+      title: 'Falta un dato para validar en SUNAT',
+      text: detalle,
+      showConfirmButton: false,
+      timer: 6000,
+      timerProgressBar: true,
+    });
   }
 
   /**
