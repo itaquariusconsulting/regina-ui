@@ -23,6 +23,7 @@ import { ChangePasswordComponent } from './views/usuario/change-password/change-
 import { authGuard } from './guards/auth.guard';
 import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { ReportesComponent } from './views/reportes/reportes.component';
+import { ReportesRendicionComponent } from './views/reportes/reportes-rendicion/reportes-rendicion.component';
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 
 export const routes: Routes = [
@@ -83,6 +84,12 @@ export const routes: Routes = [
         // los permisos, no por la ruta.
         path: 'list-op-rendidas',
         component: ListOpRendidasComponent
+      },
+      {
+        // Los tres reportes de rendicion, en pestanas. Solo lectura: no
+        // escribe nada, ni en REGINA ni en contabilidad.
+        path: 'reportes-rendicion',
+        component: ReportesRendicionComponent
       },
       {
         path: 'planilla-movilidad',

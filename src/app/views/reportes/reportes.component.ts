@@ -92,6 +92,34 @@ export class ReportesComponent {
       color: '#7c3aed',
       available: true,
       action: () => this.runReport(7, () => this.reportsService.reporteSunat())
+    },
+
+    // Los tres de la antesala. No generan PDF: abren una pantalla con
+    // filtros, porque son numeros que se miran y se cruzan, no un documento
+    // que se archiva.
+    {
+      emoji: '📥',
+      title: 'Rendiciones Recibidas',
+      description: 'Cuántas rendiciones llegaron a contabilidad, con comprobantes e importes.',
+      color: '#059669',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'resumen' } })
+    },
+    {
+      emoji: '🙋',
+      title: 'Rendiciones por Usuario',
+      description: 'Quién envió cuánto: rendiciones, comprobantes e importe por persona.',
+      color: '#0ea5e9',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'usuarios' } })
+    },
+    {
+      emoji: '⏱️',
+      title: 'Tiempo de Carga a Envío',
+      description: 'Comprobante por comprobante, cuánto pasó desde que se cargó hasta que salió.',
+      color: '#e11d48',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'tiempos' } })
     }
   ];
 

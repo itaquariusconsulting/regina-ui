@@ -1,0 +1,211 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Reportes de Rendición</div>
+    <button (click)="volver()" class="general-button btn-secondary">
+      <i class="fa fa-arrow-left"></i>Regresar
+    </button>
+  </div>
+
+  <!-- Pestañas: tres preguntas sobre lo mismo, con los mismos filtros. -->
+  <div class="rr-tabs">
+    <button class="rr-tab" [class.activa]="vista === 'resumen'" (click)="cambiarVista('resumen')">
+      <i class="fa fa-inbox"></i> Rendiciones recibidas
+    </button>
+    <button class="rr-tab" [class.activa]="vista === 'usuarios'" (click)="cambiarVista('usuarios')">
+      <i class="fa fa-users"></i> Por usuario
+    </button>
+    <button class="rr-tab" [class.activa]="vista === 'tiempos'" (click)="cambiarVista('tiempos')">
+      <i class="fa fa-clock"></i> Tiempo de carga a envío
+    </button>
+  </div>
+
+  <!-- Filtros comunes. El rango va sobre el día del envío a contabilidad. -->
+  <div class="rr-filtros">
+    <div class="filtro">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="filtro.desde" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="filtro.hasta" />
+    </div>
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Auxiliar</label>
+      <input type="text" class="form-control" placeholder="Código del auxiliar"
+             [(ngModel)]="filtro.codAuxiliar" (keyup.enter)="buscar()" />
+    </div>
+    <div class="filtro-acciones">
+      <button (click)="buscar()" class="general-button btn-primary">
+        <i class="fa fa-search"></i>Buscar
+      </button>
+      <button (click)="limpiar()" class="general-button btn-secondary" title="Quitar todos los filtros">
+        <i class="fa fa-eraser"></i>Limpiar
+      </button>
+      <button (click)="descargar()" class="general-button btn-secondary"
+              *ngIf="vista !== 'resumen'" title="Bajar la tabla como CSV">
+        <i class="fa fa-download"></i>CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="rr-error" *ngIf="mensajeError">
+    <i class="fa fa-triangle-exclamation"></i> {{ mensajeError }}
+  </div>
+
+  <!-- ============================ 1. RECIBIDAS ============================ -->
+  <ng-container *ngIf="vista === 'resumen' && resumen">
+
+    <div class="rr-tarjetas">
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">{{ resumen.recibidas }}</div>
+        <div class="rr-rot">Rendiciones recibidas</div>
+        <div class="rr-pie">Enviadas a contabilidad</div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">{{ resumen.comprobantes }}</div>
+        <div class="rr-rot">Comprobantes</div>
+        <div class="rr-pie">Dentro de las recibidas</div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">S/ {{ resumen.importeSoles | number:'1.2-2' }}</div>
+        <div class="rr-rot">Importe</div>
+        <div class="rr-pie">US$ {{ resumen.importeDolares | number:'1.2-2' }}</div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">{{ resumen.usuarios }}</div>
+        <div class="rr-rot">Personas</div>
+        <div class="rr-pie">Enviaron al menos una</div>
+      </div>
+      <div class="rr-tarjeta tenue">
+        <div class="rr-num">{{ resumen.abiertas }}</div>
+        <div class="rr-rot">Abiertas</div>
+        <div class="rr-pie">Todavía con el usuario</div>
+      </div>
+      <div class="rr-tarjeta tenue" *ngIf="resumen.rechazadas">
+        <div class="rr-num">{{ resumen.rechazadas }}</div>
+        <div class="rr-rot">Rechazadas</div>
+        <div class="rr-pie">Devueltas por contabilidad</div>
+      </div>
+    </div>
+
+    <div class="rr-nota">
+      <p *ngIf="resumen.primerEnvio">
+        Primer envío del rango: <strong>{{ resumen.primerEnvio | date:'dd/MM/yyyy HH:mm' }}</strong>
+        · último: <strong>{{ resumen.ultimoEnvio | date:'dd/MM/yyyy HH:mm' }}</strong>
+      </p>
+      <p class="rr-aviso" *ngIf="resumen.hayDatosDesde">
+        <i class="fa fa-circle-info"></i>
+        La antesala empezó a registrar el
+        <strong>{{ resumen.hayDatosDesde | date:'dd/MM/yyyy' }}</strong>.
+        Un rango anterior sale en cero porque no había registro, no porque no
+        se haya rendido.
+      </p>
+    </div>
+  </ng-container>
+
+  <!-- ============================ 2. POR USUARIO ========================== -->
+  <ng-container *ngIf="vista === 'usuarios'">
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th>Usuario</th>
+          <th class="text-center">Rendiciones</th>
+          <th class="text-center">Comprobantes</th>
+          <th class="text-end">Importe S/</th>
+          <th class="text-center">Comp. por rendición</th>
+          <th class="text-center">Primer envío</th>
+          <th class="text-center">Último envío</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuarios">
+            <td>
+              {{ u.usuario }}
+              <small class="rr-username" *ngIf="u.username">({{ u.username }})</small>
+            </td>
+            <td class="text-center"><strong>{{ u.rendiciones }}</strong></td>
+            <td class="text-center">{{ u.comprobantes }}</td>
+            <td class="text-end">{{ u.importeSoles | number:'1.2-2' }}</td>
+            <td class="text-center">{{ u.comprobantesPorRendicion | number:'1.1-1' }}</td>
+            <td class="text-center">{{ u.primerEnvio | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">{{ u.ultimoEnvio | date:'dd/MM/yyyy' }}</td>
+          </tr>
+          <tr *ngIf="buscoAlgunaVez && !usuarios.length">
+            <td colspan="7" class="text-center rr-vacio">
+              Nadie envió rendiciones en este rango.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- ============================ 3. TIEMPOS ============================== -->
+  <ng-container *ngIf="vista === 'tiempos'">
+
+    <div class="rr-resumen-linea" *ngIf="tiempos.length">
+      <span><strong>{{ tiempos.length }}</strong> comprobante(s)</span>
+      <span class="separador">·</span>
+      <span>promedio de espera <strong>{{ promedioDias | number:'1.1-1' }}</strong> día(s)</span>
+      <ng-container *ngIf="peorEspera">
+        <span class="separador">·</span>
+        <span>el que más esperó:
+          <strong>{{ peorEspera.comprobante }}</strong>
+          ({{ peorEspera.diasEspera | number:'1.1-1' }} días, OP {{ peorEspera.numOrden }})
+        </span>
+      </ng-container>
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th class="text-center">Orden</th>
+          <th class="text-center">Ítem</th>
+          <th>Comprobante</th>
+          <th class="text-end">Importe S/</th>
+          <th class="text-center">Cargado</th>
+          <th class="text-center">Enviado</th>
+          <th class="text-center">Espera</th>
+          <th>Cargado por</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of paginaDeTiempos">
+            <td class="text-center">{{ t.numOrden }}</td>
+            <td class="text-center">{{ t.numItemOp }}</td>
+            <td>
+              {{ t.comprobante }}
+              <small class="rr-username" *ngIf="t.codDocumento">{{ t.codDocumento }}</small>
+            </td>
+            <td class="text-end">{{ t.impSoles | number:'1.2-2' }}</td>
+            <td class="text-center">{{ t.fecCarga | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="text-center">{{ t.fecEnvio | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="text-center">
+              <span class="rr-espera" [ngClass]="colorDeEspera(t.diasEspera)">
+                {{ t.diasEspera | number:'1.1-1' }} d
+              </span>
+            </td>
+            <td>{{ t.usuarioCarga }}</td>
+          </tr>
+          <tr *ngIf="buscoAlgunaVez && !tiempos.length">
+            <td colspan="8" class="text-center rr-vacio">
+              No hay comprobantes enviados en este rango.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rr-paginado" *ngIf="totalPaginas > 1">
+      <button class="general-button btn-secondary" (click)="irAPagina(paginaActual - 1)"
+              [disabled]="paginaActual === 0">« Anterior</button>
+      <span>Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
+      <button class="general-button btn-secondary" (click)="irAPagina(paginaActual + 1)"
+              [disabled]="paginaActual + 1 >= totalPaginas">Siguiente »</button>
+    </div>
+  </ng-container>
+
+</div>

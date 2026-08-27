@@ -2109,7 +2109,15 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDet.anoProcesoDeclara = String(this.anioDeclaracion ?? new Date().getFullYear());
       this.ordenPagoDet.mesProcesoDeclara = String(this.mesDeclaracion ?? (new Date().getMonth() + 1)).padStart(2, '0');
 
-      this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
+      // Solo se pisa si hay algo que poner. `this.codAuxiliar` se llena en
+      // onGetDatosRuc buscando en la lista de proveedores, y queda vacío
+      // cuando el RUC no está en esa lista —porque es nuevo, o porque está
+      // registrado con otro tipo. onSaveAuxiliar ya resolvió el código en
+      // ese caso: pisarlo con '' lo perdía y el comprobante viajaba sin
+      // auxiliar, que es lo que después rebota contra la foránea del ERP.
+      if (this.codAuxiliar) {
+        this.ordenPagoDet.codAuxiliar = this.codAuxiliar;
+      }
 
       // ====== CENTRO DE COSTOS heredado de la OP (solo lectura · obs. usuario) ======
       this.ordenPagoDet.codCCostos = this.orden.codCCostos;

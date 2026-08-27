@@ -1,0 +1,194 @@
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+/* PESTAÑAS */
+.rr-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 14px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.rr-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+
+  i { margin-right: 6px; }
+
+  &:hover { color: var(--primary-color, #1976d2); }
+
+  &.activa {
+    color: var(--primary-color, #1976d2);
+    border-bottom-color: var(--primary-color, #1976d2);
+  }
+}
+
+/* FILTROS */
+.rr-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  .filtro {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+
+    &--ancho { min-width: 220px; flex: 1; }
+  }
+
+  .form-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .filtro-acciones {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.rr-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+
+  i { margin-right: 6px; }
+}
+
+/* TARJETAS DEL RESUMEN */
+.rr-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rr-tarjeta {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary-color, #1976d2);
+  border-radius: 12px;
+  padding: 14px 16px;
+
+  &.principal {
+    border-left-color: #10b981;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  }
+
+  /* Abiertas y rechazadas no son logro ni problema: son estado. */
+  &.tenue {
+    border-left-color: #cbd5e1;
+    background: #f8fafc;
+  }
+}
+
+.rr-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.rr-rot {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 2px;
+}
+
+.rr-pie {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.rr-nota {
+  font-size: 0.82rem;
+  color: #475569;
+
+  p { margin: 0 0 6px; }
+}
+
+.rr-aviso {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.79rem;
+
+  i { margin-right: 6px; }
+}
+
+/* TABLAS */
+.rr-resumen-linea {
+  font-size: 0.84rem;
+  color: #475569;
+  margin-bottom: 8px;
+
+  .separador { margin: 0 8px; color: #cbd5e1; }
+}
+
+.rr-username {
+  color: #94a3b8;
+  margin-left: 6px;
+  font-size: 0.74rem;
+}
+
+.rr-vacio {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 18px 0;
+}
+
+.rr-espera {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+
+  &.espera-ok    { background: #dcfce7; color: #166534; }
+  &.espera-media { background: #fef3c7; color: #92400e; }
+  &.espera-alta  { background: #fee2e2; color: #991b1b; }
+}
+
+.rr-paginado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+@media (max-width: 700px) {
+  .rr-filtros .filtro { min-width: 100%; }
+  .rr-tab { padding: 8px 10px; font-size: 0.8rem; }
+}
