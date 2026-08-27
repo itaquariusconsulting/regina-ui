@@ -821,23 +821,25 @@ export class EditRendirCuentaComponent implements OnInit {
       (response: Response) => {
         this.impuestos = response.resultado;
         console.log("Impuestos : ", this.impuestos)
-        const totalPorcentaje = 1 + ((this.impuestos.reduce((total, impuesto) => total + (impuesto.numPorcentaje || 0), 0)) / 100);
         const tipoCambioStorage = sessionStorage.getItem('tipocambio');
         this.ordenPagoDet.tipCambio = tipoCambioStorage
           ? JSON.parse(tipoCambioStorage).impVenta ?? 1
           : 1;
-        if (this.orden.codMoneda == '01') {
-          this.ordenPagoDet.impSoles = Number(this.dataImagen.amount) ?? 0;
-          this.ordenPagoDet.impDolares = this.ordenPagoDet.impSoles / (this.ordenPagoDet.tipCambio ?? 1);
-        } else {
-          this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) ?? 0;
-          this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
+
+        // El importe NO se vuelve a tomar del OCR si el usuario ya puso uno.
+        //
+        // getImpuestos() corre cada vez que cambia el tipo de documento, y
+        // antes pisaba `this.total` con lo que habia leido el escaneo: el
+        // usuario escribia el monto, tocaba el combo, y se le borraba. En
+        // ingreso manual —donde el OCR no leyo nada y `amount` vale '0'—
+        // eso significaba guardar cero.
+        //
+        // Solo se siembra desde el OCR cuando todavia no hay importe.
+        if (!this.hayImporte()) {
+          this.total = this.aNumero(this.dataImagen.amount);
         }
-        this.ordenPagoDet.impImponSoles = this.ordenPagoDet.impSoles - (this.ordenPagoDet.impSoles / totalPorcentaje);
-        this.ordenPagoDet.impImponDolares = this.ordenPagoDet.impDolares - (this.ordenPagoDet.impDolares / totalPorcentaje);
-        this.total = Number(this.dataImagen.amount) ?? 0;
-        this.subTotal = this.total / totalPorcentaje;
-        this.impuesto = this.total - this.subTotal;
+
+        this.recalcularImportes();
         this.onListaAuxiliares();
       },
       (error) => {
@@ -2142,19 +2144,12 @@ export class EditRendirCuentaComponent implements OnInit {
       this.ordenPagoDet.tipCambio = tipoCambioStorage
         ? JSON.parse(tipoCambioStorage).impVenta ?? 1
         : 1;
-      if (this.ordenPagoDet.codMoneda == '01') {
-        this.ordenPagoDet.impSoles = Number(this.dataImagen.amount) || 0;
-        this.ordenPagoDet.impDolares = this.ordenPagoDet.impSoles / (this.ordenPagoDet.tipCambio ?? 1);
-      } else {
-        this.ordenPagoDet.impDolares = Number(this.dataImagen.amount) || 0;
-        this.ordenPagoDet.impSoles = this.ordenPagoDet.impDolares * (this.ordenPagoDet.tipCambio ?? 1);
-      }
-
-      // ====== % IGV EDITABLE (obs. usuario) ======
-      // Se usa el porcentaje configurado por el usuario en el formulario
-      const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
-      this.ordenPagoDet.impImponSoles = totalPorcentaje > 0 ? this.ordenPagoDet.impSoles / totalPorcentaje : this.ordenPagoDet.impSoles;
-      this.ordenPagoDet.impImponDolares = totalPorcentaje > 0 ? this.ordenPagoDet.impDolares / totalPorcentaje : this.ordenPagoDet.impDolares;
+      // Los importes salen de `this.total` —lo que el usuario tiene en
+      // pantalla— y no de lo que leyo el OCR. Antes se guardaba
+      // `dataImagen.amount`, asi que un monto corregido a mano se veia bien
+      // en la vista y viajaba mal a contabilidad. En ingreso manual, donde el
+      // escaneo no leyo nada, ese valor era '0'.
+      this.recalcularImportes();
 
       // El comprobante ya NO va directo a contabilidad. Entra a la antesala
       // de REGINA, donde el usuario todavia puede corregirlo o eliminarlo si
@@ -2521,12 +2516,57 @@ export class EditRendirCuentaComponent implements OnInit {
     // Ignorar NaN: preservar el importe actual y no destruir el OCR.
     if (!Number.isFinite(raw)) { return; }
     this.total = raw;
-    // Recálculo usando el % de IGV editable
-    const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
-    this.subTotal = totalPorcentaje > 0 ? this.total / totalPorcentaje : this.total;
-    this.impuesto = this.total - this.subTotal;
+    this.recalcularImportes();
     // Recalcular saldo con debounce (evita parpadeo y múltiples Swal seguidos).
     this.recalcularSaldos();
+  }
+
+  /** true si ya hay un importe cargado, venga del OCR o del usuario. */
+  private hayImporte(): boolean {
+    return Number.isFinite(this.total) && this.total > 0;
+  }
+
+  /** Number() que devuelve 0 ante vacio o texto, en vez de NaN. */
+  private aNumero(valor: any): number {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  /**
+   * Deriva subtotal, impuesto e importes del detalle a partir de `this.total`.
+   *
+   * `this.total` es la unica fuente de verdad del importe: es lo que el
+   * usuario ve y edita. Antes cada lugar recalculaba por su cuenta —unos con
+   * el % editable, otros con la suma de los impuestos del maestro— y al
+   * guardar se leia directamente lo que habia leido el OCR, que podia ser
+   * otro numero distinto del que estaba en pantalla.
+   */
+  private recalcularImportes(): void {
+    const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
+
+    this.subTotal = totalPorcentaje > 0 ? this.total / totalPorcentaje : this.total;
+    this.impuesto = this.total - this.subTotal;
+
+    // El OCR queda sincronizado con lo que se ve. Lo que se guarda sale de
+    // `this.total`, pero dejarlos distintos hace que la traza del escaneo
+    // mienta sobre lo que termino en contabilidad.
+    this.dataImagen.amount = String(this.total);
+
+    const tipoCambio = this.ordenPagoDet.tipCambio ?? 1;
+    if ((this.ordenPagoDet.codMoneda || this.orden?.codMoneda || '01') === '01') {
+      this.ordenPagoDet.impSoles = this.total;
+      this.ordenPagoDet.impDolares = tipoCambio ? this.total / tipoCambio : this.total;
+    } else {
+      this.ordenPagoDet.impDolares = this.total;
+      this.ordenPagoDet.impSoles = this.total * tipoCambio;
+    }
+
+    this.ordenPagoDet.impImponSoles = totalPorcentaje > 0
+      ? (this.ordenPagoDet.impSoles ?? 0) / totalPorcentaje
+      : this.ordenPagoDet.impSoles;
+    this.ordenPagoDet.impImponDolares = totalPorcentaje > 0
+      ? (this.ordenPagoDet.impDolares ?? 0) / totalPorcentaje
+      : this.ordenPagoDet.impDolares;
   }
 
   /**
@@ -2863,10 +2903,8 @@ export class EditRendirCuentaComponent implements OnInit {
 
   /** Cuando el usuario cambia el % de IGV se recalculan importes. */
   onIgvPercentChange(): void {
-    const totalPorcentaje = 1 + ((this.igvPercent || 0) / 100);
-    if (totalPorcentaje > 0 && this.total > 0) {
-      this.subTotal = this.total / totalPorcentaje;
-      this.impuesto = this.total - this.subTotal;
+    if (this.hayImporte()) {
+      this.recalcularImportes();
     }
   }
 

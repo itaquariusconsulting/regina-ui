@@ -511,7 +511,7 @@
                 <label class="form-label fw-semibold mb-2 d-block">
                     Subtotal {{dataImagen.currency}}
                 </label>
-                <input [readonly]="!!imageChangedEvent" type="text" name="importe" id="importe" class="general-input form-control text-end"
+                <input [readonly]="!!imageChangedEvent" type="text" name="subtotal" id="subtotal" class="general-input form-control text-end"
                     [(ngModel)]="subTotal" currencyMask
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
