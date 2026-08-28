@@ -122,9 +122,11 @@
     </div>
     <div class="filtro" *ngIf="vista === 'resumen' || vista === 'usuarios' || vista === 'centros'">
       <label class="form-label">Estado</label>
-      <select class="form-select" [(ngModel)]="filtro.estado">
+      <select class="form-select" [(ngModel)]="filtro.estado"
+              [title]="explicacionDelEstado">
         <option *ngFor="let e of estados" [value]="e.valor">{{ e.etiqueta }}</option>
       </select>
+      <small class="rr-explica" *ngIf="explicacionDelEstado">{{ explicacionDelEstado }}</small>
     </div>
     <div class="filtro-acciones">
       <button (click)="buscar()" class="general-button btn-primary">
@@ -169,14 +171,36 @@
         <div class="rr-pie">Enviaron al menos una</div>
       </div>
       <div class="rr-tarjeta tenue">
-        <div class="rr-num">{{ resumen.abiertas }}</div>
-        <div class="rr-rot">Abiertas</div>
+        <div class="rr-num">{{ resumen.pendientes }}</div>
+        <div class="rr-rot">Pendientes</div>
         <div class="rr-pie">Todavía con el usuario</div>
       </div>
-      <div class="rr-tarjeta tenue" *ngIf="resumen.rechazadas">
-        <div class="rr-num">{{ resumen.rechazadas }}</div>
-        <div class="rr-rot">Rechazadas</div>
-        <div class="rr-pie">Devueltas por contabilidad</div>
+    </div>
+
+    <!-- El recorrido, en el orden en que ocurre. Las recibidas de arriba son
+         la suma de estas cuatro; verlas separadas dice dónde se traba. -->
+    <h6 class="rr-subtitulo">En qué punto están</h6>
+    <div class="rr-tarjetas">
+      <div class="rr-tarjeta" style="border-left-color:#0ea5e9;">
+        <div class="rr-num">{{ resumen.enProceso }}</div>
+        <div class="rr-rot">En proceso</div>
+        <div class="rr-pie">Enviadas, esperando los físicos</div>
+      </div>
+      <div class="rr-tarjeta" style="border-left-color:#6366f1;">
+        <div class="rr-num">{{ resumen.recepcionadas }}</div>
+        <div class="rr-rot">Recepcionadas</div>
+        <div class="rr-pie">Contabilidad recibió los físicos</div>
+      </div>
+      <div class="rr-tarjeta" [class.alerta]="resumen.observadas"
+           style="border-left-color:#f97316;">
+        <div class="rr-num">{{ resumen.observadas }}</div>
+        <div class="rr-rot">Observadas</div>
+        <div class="rr-pie">Con algo que no sustenta</div>
+      </div>
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">{{ resumen.liquidadas }}</div>
+        <div class="rr-rot">Liquidadas</div>
+        <div class="rr-pie">El proceso terminó</div>
       </div>
     </div>
 

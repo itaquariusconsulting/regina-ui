@@ -75,12 +75,34 @@ export class ReportesRendicionComponent implements OnInit {
   indiceCentro = -1;
   private cerrarCentrosTimer: any;
 
+  /**
+   * Los cinco estados del recorrido.
+   *
+   * No son los de la columna ESTADO —que solo distingue abierta, rendida y
+   * rechazada— sino los que se deducen de las fechas. La regla vive en el
+   * backend y esta lista es su reflejo: si cambia allá, cambia acá.
+   */
   readonly estados = [
-    { valor: '',           etiqueta: 'Todos' },
-    { valor: 'RENDIDA',    etiqueta: 'Enviadas a contabilidad' },
-    { valor: 'ABIERTA',    etiqueta: 'En preparación' },
-    { valor: 'RECHAZADA',  etiqueta: 'Rechazadas' },
+    { valor: '',             etiqueta: 'Todos' },
+    { valor: 'PENDIENTE',    etiqueta: 'Pendiente' },
+    { valor: 'EN_PROCESO',   etiqueta: 'En proceso' },
+    { valor: 'RECEPCIONADO', etiqueta: 'Recepcionado' },
+    { valor: 'OBSERVADO',    etiqueta: 'Observado' },
+    { valor: 'LIQUIDADO',    etiqueta: 'Liquidado' },
   ];
+
+  /** Lo que significa cada estado. Se muestra al lado del filtro. */
+  readonly explicaciones: Record<string, string> = {
+    PENDIENTE:    'Desde que se creó la OP hasta que el usuario la envía a contabilidad.',
+    EN_PROCESO:   'Desde el envío a contabilidad hasta que marcan que llegaron los físicos.',
+    RECEPCIONADO: 'Contabilidad confirmó que recibió los comprobantes físicos.',
+    OBSERVADO:    'Contabilidad marcó al menos un comprobante como que no sustenta.',
+    LIQUIDADO:    'La orden quedó liquidada en el ERP. Lo detecta REGINA sola.',
+  };
+
+  get explicacionDelEstado(): string {
+    return this.explicaciones[this.filtro.estado] ?? '';
+  }
 
   buscoAlgunaVez = false;
   mensajeError = '';

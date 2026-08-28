@@ -20,7 +20,16 @@ export class FiltroReporte {
 
 /** Cuántas rendiciones recibió contabilidad y con cuánto adentro. */
 export interface ResumenRendiciones {
+  /** Todo lo que ya salió del usuario: en proceso + recepcionadas + observadas + liquidadas. */
   recibidas: number;
+
+  /** Los cinco estados del recorrido, por separado. */
+  pendientes: number;
+  enProceso: number;
+  recepcionadas: number;
+  observadas: number;
+  liquidadas: number;
+
   abiertas: number;
   rechazadas: number;
 

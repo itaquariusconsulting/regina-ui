@@ -305,3 +305,14 @@
 
   &.interna { color: #0369a1; }
 }
+
+/* La explicación del estado, debajo del combo. Sin esto, "Recepcionado" y
+   "En proceso" se confunden entre sí y la gente filtra a ciegas. */
+.rr-explica {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.35;
+  max-width: 240px;
+}
