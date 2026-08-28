@@ -123,7 +123,37 @@ export class ReportesRendicionComponent implements OnInit {
     this.isLoading$ = this.loadingService.loading$;
   }
 
+  /**
+   * El mes en curso completo: del día 1 al último día del mes.
+   *
+   * Se toma el mes entero y no "hasta hoy" porque contabilidad trabaja por
+   * período: un corte a mitad de mes cambia solo, y lo que se miró ayer no da
+   * lo mismo que hoy. El fin de mes se calcula pidiendo el día 0 del mes
+   * siguiente, que es el último del actual — así sale bien en febrero y en
+   * los años bisiestos sin tabla de días.
+   *
+   * Las fechas se arman con los componentes locales y no con toISOString, que
+   * pasa a UTC y en Lima devuelve el día anterior.
+   */
+  private ponerRangoPorDefecto(): void {
+    const hoy = new Date();
+    const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const ultimo = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+    this.filtro.desde = this.aISO(primero);
+    this.filtro.hasta = this.aISO(ultimo);
+  }
+
+  /** yyyy-MM-dd con la fecha local, que es lo que espera un input date. */
+  private aISO(f: Date): string {
+    const mes = String(f.getMonth() + 1).padStart(2, '0');
+    const dia = String(f.getDate()).padStart(2, '0');
+    return `${f.getFullYear()}-${mes}-${dia}`;
+  }
+
   ngOnInit(): void {
+    this.ponerRangoPorDefecto();
+
     const pedida = this.ruta.snapshot.queryParamMap.get('vista');
     const validas: Vista[] = ['resumen', 'usuarios', 'centros', 'tiempos', 'observaciones', 'uso'];
     if (pedida && (validas as string[]).includes(pedida)) {
@@ -402,6 +432,7 @@ export class ReportesRendicionComponent implements OnInit {
 
   limpiar(): void {
     this.filtro = new FiltroReporte();
+    this.ponerRangoPorDefecto();
     this.personaTexto = '';
     this.centroTexto = '';
     this.mostrarPersonas = false;
