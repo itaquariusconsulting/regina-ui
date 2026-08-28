@@ -66,7 +66,6 @@
         <th class="text-end">Entregado</th>
         <th class="text-end">Rendido</th>
         <th class="text-end">Diferencia</th>
-        <th class="text-center">Estado</th>
         <th class="text-center">
           Estado
           <i class="fa fa-circle-question leyenda-icono" (click)="verLeyenda()"
@@ -95,15 +94,6 @@
               [class.dif-sobra]="diferencia(op) > 0"
               [class.dif-falta]="diferencia(op) < 0">
             {{ diferencia(op) | number: '1.2-2' }}
-          </td>
-
-          <td class="text-center">
-            <span class="marca-liq" *ngIf="estaLiquidada(op)" title="Contabilidad ya la liquidó.">
-              Liquidada
-            </span>
-            <span class="marca-pend" *ngIf="!estaLiquidada(op)" title="Esperando la liquidación de contabilidad.">
-              Por liquidar
-            </span>
           </td>
 
           <!-- El recorrido lo registra REGINA: el ERP no guarda cuándo
@@ -149,7 +139,7 @@
         </tr>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
-          <td colspan="13" class="text-center text-muted py-4">
+          <td colspan="12" class="text-center text-muted py-4">
             No hay órdenes rendidas con esos filtros.
           </td>
         </tr>
