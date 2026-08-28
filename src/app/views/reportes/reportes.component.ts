@@ -13,7 +13,17 @@ interface ReporteItem {
   color: string;
   available: boolean;
   generating?: boolean;
+  /** Abre una pantalla. */
   action?: () => void;
+  /**
+   * Genera un PDF.
+   *
+   * Separado de `action` para no atar cada tarjeta a su posición en el
+   * arreglo: antes cada una llamaba a runReport con su índice a mano, así
+   * que agregar o quitar una tarjeta corría los índices y el spinner
+   * aparecía sobre la tarjeta equivocada, sin error y sin que se note.
+   */
+  generar?: () => Observable<boolean>;
 }
 
 @Component({
@@ -26,17 +36,8 @@ interface ReporteItem {
 export class ReportesComponent {
 
   isLoading$: Observable<boolean>;
-  generandoIdx: number | null = null;
 
   reportes: ReporteItem[] = [
-    {
-      emoji: '📄',
-      title: 'Reporte de Rendición',
-      description: 'PDF profesional de rendición por orden de pago. Disponible en la lista de OPs (botón rojo).',
-      color: '#ef4444',
-      available: true,
-      action: () => this.router.navigate(['/list-orders'])
-    },
     {
       emoji: '📊',
       title: 'Dashboard Ejecutivo',
@@ -51,7 +52,7 @@ export class ReportesComponent {
       description: 'Detalle consolidado de planillas y viajes asociados a cada orden de pago.',
       color: '#10b981',
       available: true,
-      action: () => this.runReport(2, () => this.reportsService.reportePlanillasMovilidad())
+      generar: () => this.reportsService.reportePlanillasMovilidad()
     },
     {
       emoji: '📈',
@@ -59,7 +60,7 @@ export class ReportesComponent {
       description: 'Análisis de % de rendición vs importes por estado y por beneficiario.',
       color: '#8b5cf6',
       available: true,
-      action: () => this.runReport(3, () => this.reportsService.reporteCumplimiento())
+      generar: () => this.reportsService.reporteCumplimiento()
     },
     {
       emoji: '📋',
@@ -75,7 +76,7 @@ export class ReportesComponent {
       description: 'Histórico de OPs y cumplimiento agrupado por usuario beneficiario.',
       color: '#06b6d4',
       available: true,
-      action: () => this.runReport(5, () => this.reportsService.reporteBeneficiarios())
+      generar: () => this.reportsService.reporteBeneficiarios()
     },
     {
       emoji: '⚠️',
@@ -93,7 +94,7 @@ export class ReportesComponent {
       description: 'Comprobantes consolidados con detalle por proveedor (RUC) e importes.',
       color: '#7c3aed',
       available: true,
-      action: () => this.runReport(7, () => this.reportsService.reporteSunat())
+      generar: () => this.reportsService.reporteSunat()
     },
 
     // Los tres de la antesala. No generan PDF: abren una pantalla con
@@ -158,29 +159,32 @@ export class ReportesComponent {
   }
 
   ejecutar(rep: ReporteItem): void {
-    if (rep.available && rep.action && !rep.generating) {
+    if (!rep.available || rep.generating) {
+      return;
+    }
+    if (rep.generar) {
+      this.generarPdf(rep);
+    } else if (rep.action) {
       rep.action();
     }
   }
 
-  private runReport(idx: number, fn: () => Observable<boolean>): void {
-    if (this.reportes[idx].generating) return;
-
-    this.reportes[idx].generating = true;
-    this.generandoIdx = idx;
+  /**
+   * Genera el PDF de una tarjeta.
+   *
+   * Recibe la tarjeta, no su posición: el spinner se prende sobre el objeto
+   * que el usuario tocó, y agregar o quitar tarjetas deja de poder
+   * desalinearlo.
+   */
+  private generarPdf(rep: ReporteItem): void {
+    rep.generating = true;
     this.loadingService.show();
 
-    fn().subscribe({
-      next: () => {
-        this.reportes[idx].generating = false;
-        this.generandoIdx = null;
-        this.loadingService.hide();
-      },
-      error: () => {
-        this.reportes[idx].generating = false;
-        this.generandoIdx = null;
-        this.loadingService.hide();
-      }
-    });
+    const terminar = () => {
+      rep.generating = false;
+      this.loadingService.hide();
+    };
+
+    rep.generar!().subscribe({ next: terminar, error: terminar });
   }
 }
