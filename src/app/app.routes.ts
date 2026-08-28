@@ -4,6 +4,7 @@ import { DefaultLayoutComponent } from './components/layout/default-layout/defau
 import { ListOrdenPagoComponent } from './views/orden-pago/list-orden-pago/list-orden-pago.component';
 import { ListOrdenPagoDetComponent } from './views/orden-pago/list-orden-pago-det/list-orden-pago-det.component';
 import { ListOpRendidasComponent } from './views/orden-pago/list-op-rendidas/list-op-rendidas.component';
+import { OpRendicionesComponent } from './views/reportes/op-rendiciones/op-rendiciones.component';
 import { ListUsuariosComponent } from './views/usuario/list-usuarios/list-usuarios.component';
 import { NuevoUsuarioComponent } from './views/usuario/nuevo-usuario/nuevo-usuario.component';
 import { CargaMasivaUsuariosComponent } from './views/usuario/carga-masiva-usuarios/carga-masiva-usuarios.component';
@@ -86,6 +87,12 @@ export const routes: Routes = [
         // los permisos, no por la ruta.
         path: 'list-op-rendidas',
         component: ListOpRendidasComponent
+      },
+      {
+        // Las ordenes de pago del ERP con y sin rendicion. Arranca del lado de
+        // contabilidad, asi que es la unica que muestra las que nadie rindio.
+        path: 'op-rendiciones',
+        component: OpRendicionesComponent
       },
       {
         // Los tres reportes de rendicion, en pestanas. Solo lectura: no

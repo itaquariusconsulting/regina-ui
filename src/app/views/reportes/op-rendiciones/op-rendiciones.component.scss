@@ -1,0 +1,120 @@
+.opr-pantalla { padding: 1rem 1.25rem 2rem; }
+
+.opr-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  h2 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+}
+
+.opr-acciones-arriba { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.btn-pdf   { background: #c0392b; color: #fff; }
+.btn-excel { background: #1d7044; color: #fff; }
+
+.opr-nota {
+  color: #5c6672;
+  font-size: 0.875rem;
+  max-width: 78ch;
+  margin: 0.35rem 0 1rem;
+}
+
+/* ------------------------------------------------------------- filtros */
+
+.opr-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.filtro { display: flex; flex-direction: column; gap: 0.2rem; min-width: 9rem; }
+.filtro--ancho { min-width: 18rem; flex: 1; }
+.filtro .form-label { font-size: 0.78rem; font-weight: 600; color: #4a5563; margin: 0; }
+
+.filtro-acciones { display: flex; gap: 0.5rem; }
+
+/* ------------------------------------------------------------ tarjetas */
+
+.opr-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.opr-tarjeta {
+  border: 1px solid #e2e6ec;
+  border-top: 3px solid #254e8a;
+  border-radius: 4px;
+  padding: 0.75rem 0.9rem;
+  background: #fff;
+}
+
+.opr-num { font-size: 1.75rem; font-weight: 700; line-height: 1.1; color: #254e8a; }
+.opr-rot { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78838f; margin-top: 0.15rem; }
+.opr-pie { font-size: 0.75rem; color: #5c6672; margin-top: 0.3rem; }
+
+.t-sin  { border-top-color: #b0442d; .opr-num { color: #b0442d; } }
+.t-proc { border-top-color: #b08418; .opr-num { color: #b08418; } }
+.t-liq  { border-top-color: #25764a; .opr-num { color: #25764a; } }
+
+/* --------------------------------------------------------------- tabla */
+
+.opr-cod { color: #8a929c; font-size: 0.75rem; }
+
+.opr-saldo { color: #b0442d; font-weight: 600; }
+
+.opr-erp {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  background: #eef1f5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3d4756;
+}
+
+.opr-si { color: #25764a; font-weight: 600; font-size: 0.8rem; }
+.opr-no { color: #b0442d; font-weight: 700; font-size: 0.8rem; }
+
+.opr-proc {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pr-pend  { color: #6b5107; background: #fdf3d6; }
+.pr-proc  { color: #1c4f80; background: #dceaf7; }
+.pr-recep { color: #1f5c3d; background: #dcefe3; }
+.pr-obs   { color: #8a2d19; background: #fbe2dc; }
+.pr-liq   { color: #3d3f45; background: #e6e7ea; }
+
+.opr-obs { display: block; color: #8a2d19; font-size: 0.7rem; margin-top: 0.15rem; }
+
+.d-ok    { color: #25764a; font-weight: 600; }
+.d-medio { color: #a07716; font-weight: 600; }
+.d-tarde { color: #b0442d; font-weight: 700; }
+
+.opr-vacio { color: #78838f; padding: 1.5rem 0; }
+.opr-cargando { color: #5c6672; padding: 2rem 0; text-align: center; }
+
+/* ------------------------------------------------------------ paginado */
+
+.opr-paginado {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: #5c6672;
+}

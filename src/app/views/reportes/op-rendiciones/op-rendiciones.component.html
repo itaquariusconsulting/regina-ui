@@ -1,0 +1,177 @@
+<div class="opr-pantalla">
+
+  <div class="opr-encabezado">
+    <h2>Órdenes de Pago y Rendiciones</h2>
+    <div class="opr-acciones-arriba">
+      <button class="general-button btn-pdf" (click)="descargarPDF()"
+              [disabled]="!filas.length"
+              title="El reporte con los filtros aplicados, en PDF">
+        <i class="fa fa-file-pdf"></i>PDF
+      </button>
+      <button class="general-button btn-excel" (click)="descargarExcel()"
+              [disabled]="!filas.length"
+              title="La misma tabla en Excel">
+        <i class="fa fa-file-excel"></i>Excel
+      </button>
+      <button class="general-button btn-secondary" (click)="volver()">
+        <i class="fa fa-arrow-left"></i>Regresar
+      </button>
+    </div>
+  </div>
+
+  <p class="opr-nota">
+    Arranca de las entregas a rendir cuenta que hay en contabilidad, no de las
+    rendiciones. Por eso es la única pantalla donde aparecen las órdenes que
+    <strong>nadie empezó a rendir</strong>.
+  </p>
+
+  <!-- ============================== FILTROS ============================== -->
+  <div class="opr-filtros">
+
+    <div class="filtro">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="filtro.desde" />
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="filtro.hasta" />
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Nro. de OP</label>
+      <input type="text" class="form-control" placeholder="Ej.: 000016695"
+             [(ngModel)]="filtro.numOrden" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Personal que rinde</label>
+      <input type="text" class="form-control" placeholder="Código o nombre del personal"
+             [(ngModel)]="filtro.persona" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Centro de costos</label>
+      <input type="text" class="form-control" placeholder="Código"
+             [(ngModel)]="filtro.codCCostos" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Estado en el ERP</label>
+      <select class="form-select" [(ngModel)]="filtro.tipEstado">
+        <option *ngFor="let e of estadosErp" [value]="e.valor">{{ e.etiqueta }}</option>
+      </select>
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Rendición</label>
+      <select class="form-select" [(ngModel)]="filtro.situacion">
+        <option *ngFor="let s of situaciones" [value]="s.valor">{{ s.etiqueta }}</option>
+      </select>
+    </div>
+
+    <div class="filtro">
+      <label class="form-label">Estado en REGINA</label>
+      <select class="form-select" [(ngModel)]="filtro.estProceso">
+        <option *ngFor="let e of estadosRegina" [value]="e.valor">{{ e.etiqueta }}</option>
+      </select>
+    </div>
+
+    <div class="filtro-acciones">
+      <button (click)="buscar()" class="general-button btn-primary">
+        <i class="fa fa-search"></i>Buscar
+      </button>
+      <button (click)="limpiar()" class="general-button btn-secondary"
+              title="Volver al mes en curso, sin filtros">
+        <i class="fa fa-eraser"></i>Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================== RESUMEN ============================== -->
+  <div class="opr-tarjetas" *ngIf="buscoAlgunaVez">
+    <div class="opr-tarjeta t-total">
+      <div class="opr-num">{{ totalOrdenes }}</div>
+      <div class="opr-rot">Órdenes</div>
+      <div class="opr-pie">S/ {{ totalEntregado | number:'1.2-2' }} entregados</div>
+    </div>
+    <div class="opr-tarjeta t-sin">
+      <div class="opr-num">{{ sinRendir }}</div>
+      <div class="opr-rot">Sin rendición cargada</div>
+      <div class="opr-pie">Nadie las empezó en REGINA</div>
+    </div>
+    <div class="opr-tarjeta t-proc">
+      <div class="opr-num">{{ enProceso }}</div>
+      <div class="opr-rot">En contabilidad</div>
+      <div class="opr-pie">Enviadas o recepcionadas</div>
+    </div>
+    <div class="opr-tarjeta t-liq">
+      <div class="opr-num">{{ liquidadas }}</div>
+      <div class="opr-rot">Liquidadas</div>
+      <div class="opr-pie">S/ {{ totalRendido | number:'1.2-2' }} rendidos en total</div>
+    </div>
+  </div>
+
+  <!-- =============================== TABLA =============================== -->
+  <div class="table-container table-responsive" *ngIf="!cargando">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <th>Orden</th>
+        <th class="text-center">Fecha</th>
+        <th>Personal</th>
+        <th class="text-center">CC</th>
+        <th class="text-end">Entregado</th>
+        <th class="text-end">Rendido</th>
+        <th class="text-end">Saldo</th>
+        <th class="text-center">ERP</th>
+        <th class="text-center">Rendición</th>
+        <th class="text-center">Estado REGINA</th>
+        <th class="text-center">Comp.</th>
+        <th class="text-center" title="Días desde la orden. Se detiene el día del envío.">Días</th>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of paginaActual">
+          <td>{{ f.numOrden }}</td>
+          <td class="text-center">{{ f.fecOrden | date:'dd/MM/yyyy' }}</td>
+          <td>
+            {{ f.desAuxiliar || f.codAuxiliar }}
+            <small class="opr-cod" *ngIf="f.desAuxiliar">({{ f.codAuxiliar }})</small>
+          </td>
+          <td class="text-center">{{ f.codCCostos }}</td>
+          <td class="text-end">{{ f.desMoneda }} {{ f.impOrdPago | number:'1.2-2' }}</td>
+          <td class="text-end">{{ f.impRendido | number:'1.2-2' }}</td>
+          <td class="text-end" [class.opr-saldo]="f.saldo > 0">{{ f.saldo | number:'1.2-2' }}</td>
+          <td class="text-center"><span class="opr-erp">{{ f.tipEstado }}</span></td>
+          <td class="text-center">
+            <span class="opr-si" *ngIf="f.tieneRendicion">Sí</span>
+            <span class="opr-no" *ngIf="!f.tieneRendicion">No</span>
+          </td>
+          <td class="text-center">
+            <span class="opr-proc" [ngClass]="claseProceso(f.estProceso)">
+              {{ f.etiquetaProceso }}
+            </span>
+            <small class="opr-obs" *ngIf="f.observados">{{ f.observados }} obs.</small>
+          </td>
+          <td class="text-center">{{ f.comprobantes }}</td>
+          <td class="text-center" [ngClass]="claseDias(f.diasSinRendir)">{{ f.diasSinRendir }}</td>
+        </tr>
+        <tr *ngIf="buscoAlgunaVez && !filas.length">
+          <td colspan="12" class="text-center opr-vacio">
+            No hay órdenes de pago con estos filtros.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="opr-cargando" *ngIf="cargando">Buscando…</div>
+
+  <div class="opr-paginado" *ngIf="filas.length > porPagina">
+    <button class="general-button btn-secondary" (click)="irA(pagina - 1)"
+            [disabled]="pagina === 0">« Anterior</button>
+    <span>Página {{ pagina + 1 }} de {{ totalPaginas }} ({{ filas.length }} órdenes)</span>
+    <button class="general-button btn-secondary" (click)="irA(pagina + 1)"
+            [disabled]="pagina + 1 >= totalPaginas">Siguiente »</button>
+  </div>
+
+</div>

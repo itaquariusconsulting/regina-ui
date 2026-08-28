@@ -39,6 +39,14 @@ export class ReportesComponent {
 
   reportes: ReporteItem[] = [
     {
+      emoji: '🧾',
+      title: 'Órdenes de Pago y Rendiciones',
+      description: 'Las entregas a rendir del ERP, con y sin rendición en REGINA. Muestra las que nadie empezó.',
+      color: '#254e8a',
+      available: true,
+      action: () => this.router.navigate(['/op-rendiciones'])
+    },
+    {
       emoji: '📑',
       title: 'Reporte de Planillas de Movilidad',
       description: 'Detalle consolidado de planillas y viajes asociados a cada orden de pago.',
