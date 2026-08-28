@@ -1,0 +1,137 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Gasto por Centro de Costos</div>
+    <div class="d-flex gap-2">
+      <button (click)="descargarPdf()" class="general-button btn-danger" [disabled]="generandoPdf">
+        <i class="fa fa-file-pdf"></i>PDF
+      </button>
+      <button (click)="descargarCsv()" class="general-button btn-secondary">
+        <i class="fa fa-download"></i>CSV
+      </button>
+      <button (click)="volver()" class="general-button btn-secondary">
+        <i class="fa fa-arrow-left"></i>Regresar
+      </button>
+    </div>
+  </div>
+
+  <div class="cc-tarjetas">
+    <div class="cc-tarjeta principal">
+      <div class="cc-num">S/ {{ totalEntregado | number:'1.2-2' }}</div>
+      <div class="cc-rot">Entregado</div>
+      <div class="cc-pie">{{ totalOrdenes }} orden(es) en {{ totalCentros }} centro(s)</div>
+    </div>
+    <div class="cc-tarjeta">
+      <div class="cc-num">S/ {{ totalRendido | number:'1.2-2' }}</div>
+      <div class="cc-rot">Rendido</div>
+      <div class="cc-pie">{{ porcentajeRendido | number:'1.1-1' }}% de lo entregado</div>
+    </div>
+    <div class="cc-tarjeta" [class.alerta]="totalPendiente > 0">
+      <div class="cc-num">S/ {{ totalPendiente | number:'1.2-2' }}</div>
+      <div class="cc-rot">Pendiente de rendir</div>
+      <div class="cc-pie">Entregado menos rendido</div>
+    </div>
+  </div>
+
+  <div class="cc-aviso" *ngIf="ordenesEnDolares">
+    <i class="fa fa-circle-info"></i>
+    Hay <strong>{{ ordenesEnDolares }}</strong> orden(es) en moneda extranjera. Los
+    importes se convierten a soles con el tipo de cambio de cada orden antes de
+    sumar, para que los porcentajes entre centros sean comparables.
+  </div>
+
+  <div class="cc-filtros">
+    <div class="filtro">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Centro de costos</label>
+      <input type="text" class="form-control" placeholder="Código" [(ngModel)]="centro" />
+    </div>
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Persona</label>
+      <input type="text" class="form-control" placeholder="Nombre o código de auxiliar"
+             [(ngModel)]="persona" />
+    </div>
+    <div class="filtro filtro--check">
+      <label class="form-check-label">
+        <input type="checkbox" class="form-check-input me-1" [(ngModel)]="soloConPendiente" />
+        Solo con pendiente
+      </label>
+    </div>
+    <div class="filtro-acciones">
+      <button (click)="rangoUltimoMes()" class="general-button btn-secondary" title="Volver al último mes">
+        <i class="fa fa-calendar"></i>Último mes
+      </button>
+      <button (click)="verTodoElHistorial()" class="general-button btn-secondary" title="Quitar el rango de fechas">
+        <i class="fa fa-clock-rotate-left"></i>Todo
+      </button>
+      <button (click)="limpiar()" class="general-button btn-secondary">
+        <i class="fa fa-eraser"></i>Limpiar
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container table-responsive">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <th class="text-start">Centro de costos</th>
+        <th class="text-center">Órdenes</th>
+        <th class="text-center">Sin rendir</th>
+        <th class="text-end">Entregado S/</th>
+        <th class="text-end">Rendido S/</th>
+        <th class="text-end">Pendiente S/</th>
+        <th class="text-end">% del total</th>
+        <th class="cc-barra-col"></th>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of filas">
+          <td class="text-start">
+            {{ f.codigo }}
+            <small class="cc-sin" *ngIf="f.codigo === 'SIN IMPUTAR'">sin centro asignado</small>
+          </td>
+          <td class="text-center">{{ f.ordenes }}</td>
+          <td class="text-center">
+            <span class="cc-marca" *ngIf="f.sinRendir">{{ f.sinRendir }}</span>
+            <span class="cc-cero" *ngIf="!f.sinRendir">—</span>
+          </td>
+          <td class="text-end"><strong>{{ f.entregado | number:'1.2-2' }}</strong></td>
+          <td class="text-end">{{ f.rendido | number:'1.2-2' }}</td>
+          <td class="text-end" [class.cc-debe]="f.pendiente > 0.005">
+            {{ f.pendiente | number:'1.2-2' }}
+          </td>
+          <td class="text-end">{{ f.porcentaje | number:'1.1-1' }}%</td>
+
+          <!-- La barra dice de un vistazo dónde se concentra el gasto, que es
+               lo que la columna de porcentaje obliga a comparar leyendo. -->
+          <td class="cc-barra-col">
+            <div class="cc-barra"><div class="cc-barra-fill" [style.width.%]="f.porcentaje"></div></div>
+          </td>
+        </tr>
+
+        <tr *ngIf="buscoAlgunaVez && !filas.length">
+          <td colspan="8" class="text-center cc-vacio">
+            No hay órdenes con estos filtros.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cc-pie-nota">
+    Esto mira las <strong>órdenes de pago del ERP</strong>: cuánto se entregó por centro y
+    cuánto volvió rendido.
+    <a class="cc-link" (click)="verRendiciones()">Ver el detalle por comprobante</a>,
+    que sale de REGINA y reparte el gasto por el centro de cada comprobante.
+  </div>
+
+</div>

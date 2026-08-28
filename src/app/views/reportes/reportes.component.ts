@@ -63,11 +63,11 @@ export class ReportesComponent {
     },
     {
       emoji: '📋',
-      title: 'Reporte por Centro de Costos',
-      description: 'Distribución de gasto por centro de costos con cantidades, importes y % del total.',
+      title: 'Gasto por Centro de Costos',
+      description: 'Cuánto se entregó y cuánto volvió rendido en cada centro, con lo que queda pendiente.',
       color: '#f59e0b',
       available: true,
-      action: () => this.runReport(4, () => this.reportsService.reporteCentroCostos())
+      action: () => this.router.navigate(['/centro-costos'])
     },
     {
       emoji: '👥',
@@ -125,8 +125,8 @@ export class ReportesComponent {
     },
     {
       emoji: '🏢',
-      title: 'Rendiciones por Centro de Costos',
-      description: 'Gasto rendido por centro de costos, con importes y participación en el total.',
+      title: 'Centro de Costos — Detalle',
+      description: 'El gasto rendido repartido por el centro de cada comprobante, desde REGINA.',
       color: '#7c3aed',
       available: true,
       action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'centros' } })

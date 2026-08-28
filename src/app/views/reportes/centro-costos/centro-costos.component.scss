@@ -1,0 +1,137 @@
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.cc-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.cc-tarjeta {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #64748b;
+  border-radius: 12px;
+  padding: 12px 14px;
+
+  &.principal {
+    border-left-color: var(--primary-color, #1976d2);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+
+  /* Solo se pinta cuando hay algo que reclamar. Un tablero donde todo
+     grita deja de decir nada. */
+  &.alerta { border-left-color: #f59e0b; }
+}
+
+.cc-num { font-size: 1.35rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
+.cc-rot { font-size: 0.8rem; font-weight: 600; color: #334155; margin-top: 2px; }
+.cc-pie { font-size: 0.71rem; color: #94a3b8; margin-top: 2px; }
+
+.cc-aviso {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.79rem;
+  margin-bottom: 12px;
+
+  i { margin-right: 6px; }
+}
+
+.cc-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  .filtro {
+    display: flex;
+    flex-direction: column;
+    min-width: 145px;
+
+    &--ancho { min-width: 210px; flex: 1; }
+    &--check { justify-content: flex-end; padding-bottom: 6px; min-width: auto; }
+  }
+
+  .form-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .form-check-label { font-size: 0.82rem; color: #334155; cursor: pointer; }
+  .filtro-acciones { display: flex; gap: 8px; }
+}
+
+.cc-barra-col { width: 120px; }
+
+.cc-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.cc-barra-fill {
+  height: 100%;
+  background: var(--primary-color, #1976d2);
+  border-radius: 999px;
+}
+
+.cc-debe { color: #b45309; font-weight: 700; }
+
+.cc-marca {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cc-cero { color: #cbd5e1; }
+
+.cc-sin {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-style: italic;
+}
+
+.cc-vacio {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 22px 0;
+}
+
+.cc-pie-nota {
+  margin-top: 12px;
+  font-size: 0.79rem;
+  color: #64748b;
+}
+
+.cc-link {
+  text-decoration: underline;
+  cursor: pointer;
+  color: var(--primary-color, #1976d2);
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .cc-filtros .filtro { min-width: 100%; }
+  .cc-barra-col { display: none; }
+}

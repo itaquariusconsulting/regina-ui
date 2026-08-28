@@ -25,6 +25,7 @@ import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { ReportesComponent } from './views/reportes/reportes.component';
 import { ReportesRendicionComponent } from './views/reportes/reportes-rendicion/reportes-rendicion.component';
 import { VencimientosComponent } from './views/reportes/vencimientos/vencimientos.component';
+import { CentroCostosComponent } from './views/reportes/centro-costos/centro-costos.component';
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 
 export const routes: Routes = [
@@ -97,6 +98,10 @@ export const routes: Routes = [
         // pero como un boton adentro y no como el unico camino.
         path: 'vencimientos',
         component: VencimientosComponent
+      },
+      {
+        path: 'centro-costos',
+        component: CentroCostosComponent
       },
       {
         path: 'planilla-movilidad',
