@@ -14,6 +14,7 @@ import {
   RendicionPorUsuario,
   ResumenRendiciones,
   TiempoComprobante,
+  TiemposEtapa,
   UsoRegina
 } from '../../../models/reporte-rendicion';
 
@@ -49,6 +50,7 @@ export class ReportesRendicionComponent implements OnInit {
   usuarios: RendicionPorUsuario[] = [];
   centros: RendicionPorCentroCosto[] = [];
   tiempos: TiempoComprobante[] = [];
+  etapas?: TiemposEtapa;
   observaciones?: ObservacionesResumen;
   uso: UsoRegina[] = [];
 
@@ -138,6 +140,15 @@ export class ReportesRendicionComponent implements OnInit {
         break;
 
       default:
+        // Las etapas van aparte y su fallo no tumba la tabla: son dos
+        // preguntas distintas, y quedarse sin el detalle porque el resumen
+        // falló sería perder lo que sí se puede mostrar.
+        this.servicio.etapas(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({
+            next: e => this.etapas = e,
+            error: e => console.error('[reportes] no se pudieron obtener las etapas:', e)
+          });
+
         this.servicio.tiempos(this.codEmpresa, this.codSucursal, this.filtro)
           .subscribe({
             next: r => { this.tiempos = r ?? []; this.paginaActual = 0; listo(); },

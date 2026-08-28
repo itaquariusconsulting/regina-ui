@@ -201,3 +201,27 @@
   text-align: center;
   font-size: 0.85rem;
 }
+
+/* Estado del proceso contable. Gris cuando nadie lo tomó todavía —que es
+   un estado real y no un hueco—, y verde solo al final. */
+.marca-proc {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.proc-sin     { background: #f1f5f9; color: #64748b; }
+  &.proc-recep   { background: #e0f2fe; color: #0369a1; }
+  &.proc-proceso { background: #fef3c7; color: #92400e; }
+  &.proc-liq     { background: #dcfce7; color: #166534; }
+}
+
+.obs-marca {
+  display: block;
+  margin-top: 3px;
+  color: #9a3412;
+  font-size: 0.68rem;
+  font-weight: 700;
+}

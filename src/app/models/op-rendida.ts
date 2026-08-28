@@ -34,6 +34,16 @@ export class OpRendida {
   userIdRinde?: number;
   /** Cuántos comprobantes viajaron al ERP. Sirve para cuadrar. */
   numComprobantes?: number;
+
+  /**
+   * Dónde va dentro de contabilidad: vacío = sin tomar, RECEPCIONADA,
+   * EN_PROCESO o LIQUIDADA. Lo registra REGINA porque el ERP no guarda
+   * cuándo cambia de estado.
+   */
+  estProceso?: string;
+  fecLiquida?: string;
+  /** Comprobantes que contabilidad marcó como que no sustentan. */
+  observados?: number;
 }
 
 /** Los filtros de la pantalla. Vacío quiere decir "no filtrar por esto". */

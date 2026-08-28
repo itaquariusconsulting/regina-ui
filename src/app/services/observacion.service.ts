@@ -53,6 +53,23 @@ export class ObservacionService {
       cuerpo, { headers: this.cabeceras() });
   }
 
+  /**
+   * Mueve la rendición al siguiente estado del proceso contable.
+   *
+   * Existe porque el ERP no registra cuándo contabilidad aprueba: no anota
+   * fecha de cambio de estado, CXP_LIQUIDACION está vacía y las aplicaciones
+   * cubren 2 de cada 167 liquidadas. Sin esto, "tiempo hasta la aprobación"
+   * no se puede responder.
+   */
+  avanzarEstado(cuerpo: {
+    codEmpresa: string; codSucursal: string; numOrden: string;
+    estado: string; userId?: number; nota?: string;
+  }): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrlProcess}rendicion/proceso/avanzar`,
+      cuerpo, { headers: this.cabeceras() });
+  }
+
   private cabeceras(): HttpHeaders {
     return new HttpHeaders({
       'Authorization': `Bearer ${sessionStorage.getItem('authToken') ?? ''}`,

@@ -67,6 +67,7 @@
         <th class="text-end">Rendido</th>
         <th class="text-end">Diferencia</th>
         <th class="text-center">Estado</th>
+        <th class="text-center">Proceso</th>
         <th class="text-center">Revisión</th>
       </thead>
       <tbody>
@@ -100,6 +101,24 @@
             </span>
           </td>
 
+          <!-- El proceso contable lo registra REGINA: el ERP no guarda
+               cuando cambia de estado, asi que sin esto el tiempo hasta la
+               aprobacion no se puede medir. -->
+          <td class="text-center">
+            <span class="marca-proc" [ngClass]="claseProceso(op.estProceso)">
+              {{ etiquetaProceso(op.estProceso) }}
+            </span>
+            <button class="general-button btn-primary btn-sm ms-1"
+                    *ngIf="siguientePaso(op)" [disabled]="guardando"
+                    (click)="avanzar(op)"
+                    [title]="'Marcar como ' + etiquetaProceso(siguientePaso(op))">
+              <i class="fa fa-arrow-right"></i>
+            </button>
+            <small class="obs-marca" *ngIf="op.observados">
+              {{ op.observados }} obs.
+            </small>
+          </td>
+
           <td class="text-center">
             <button class="general-button btn-secondary btn-sm" (click)="revisar(op)"
                     title="Ver los comprobantes y marcar los que no cuadran con el físico">
@@ -109,7 +128,7 @@
         </tr>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
-          <td colspan="11" class="text-center text-muted py-4">
+          <td colspan="12" class="text-center text-muted py-4">
             No hay órdenes rendidas con esos filtros.
           </td>
         </tr>

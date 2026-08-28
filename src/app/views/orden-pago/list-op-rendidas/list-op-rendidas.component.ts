@@ -121,6 +121,97 @@ export class ListOpRendidasComponent implements OnInit {
     this.buscar();
   }
 
+  // ------------------------------------------------- proceso contable
+
+  /** Los tres pasos, en orden. Vacío es "sin tomar". */
+  private readonly pasos = ['', 'RECEPCIONADA', 'EN_PROCESO', 'LIQUIDADA'];
+
+  etiquetaProceso(estado?: string): string {
+    switch (estado) {
+      case 'RECEPCIONADA': return 'Recepcionada';
+      case 'EN_PROCESO':   return 'En proceso';
+      case 'LIQUIDADA':    return 'Liquidada';
+      default:             return 'Sin tomar';
+    }
+  }
+
+  claseProceso(estado?: string): string {
+    switch (estado) {
+      case 'RECEPCIONADA': return 'proc-recep';
+      case 'EN_PROCESO':   return 'proc-proceso';
+      case 'LIQUIDADA':    return 'proc-liq';
+      default:             return 'proc-sin';
+    }
+  }
+
+  /** El paso que sigue, o vacío si ya está liquidada. */
+  siguientePaso(op: OpRendida): string {
+    const i = this.pasos.indexOf(op.estProceso ?? '');
+    return (i >= 0 && i < this.pasos.length - 1) ? this.pasos[i + 1] : '';
+  }
+
+  /**
+   * Avanza el estado un paso.
+   *
+   * Solo hacia adelante y de a uno: saltarse la recepción dejaría vacío el
+   * tramo "recepción → liquidación" justo en las que se hicieron rápido, que
+   * son las que interesa medir.
+   */
+  avanzar(op: OpRendida): void {
+    const siguiente = this.siguientePaso(op);
+    if (!siguiente || this.guardando) { return; }
+
+    const avisa = siguiente === 'EN_PROCESO';
+
+    Swal.fire({
+      title: `Marcar como ${this.etiquetaProceso(siguiente)}`,
+      html: avisa
+        ? `<div style="text-align:left;font-size:0.88rem;color:#555;">
+             Se le avisa por correo a quien rindió la OP ${op.numOrden}.
+           </div>`
+        : `<div style="text-align:left;font-size:0.88rem;color:#555;">
+             OP ${op.numOrden}. No se envía ningún correo en este paso.
+           </div>`,
+      input: avisa ? 'textarea' : undefined,
+      inputPlaceholder: 'Nota opcional para el correo',
+      showCancelButton: true,
+      confirmButtonText: 'Confirmar',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) { return; }
+      this.guardando = true;
+
+      this.observacionService.avanzarEstado({
+        codEmpresa: this.codEmpresa,
+        codSucursal: this.codSucursal,
+        numOrden: op.numOrden ?? '',
+        estado: siguiente,
+        userId: this.usuarioActual(),
+        nota: (r.value ?? '').toString().trim(),
+      }).subscribe({
+        next: (resp: any) => {
+          this.guardando = false;
+          op.estProceso = siguiente;
+          Swal.fire({
+            toast: true, position: 'top-end', icon: 'success',
+            title: resp?.mensaje ?? 'Estado actualizado',
+            showConfirmButton: false, timer: 2800, timerProgressBar: true,
+          });
+        },
+        error: (err) => {
+          this.guardando = false;
+          console.error('[op-rendidas] no se pudo avanzar el estado:', err);
+          Swal.fire({
+            icon: err?.status === 409 ? 'warning' : 'error',
+            title: 'No se pudo cambiar el estado',
+            text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+            confirmButtonText: 'Entendido',
+          });
+        }
+      });
+    });
+  }
+
   // ------------------------------------------------------------ revisión
 
   /**

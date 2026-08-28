@@ -167,6 +167,59 @@
   <!-- ============================ 3. TIEMPOS ============================== -->
   <ng-container *ngIf="vista === 'tiempos'">
 
+    <!-- El recorrido completo. Existe desde que REGINA anota los estados:
+         el ERP no guarda cuando contabilidad hace nada. -->
+    <div class="rr-tarjetas" *ngIf="etapas">
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">
+          <span *ngIf="etapas.diasEnvioALiquidacion != null">
+            {{ etapas.diasEnvioALiquidacion | number:'1.1-1' }} d
+          </span>
+          <span *ngIf="etapas.diasEnvioALiquidacion == null" class="rr-sindato">—</span>
+        </div>
+        <div class="rr-rot">Envío → liquidación</div>
+        <div class="rr-pie">{{ etapas.conLiquidacion }} de {{ etapas.rendiciones }} liquidadas</div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">
+          <span *ngIf="etapas.diasEnvioARecepcion != null">
+            {{ etapas.diasEnvioARecepcion | number:'1.1-1' }} d
+          </span>
+          <span *ngIf="etapas.diasEnvioARecepcion == null" class="rr-sindato">—</span>
+        </div>
+        <div class="rr-rot">Envío → recepción</div>
+        <div class="rr-pie">{{ etapas.conRecepcion }} recepcionadas</div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">
+          <span *ngIf="etapas.diasProcesoALiquidacion != null">
+            {{ etapas.diasProcesoALiquidacion | number:'1.1-1' }} d
+          </span>
+          <span *ngIf="etapas.diasProcesoALiquidacion == null" class="rr-sindato">—</span>
+        </div>
+        <div class="rr-rot">Revisión → liquidación</div>
+        <div class="rr-pie">{{ etapas.conProceso }} en proceso o más</div>
+      </div>
+      <div class="rr-tarjeta tenue">
+        <div class="rr-num">
+          <span *ngIf="etapas.diasCargaALiquidacion != null">
+            {{ etapas.diasCargaALiquidacion | number:'1.1-1' }} d
+          </span>
+          <span *ngIf="etapas.diasCargaALiquidacion == null" class="rr-sindato">—</span>
+        </div>
+        <div class="rr-rot">Recorrido completo</div>
+        <div class="rr-pie">Primera carga → liquidación</div>
+      </div>
+    </div>
+
+    <div class="rr-aviso" *ngIf="etapas && !etapas.conRecepcion" style="margin-bottom:14px;">
+      <i class="fa fa-circle-info"></i>
+      Todavía no hay rendiciones con estado de contabilidad. Estos tramos se
+      llenan a medida que contabilidad marca <strong>Recepcionada</strong>,
+      <strong>En proceso</strong> y <strong>Liquidada</strong> desde OP Rendidas.
+      El ERP no guarda ese momento — por eso lo registra REGINA.
+    </div>
+
     <div class="rr-resumen-linea" *ngIf="tiempos.length">
       <span><strong>{{ tiempos.length }}</strong> comprobante(s)</span>
       <span class="separador">·</span>

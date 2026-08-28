@@ -207,3 +207,10 @@
   &.nivel-bajo   { background: #fef3c7; color: #92400e; }
   &.nivel-activo { background: #dcfce7; color: #166534; }
 }
+
+/* Un guion, no un cero. Cero diría "instantáneo"; el guion dice "todavía
+   nadie recorrió ese tramo", que es lo que pasa de verdad. */
+.rr-sindato {
+  color: #cbd5e1;
+  font-weight: 400;
+}

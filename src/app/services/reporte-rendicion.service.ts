@@ -10,6 +10,7 @@ import {
   RendicionPorUsuario,
   ResumenRendiciones,
   TiempoComprobante,
+  TiemposEtapa,
   UsoRegina
 } from '../models/reporte-rendicion';
 
@@ -45,6 +46,12 @@ export class ReporteRendicionService {
     return this.http.get<TiempoComprobante[]>(
       `${this.apiUrlProcess}rendicion/reportes/tiempos`,
       { headers: this.cabeceras(), params });
+  }
+
+  etapas(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<TiemposEtapa> {
+    return this.http.get<TiemposEtapa>(
+      `${this.apiUrlProcess}rendicion/reportes/etapas`,
+      { headers: this.cabeceras(), params: this.parametros(codEmpresa, codSucursal, filtro) });
   }
 
   porCentroCosto(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<RendicionPorCentroCosto[]> {

@@ -130,3 +130,27 @@ export interface Motivo {
   ambito: string;
   orden: number;
 }
+
+/**
+ * El recorrido de la rendición, tramo por tramo.
+ *
+ * Los promedios vienen en null —no en cero— cuando todavía nadie recorrió
+ * ese tramo. Cero significaría "instantáneo", que es lo contrario.
+ */
+export interface TiemposEtapa {
+  rendiciones: number;
+  conRecepcion: number;
+  conProceso: number;
+  conLiquidacion: number;
+
+  diasEnvioARecepcion?: number;
+  diasRecepcionAProceso?: number;
+  diasProcesoALiquidacion?: number;
+
+  /** Envío → liquidación: el número que se pidió. */
+  diasEnvioALiquidacion?: number;
+  /** Carga del primer comprobante → liquidación. */
+  diasCargaALiquidacion?: number;
+
+  desdeCuando?: string;
+}
