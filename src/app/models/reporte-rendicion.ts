@@ -10,7 +10,9 @@ export class FiltroReporte {
   desde: string = '';
   hasta: string = '';
   codAuxiliar: string = '';
-  /** Centro de costos: es lo más cercano a "área" que existe en el ERP. */
+  /** El usuario que rindió. Es el filtro por persona que sí tiene datos. */
+  userId: string = '';
+  /** Centro de costos: áreas internas y proyectos por cliente. */
   codCCostos: string = '';
   /** ABIERTA | RENDIDA | RECHAZADA. Vacío = todos. */
   estado: string = '';
@@ -153,4 +155,20 @@ export interface TiemposEtapa {
   diasCargaALiquidacion?: number;
 
   desdeCuando?: string;
+}
+
+/** Una opción de combo, sacada de los datos que existen. */
+export interface OpcionFiltro {
+  valor: string;
+  etiqueta: string;
+  /** Cuántas rendiciones o comprobantes tiene: ordena y da contexto. */
+  cuantos: number;
+  /** Para agrupar los centros: 'Areas internas' o 'Proyectos'. */
+  grupo?: string;
+}
+
+/** Lo que se puede elegir en los filtros. */
+export interface OpcionesFiltro {
+  personas: OpcionFiltro[];
+  centros: OpcionFiltro[];
 }

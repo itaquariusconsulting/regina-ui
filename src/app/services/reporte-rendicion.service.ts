@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import {
   FiltroReporte,
   ObservacionesResumen,
+  OpcionesFiltro,
   RendicionPorCentroCosto,
   RendicionPorUsuario,
   ResumenRendiciones,
@@ -48,6 +49,20 @@ export class ReporteRendicionService {
       { headers: this.cabeceras(), params });
   }
 
+  /**
+   * Lo que se puede elegir en los filtros.
+   *
+   * Se pide una vez al abrir la pantalla. Solo trae lo que aparece en los
+   * datos: el maestro de centros tiene 3733 filas y en las rendiciones
+   * aparecen cinco.
+   */
+  opciones(codEmpresa: string, codSucursal: string): Observable<OpcionesFiltro> {
+    return this.http.get<OpcionesFiltro>(
+      `${this.apiUrlProcess}rendicion/reportes/opciones`,
+      { headers: this.cabeceras(),
+        params: new HttpParams().set('codEmpresa', codEmpresa).set('codSucursal', codSucursal) });
+  }
+
   etapas(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<TiemposEtapa> {
     return this.http.get<TiemposEtapa>(
       `${this.apiUrlProcess}rendicion/reportes/etapas`,
@@ -82,6 +97,7 @@ export class ReporteRendicionService {
     params = this.agregarSiTiene(params, 'desde', filtro.desde);
     params = this.agregarSiTiene(params, 'hasta', filtro.hasta);
     params = this.agregarSiTiene(params, 'codAuxiliar', filtro.codAuxiliar);
+    params = this.agregarSiTiene(params, 'userId', filtro.userId);
     params = this.agregarSiTiene(params, 'codCCostos', filtro.codCCostos);
     params = this.agregarSiTiene(params, 'estado', filtro.estado);
     return params;

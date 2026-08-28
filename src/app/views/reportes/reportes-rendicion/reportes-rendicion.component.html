@@ -43,15 +43,36 @@
       <label class="form-label">Hasta</label>
       <input type="date" class="form-control" [(ngModel)]="filtro.hasta" />
     </div>
-    <div class="filtro">
-      <label class="form-label">Auxiliar</label>
-      <input type="text" class="form-control" placeholder="Código"
-             [(ngModel)]="filtro.codAuxiliar" (keyup.enter)="buscar()" />
+    <!-- Por el usuario que rindió y no por el auxiliar: el auxiliar en la
+         cabecera recién se guarda desde el 25/08 y las rendiciones anteriores
+         lo tienen vacío, así que ese filtro dejaría afuera casi todo. -->
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Personal que rinde</label>
+      <select class="form-select" [(ngModel)]="filtro.userId">
+        <option value="">Todos</option>
+        <option *ngFor="let p of personas" [value]="p.valor">
+          {{ p.etiqueta }} ({{ p.cuantos }})
+        </option>
+      </select>
     </div>
-    <div class="filtro" *ngIf="vista !== 'uso'">
+
+    <!-- Agrupado: las áreas internas son una docena y los proyectos casi
+         doscientos; en un combo plano las áreas quedan enterradas. -->
+    <div class="filtro filtro--ancho" *ngIf="vista !== 'uso'">
       <label class="form-label">Centro de costos</label>
-      <input type="text" class="form-control" placeholder="Código"
-             [(ngModel)]="filtro.codCCostos" (keyup.enter)="buscar()" />
+      <select class="form-select" [(ngModel)]="filtro.codCCostos">
+        <option value="">Todos</option>
+        <optgroup label="Áreas internas" *ngIf="centrosInternos.length">
+          <option *ngFor="let c of centrosInternos" [value]="c.valor">
+            {{ c.etiqueta }} ({{ c.cuantos }})
+          </option>
+        </optgroup>
+        <optgroup label="Proyectos" *ngIf="centrosProyecto.length">
+          <option *ngFor="let c of centrosProyecto" [value]="c.valor">
+            {{ c.etiqueta }} ({{ c.cuantos }})
+          </option>
+        </optgroup>
+      </select>
     </div>
     <div class="filtro" *ngIf="vista === 'resumen' || vista === 'usuarios' || vista === 'centros'">
       <label class="form-label">Estado</label>

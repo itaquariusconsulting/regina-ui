@@ -10,6 +10,8 @@ import { ReporteRendicionService } from '../../../services/reporte-rendicion.ser
 import {
   FiltroReporte,
   ObservacionesResumen,
+  OpcionesFiltro,
+  OpcionFiltro,
   RendicionPorCentroCosto,
   RendicionPorUsuario,
   ResumenRendiciones,
@@ -54,6 +56,11 @@ export class ReportesRendicionComponent implements OnInit {
   observaciones?: ObservacionesResumen;
   uso: UsoRegina[] = [];
 
+  // --- opciones de los combos, sacadas de los datos que existen
+  personas: OpcionFiltro[] = [];
+  centrosInternos: OpcionFiltro[] = [];
+  centrosProyecto: OpcionFiltro[] = [];
+
   readonly estados = [
     { valor: '',           etiqueta: 'Todos' },
     { valor: 'RENDIDA',    etiqueta: 'Enviadas a contabilidad' },
@@ -83,7 +90,26 @@ export class ReportesRendicionComponent implements OnInit {
     if (pedida && (validas as string[]).includes(pedida)) {
       this.vista = pedida as Vista;
     }
+    this.cargarOpciones();
     this.buscar();
+  }
+
+  /**
+   * Llena los combos con lo que hay en los datos.
+   *
+   * Su fallo no bloquea la pantalla: los reportes siguen andando sin
+   * filtros, que es mejor que una pantalla vacía por un combo.
+   */
+  private cargarOpciones(): void {
+    this.servicio.opciones(this.codEmpresa, this.codSucursal).subscribe({
+      next: (o) => {
+        this.personas = o?.personas ?? [];
+        const centros = o?.centros ?? [];
+        this.centrosInternos = centros.filter(c => c.grupo === 'Areas internas');
+        this.centrosProyecto = centros.filter(c => c.grupo !== 'Areas internas');
+      },
+      error: (err) => console.error('[reportes] no se pudieron cargar los filtros:', err)
+    });
   }
 
   cambiarVista(v: Vista): void {
