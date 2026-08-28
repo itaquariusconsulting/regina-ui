@@ -39,14 +39,6 @@ export class ReportesComponent {
 
   reportes: ReporteItem[] = [
     {
-      emoji: '📊',
-      title: 'Dashboard Ejecutivo',
-      description: 'Indicadores, KPIs y gráficos en tiempo real de tus órdenes de pago.',
-      color: '#1976d2',
-      available: true,
-      action: () => this.router.navigate(['/dashboard'])
-    },
-    {
       emoji: '📑',
       title: 'Reporte de Planillas de Movilidad',
       description: 'Detalle consolidado de planillas y viajes asociados a cada orden de pago.',
