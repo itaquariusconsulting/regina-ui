@@ -7,7 +7,6 @@ import { SidebarComponent } from '../../sidebar/sidebar.component';
 import { DefaultHeaderComponent } from '../../layout/default-layout/default-header/default-header.component';
 import { DeviceService } from '../../../services/core-service/device.service';
 import { DefaultFooterMobileComponent } from '../../layout/default-layout/default-footer-mobile/default-footer-mobile.component';
-import { DefaultFooterComponent } from './default-footer/default-footer.component';
 
 import { ChatResponse, ReginaIaService } from '../../../services/regina-ia.service';
 import { ChatFiltrosService } from '../../../services/chat-filtros.service';
@@ -32,8 +31,7 @@ interface ChatMessage {
     FormsModule,
     SidebarComponent,
     DefaultHeaderComponent,
-    DefaultFooterMobileComponent,
-    DefaultFooterComponent
+    DefaultFooterMobileComponent
   ]
 })
 export class DefaultLayoutComponent implements OnInit {

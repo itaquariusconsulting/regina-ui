@@ -668,10 +668,15 @@ export class ReportesRendicionComponent implements OnInit {
     if (this.vista === 'usuarios') {
       nombre = 'rendiciones_por_usuario';
       filas = [['Usuario', 'Usuario del sistema', 'Rendiciones', 'Comprobantes',
-                'Importe S/', 'Comprob. por rendicion', 'Primer envio', 'Ultimo envio']];
+                'Importe S/', 'Comprob. por rendicion',
+                'Pendientes', 'En proceso', 'Recepcionadas', 'Observadas', 'Liquidadas',
+                'Primer envio', 'Ultimo envio']];
       for (const u of this.usuarios) {
         filas.push([u.usuario, u.username ?? '', String(u.rendiciones), String(u.comprobantes),
                     String(u.importeSoles ?? 0), String(u.comprobantesPorRendicion ?? 0),
+                    String(u.pendientes ?? 0), String(u.enProceso ?? 0),
+                    String(u.recepcionadas ?? 0), String(u.observadas ?? 0),
+                    String(u.liquidadas ?? 0),
                     u.primerEnvio ?? '', u.ultimoEnvio ?? '']);
       }
     } else if (this.vista === 'tiempos') {

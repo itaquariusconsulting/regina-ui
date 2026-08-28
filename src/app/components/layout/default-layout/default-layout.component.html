@@ -75,5 +75,7 @@
 
 </div>
 
-<app-default-footer></app-default-footer>
+<!-- El pie de escritorio se saco a pedido: ocupaba una franja fija en
+     pantallas donde las tablas de reportes ya llegan al borde. El de
+     movil se queda porque ahi vive la barra de navegacion. -->
 <app-default-footer-mobile *ngIf="!isDesktop"></app-default-footer-mobile>

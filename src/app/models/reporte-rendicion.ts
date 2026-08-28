@@ -60,6 +60,13 @@ export interface RendicionPorUsuario {
   ultimoEnvio?: string;
 
   comprobantesPorRendicion: number;
+
+  /** En qué anda cada una de sus rendiciones, por estado. */
+  pendientes: number;
+  enProceso: number;
+  recepcionadas: number;
+  observadas: number;
+  liquidadas: number;
 }
 
 /** Un comprobante y cuánto esperó entre que se cargó y que salió. */

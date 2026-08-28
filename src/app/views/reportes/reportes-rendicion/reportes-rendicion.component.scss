@@ -316,3 +316,32 @@
   line-height: 1.35;
   max-width: 240px;
 }
+
+/* --------------------------------------------- estados por persona
+
+   La tabla agrupa por gente, asi que no hay un estado unico: se
+   listan las pastillas de los casilleros que tienen algo. Los
+   casilleros vacios no se dibujan, para que la columna no sea una
+   fila de ceros.                                                    */
+
+.rr-estados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 12rem;
+}
+
+.rr-pastilla {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.28rem 0.45rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.rr-pastilla.p-pend  { color: #6b5107; background: #fdf3d6; }
+.rr-pastilla.p-proc  { color: #1c4f80; background: #dceaf7; }
+.rr-pastilla.p-recep { color: #1f5c3d; background: #dcefe3; }
+.rr-pastilla.p-obs   { color: #8a2d19; background: #fbe2dc; }
+.rr-pastilla.p-liq   { color: #3d3f45; background: #e6e7ea; }

@@ -229,6 +229,7 @@
           <th class="text-center">Comprobantes</th>
           <th class="text-end">Importe S/</th>
           <th class="text-center">Comp. por rendición</th>
+          <th>Estado</th>
           <th class="text-center">Primer envío</th>
           <th class="text-center">Último envío</th>
         </thead>
@@ -242,12 +243,28 @@
             <td class="text-center">{{ u.comprobantes }}</td>
             <td class="text-end">{{ u.importeSoles | number:'1.2-2' }}</td>
             <td class="text-center">{{ u.comprobantesPorRendicion | number:'1.1-1' }}</td>
+
+            <!-- En qué anda lo de cada uno. Sin esto la gente pregunta por
+                 teléfono en qué quedó su rendición. -->
+            <td class="rr-estados">
+              <span class="rr-pastilla p-pend" *ngIf="u.pendientes"
+                    title="Sin enviar a contabilidad">{{ u.pendientes }} pend.</span>
+              <span class="rr-pastilla p-proc" *ngIf="u.enProceso"
+                    title="Enviadas, esperando los físicos">{{ u.enProceso }} en proceso</span>
+              <span class="rr-pastilla p-recep" *ngIf="u.recepcionadas"
+                    title="Contabilidad recibió los físicos">{{ u.recepcionadas }} recep.</span>
+              <span class="rr-pastilla p-obs" *ngIf="u.observadas"
+                    title="Con algo observado">{{ u.observadas }} obs.</span>
+              <span class="rr-pastilla p-liq" *ngIf="u.liquidadas"
+                    title="Liquidadas en contabilidad">{{ u.liquidadas }} liq.</span>
+            </td>
+
             <td class="text-center">{{ u.primerEnvio | date:'dd/MM/yyyy' }}</td>
             <td class="text-center">{{ u.ultimoEnvio | date:'dd/MM/yyyy' }}</td>
           </tr>
           <tr *ngIf="buscoAlgunaVez && !usuarios.length">
-            <td colspan="7" class="text-center rr-vacio">
-              Nadie envió rendiciones en este rango.
+            <td colspan="8" class="text-center rr-vacio">
+              Nadie tiene rendiciones en este rango.
             </td>
           </tr>
         </tbody>
