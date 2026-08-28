@@ -19,8 +19,17 @@
     <button class="rr-tab" [class.activa]="vista === 'usuarios'" (click)="cambiarVista('usuarios')">
       <i class="fa fa-users"></i> Por usuario
     </button>
+    <button class="rr-tab" [class.activa]="vista === 'centros'" (click)="cambiarVista('centros')">
+      <i class="fa fa-sitemap"></i> Por centro de costos
+    </button>
     <button class="rr-tab" [class.activa]="vista === 'tiempos'" (click)="cambiarVista('tiempos')">
       <i class="fa fa-clock"></i> Tiempo de carga a envío
+    </button>
+    <button class="rr-tab" [class.activa]="vista === 'observaciones'" (click)="cambiarVista('observaciones')">
+      <i class="fa fa-flag"></i> Observaciones
+    </button>
+    <button class="rr-tab" [class.activa]="vista === 'uso'" (click)="cambiarVista('uso')">
+      <i class="fa fa-user-check"></i> Uso de REGINA
     </button>
   </div>
 
@@ -34,10 +43,21 @@
       <label class="form-label">Hasta</label>
       <input type="date" class="form-control" [(ngModel)]="filtro.hasta" />
     </div>
-    <div class="filtro filtro--ancho">
+    <div class="filtro">
       <label class="form-label">Auxiliar</label>
-      <input type="text" class="form-control" placeholder="Código del auxiliar"
+      <input type="text" class="form-control" placeholder="Código"
              [(ngModel)]="filtro.codAuxiliar" (keyup.enter)="buscar()" />
+    </div>
+    <div class="filtro" *ngIf="vista !== 'uso'">
+      <label class="form-label">Centro de costos</label>
+      <input type="text" class="form-control" placeholder="Código"
+             [(ngModel)]="filtro.codCCostos" (keyup.enter)="buscar()" />
+    </div>
+    <div class="filtro" *ngIf="vista === 'resumen' || vista === 'usuarios' || vista === 'centros'">
+      <label class="form-label">Estado</label>
+      <select class="form-select" [(ngModel)]="filtro.estado">
+        <option *ngFor="let e of estados" [value]="e.valor">{{ e.etiqueta }}</option>
+      </select>
     </div>
     <div class="filtro-acciones">
       <button (click)="buscar()" class="general-button btn-primary">
@@ -205,6 +225,171 @@
       <span>Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
       <button class="general-button btn-secondary" (click)="irAPagina(paginaActual + 1)"
               [disabled]="paginaActual + 1 >= totalPaginas">Siguiente »</button>
+    </div>
+  </ng-container>
+
+  <!-- ======================== 4. CENTROS DE COSTOS ======================== -->
+  <ng-container *ngIf="vista === 'centros'">
+    <div class="rr-aviso" style="margin-bottom:12px;">
+      <i class="fa fa-circle-info"></i>
+      El centro de costos está en el comprobante, no en la rendición: una misma
+      rendición con gastos de dos centros aporta a los dos. No hay tabla de
+      "áreas" en el ERP; esto es lo que agrupa el gasto por unidad.
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th class="text-center">Código</th>
+          <th>Centro de costos</th>
+          <th class="text-center">Rendiciones</th>
+          <th class="text-center">Comprobantes</th>
+          <th class="text-end">Importe S/</th>
+          <th class="text-end">% del total</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of centros">
+            <td class="text-center">{{ c.codCCostos || '—' }}</td>
+            <td>{{ c.desCCostos }}</td>
+            <td class="text-center">{{ c.rendiciones }}</td>
+            <td class="text-center">{{ c.comprobantes }}</td>
+            <td class="text-end"><strong>{{ c.importeSoles | number:'1.2-2' }}</strong></td>
+            <td class="text-end">{{ c.porcentaje | number:'1.1-1' }}%</td>
+          </tr>
+          <tr *ngIf="buscoAlgunaVez && !centros.length">
+            <td colspan="6" class="text-center rr-vacio">No hay gasto rendido en este rango.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- ======================== 5. OBSERVACIONES ============================ -->
+  <ng-container *ngIf="vista === 'observaciones' && observaciones">
+
+    <div class="rr-tarjetas">
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">{{ observaciones.porcentajeRendiciones | number:'1.1-1' }}%</div>
+        <div class="rr-rot">Rendiciones con observación</div>
+        <div class="rr-pie">
+          {{ observaciones.rendicionesConObservacion }} de
+          {{ observaciones.rendicionesRevisadas }} revisadas
+        </div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">{{ observaciones.comprobantesObservados }}</div>
+        <div class="rr-rot">Comprobantes observados</div>
+        <div class="rr-pie">
+          {{ observaciones.porcentajeComprobantes | number:'1.1-1' }}% de
+          {{ observaciones.comprobantes }}
+        </div>
+      </div>
+      <div class="rr-tarjeta">
+        <div class="rr-num">S/ {{ observaciones.importeObservado | number:'1.2-2' }}</div>
+        <div class="rr-rot">Importe observado</div>
+        <div class="rr-pie">No sustenta gasto</div>
+      </div>
+      <div class="rr-tarjeta tenue">
+        <div class="rr-num">{{ observaciones.rendicionesRechazadas }}</div>
+        <div class="rr-rot">Rendiciones rechazadas</div>
+        <div class="rr-pie">Devueltas enteras</div>
+      </div>
+    </div>
+
+    <div class="rr-aviso" *ngIf="!observaciones.rendicionesRevisadas" style="margin-bottom:14px;">
+      <i class="fa fa-circle-info"></i>
+      Todavía no hay rendiciones revisadas por contabilidad en este rango. El
+      porcentaje se calcula sobre lo revisado, no sobre todo: dividir por
+      rendiciones que nadie miró daría un número que baja solo con que entren
+      rendiciones nuevas.
+    </div>
+
+    <h6 class="rr-subtitulo">Principales motivos</h6>
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th>Motivo</th>
+          <th class="text-center">Veces</th>
+          <th class="text-end">Importe S/</th>
+          <th class="text-end">% de las observaciones</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of observaciones.motivos">
+            <td>{{ m.desMotivo }}</td>
+            <td class="text-center"><strong>{{ m.veces }}</strong></td>
+            <td class="text-end">{{ m.importe | number:'1.2-2' }}</td>
+            <td class="text-end">{{ m.porcentaje | number:'1.1-1' }}%</td>
+          </tr>
+          <tr *ngIf="!observaciones.motivos?.length">
+            <td colspan="4" class="text-center rr-vacio">
+              No hay observaciones registradas en este rango.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- ======================== 6. USO DE REGINA ============================ -->
+  <ng-container *ngIf="vista === 'uso'">
+
+    <div class="rr-tarjetas">
+      <div class="rr-tarjeta" style="border-left-color:#dc2626;">
+        <div class="rr-num">{{ sinUso }}</div>
+        <div class="rr-rot">Sin uso</div>
+        <div class="rr-pie">No rindieron nada</div>
+      </div>
+      <div class="rr-tarjeta" style="border-left-color:#f59e0b;">
+        <div class="rr-num">{{ usoBajo }}</div>
+        <div class="rr-rot">Uso bajo</div>
+        <div class="rr-pie">1 o 2 rendiciones</div>
+      </div>
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">{{ usoActivo }}</div>
+        <div class="rr-rot">Activos</div>
+        <div class="rr-pie">3 o más</div>
+      </div>
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th>Usuario</th>
+          <th>Correo</th>
+          <th class="text-center">Nivel</th>
+          <th class="text-center">Rendiciones</th>
+          <th class="text-center">Comprobantes</th>
+          <th class="text-center">Última</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of uso">
+            <td>
+              {{ u.usuario }}
+              <small class="rr-username" *ngIf="u.username">({{ u.username }})</small>
+            </td>
+            <td>
+              <span *ngIf="u.email">{{ u.email }}</span>
+              <small class="rr-vacio" *ngIf="!u.email">sin correo</small>
+            </td>
+            <td class="text-center">
+              <span class="rr-espera" [ngClass]="claseNivel(u.nivel)">
+                {{ etiquetaNivel(u.nivel) }}
+              </span>
+            </td>
+            <td class="text-center">{{ u.rendiciones }}</td>
+            <td class="text-center">{{ u.comprobantes }}</td>
+            <td class="text-center">
+              <span *ngIf="u.ultimaRendicion">{{ u.ultimaRendicion | date:'dd/MM/yyyy' }}</span>
+              <small class="rr-vacio" *ngIf="!u.ultimaRendicion">nunca</small>
+            </td>
+          </tr>
+          <tr *ngIf="buscoAlgunaVez && !uso.length">
+            <td colspan="6" class="text-center rr-vacio">
+              No se pudo leer el padrón de usuarios.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </ng-container>
 

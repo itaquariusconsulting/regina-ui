@@ -81,3 +81,123 @@
   background: #fff4e0;
   border-color: #ffdca8;
 }
+
+/* ================== PANEL DE REVISIÓN ==================
+   Panel lateral y no diálogo: contabilidad revisa varios comprobantes
+   seguidos, y un modal que hay que cerrar y reabrir por cada uno convierte
+   una tarea de dos minutos en diez. */
+
+.rev-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 1040;
+}
+
+.rev-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 100%);
+  background: #fff;
+  box-shadow: -8px 0 28px rgba(15, 23, 42, 0.18);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+}
+
+.rev-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e2e8f0;
+
+  h6 { font-weight: 700; color: #0f172a; }
+  small { color: #64748b; }
+}
+
+.rev-aviso {
+  margin: 14px 18px 0;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+
+  i { margin-right: 6px; }
+}
+
+.rev-resumen {
+  padding: 12px 18px 4px;
+  font-size: 0.83rem;
+  color: #475569;
+
+  .separador { margin: 0 8px; color: #cbd5e1; }
+}
+
+.rev-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 18px 18px;
+}
+
+.rev-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+
+  &.observado { background: #fff7ed; margin: 0 -18px; padding-left: 18px; padding-right: 18px; }
+}
+
+.rev-item-datos { flex: 1; min-width: 0; }
+
+.rev-item-titulo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rev-item-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+
+  .separador { margin: 0 6px; color: #cbd5e1; }
+}
+
+.rev-item-motivo {
+  font-size: 0.76rem;
+  color: #9a3412;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.rev-marca {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.rev-item-accion { flex-shrink: 0; }
+
+.rev-vacio {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 0.85rem;
+}

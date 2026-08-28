@@ -192,3 +192,18 @@
   .rr-filtros .filtro { min-width: 100%; }
   .rr-tab { padding: 8px 10px; font-size: 0.8rem; }
 }
+
+.rr-subtitulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 4px 0 8px;
+}
+
+/* Niveles de uso. Comparten forma con el semaforo de espera para que se
+   lean igual: misma pastilla, mismo peso, distinto significado. */
+.rr-espera {
+  &.nivel-sin    { background: #fee2e2; color: #991b1b; }
+  &.nivel-bajo   { background: #fef3c7; color: #92400e; }
+  &.nivel-activo { background: #dcfce7; color: #166534; }
+}

@@ -5,11 +5,15 @@
  * nada se arma a mano: todo llega del servidor.
  */
 
-/** Filtros comunes a los tres. Vacío significa "no filtrar por esto". */
+/** Filtros comunes. Vacío significa "no filtrar por esto". */
 export class FiltroReporte {
   desde: string = '';
   hasta: string = '';
   codAuxiliar: string = '';
+  /** Centro de costos: es lo más cercano a "área" que existe en el ERP. */
+  codCCostos: string = '';
+  /** ABIERTA | RENDIDA | RECHAZADA. Vacío = todos. */
+  estado: string = '';
 }
 
 /** Cuántas rendiciones recibió contabilidad y con cuánto adentro. */
@@ -65,4 +69,64 @@ export interface TiempoComprobante {
 
   userIdCarga?: number;
   usuarioCarga?: string;
+}
+
+
+/** Una fila del reporte por centro de costos. */
+export interface RendicionPorCentroCosto {
+  codCCostos: string;
+  desCCostos: string;
+  rendiciones: number;
+  comprobantes: number;
+  importeSoles: number;
+  porcentaje: number;
+}
+
+/** Un motivo de observación y cuántas veces apareció. */
+export interface MotivoConteo {
+  codMotivo: string;
+  desMotivo: string;
+  veces: number;
+  importe: number;
+  porcentaje: number;
+}
+
+/** Cuántas rendiciones vienen con observaciones, y por qué. */
+export interface ObservacionesResumen {
+  rendicionesRevisadas: number;
+  rendicionesConObservacion: number;
+  porcentajeRendiciones: number;
+
+  comprobantes: number;
+  comprobantesObservados: number;
+  porcentajeComprobantes: number;
+
+  importeObservado: number;
+  rendicionesRechazadas: number;
+
+  motivos: MotivoConteo[];
+}
+
+/** Una persona y cuánto usa REGINA. Incluye a los que no lo usan. */
+export interface UsoRegina {
+  userId?: number;
+  usuario: string;
+  username?: string;
+  email?: string;
+  habilitado?: boolean;
+
+  rendiciones: number;
+  comprobantes: number;
+  ultimaRendicion?: string;
+
+  /** SIN_USO | BAJO | ACTIVO. */
+  nivel: string;
+}
+
+/** Un motivo del catálogo, para el combo de observación. */
+export interface Motivo {
+  codMotivo: string;
+  desMotivo: string;
+  ambito: string;
+  orden: number;
 }

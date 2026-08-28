@@ -5,9 +5,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   FiltroReporte,
+  ObservacionesResumen,
+  RendicionPorCentroCosto,
   RendicionPorUsuario,
   ResumenRendiciones,
-  TiempoComprobante
+  TiempoComprobante,
+  UsoRegina
 } from '../models/reporte-rendicion';
 
 /**
@@ -44,6 +47,24 @@ export class ReporteRendicionService {
       { headers: this.cabeceras(), params });
   }
 
+  porCentroCosto(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<RendicionPorCentroCosto[]> {
+    return this.http.get<RendicionPorCentroCosto[]>(
+      `${this.apiUrlProcess}rendicion/reportes/por-centro-costo`,
+      { headers: this.cabeceras(), params: this.parametros(codEmpresa, codSucursal, filtro) });
+  }
+
+  observaciones(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<ObservacionesResumen> {
+    return this.http.get<ObservacionesResumen>(
+      `${this.apiUrlProcess}rendicion/reportes/observaciones`,
+      { headers: this.cabeceras(), params: this.parametros(codEmpresa, codSucursal, filtro) });
+  }
+
+  uso(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): Observable<UsoRegina[]> {
+    return this.http.get<UsoRegina[]>(
+      `${this.apiUrlProcess}rendicion/reportes/uso`,
+      { headers: this.cabeceras(), params: this.parametros(codEmpresa, codSucursal, filtro) });
+  }
+
   private parametros(codEmpresa: string, codSucursal: string, filtro: FiltroReporte): HttpParams {
     let params = new HttpParams()
       .set('codEmpresa', codEmpresa)
@@ -54,6 +75,8 @@ export class ReporteRendicionService {
     params = this.agregarSiTiene(params, 'desde', filtro.desde);
     params = this.agregarSiTiene(params, 'hasta', filtro.hasta);
     params = this.agregarSiTiene(params, 'codAuxiliar', filtro.codAuxiliar);
+    params = this.agregarSiTiene(params, 'codCCostos', filtro.codCCostos);
+    params = this.agregarSiTiene(params, 'estado', filtro.estado);
     return params;
   }
 

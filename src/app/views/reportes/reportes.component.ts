@@ -120,6 +120,30 @@ export class ReportesComponent {
       color: '#e11d48',
       available: true,
       action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'tiempos' } })
+    },
+    {
+      emoji: '🏢',
+      title: 'Rendiciones por Centro de Costos',
+      description: 'Gasto rendido por centro de costos, con importes y participación en el total.',
+      color: '#7c3aed',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'centros' } })
+    },
+    {
+      emoji: '🚩',
+      title: 'Observaciones y Motivos',
+      description: 'Cuántas rendiciones vienen con observaciones y por qué motivos.',
+      color: '#f97316',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'observaciones' } })
+    },
+    {
+      emoji: '📉',
+      title: 'Uso de REGINA',
+      description: 'Quién lo está usando y quién no, con nivel de uso y última rendición.',
+      color: '#0891b2',
+      available: true,
+      action: () => this.router.navigate(['/reportes-rendicion'], { queryParams: { vista: 'uso' } })
     }
   ];
 

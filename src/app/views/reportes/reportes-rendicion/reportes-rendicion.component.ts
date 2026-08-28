@@ -9,12 +9,15 @@ import { LoadingService } from '../../../services/loading.service';
 import { ReporteRendicionService } from '../../../services/reporte-rendicion.service';
 import {
   FiltroReporte,
+  ObservacionesResumen,
+  RendicionPorCentroCosto,
   RendicionPorUsuario,
   ResumenRendiciones,
-  TiempoComprobante
+  TiempoComprobante,
+  UsoRegina
 } from '../../../models/reporte-rendicion';
 
-type Vista = 'resumen' | 'usuarios' | 'tiempos';
+type Vista = 'resumen' | 'usuarios' | 'centros' | 'tiempos' | 'observaciones' | 'uso';
 
 /**
  * Los tres reportes de rendición, en una sola pantalla con pestañas.
@@ -44,7 +47,17 @@ export class ReportesRendicionComponent implements OnInit {
 
   resumen?: ResumenRendiciones;
   usuarios: RendicionPorUsuario[] = [];
+  centros: RendicionPorCentroCosto[] = [];
   tiempos: TiempoComprobante[] = [];
+  observaciones?: ObservacionesResumen;
+  uso: UsoRegina[] = [];
+
+  readonly estados = [
+    { valor: '',           etiqueta: 'Todos' },
+    { valor: 'RENDIDA',    etiqueta: 'Enviadas a contabilidad' },
+    { valor: 'ABIERTA',    etiqueta: 'En preparación' },
+    { valor: 'RECHAZADA',  etiqueta: 'Rechazadas' },
+  ];
 
   buscoAlgunaVez = false;
   mensajeError = '';
@@ -64,8 +77,9 @@ export class ReportesRendicionComponent implements OnInit {
 
   ngOnInit(): void {
     const pedida = this.ruta.snapshot.queryParamMap.get('vista');
-    if (pedida === 'usuarios' || pedida === 'tiempos' || pedida === 'resumen') {
-      this.vista = pedida;
+    const validas: Vista[] = ['resumen', 'usuarios', 'centros', 'tiempos', 'observaciones', 'uso'];
+    if (pedida && (validas as string[]).includes(pedida)) {
+      this.vista = pedida as Vista;
     }
     this.buscar();
   }
@@ -97,20 +111,38 @@ export class ReportesRendicionComponent implements OnInit {
       listo();
     };
 
-    if (this.vista === 'resumen') {
-      this.servicio.resumen(this.codEmpresa, this.codSucursal, this.filtro)
-        .subscribe({ next: r => { this.resumen = r; listo(); }, error: fallo });
+    switch (this.vista) {
+      case 'resumen':
+        this.servicio.resumen(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({ next: r => { this.resumen = r; listo(); }, error: fallo });
+        break;
 
-    } else if (this.vista === 'usuarios') {
-      this.servicio.porUsuario(this.codEmpresa, this.codSucursal, this.filtro)
-        .subscribe({ next: r => { this.usuarios = r ?? []; listo(); }, error: fallo });
+      case 'usuarios':
+        this.servicio.porUsuario(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({ next: r => { this.usuarios = r ?? []; listo(); }, error: fallo });
+        break;
 
-    } else {
-      this.servicio.tiempos(this.codEmpresa, this.codSucursal, this.filtro)
-        .subscribe({
-          next: r => { this.tiempos = r ?? []; this.paginaActual = 0; listo(); },
-          error: fallo
-        });
+      case 'centros':
+        this.servicio.porCentroCosto(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({ next: r => { this.centros = r ?? []; listo(); }, error: fallo });
+        break;
+
+      case 'observaciones':
+        this.servicio.observaciones(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({ next: r => { this.observaciones = r; listo(); }, error: fallo });
+        break;
+
+      case 'uso':
+        this.servicio.uso(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({ next: r => { this.uso = r ?? []; listo(); }, error: fallo });
+        break;
+
+      default:
+        this.servicio.tiempos(this.codEmpresa, this.codSucursal, this.filtro)
+          .subscribe({
+            next: r => { this.tiempos = r ?? []; this.paginaActual = 0; listo(); },
+            error: fallo
+          });
     }
   }
 
@@ -165,6 +197,32 @@ export class ReportesRendicionComponent implements OnInit {
     return 'espera-alta';
   }
 
+  // ------------------------------------------------------------ uso
+
+  get sinUso(): number {
+    return this.uso.filter(u => u.nivel === 'SIN_USO').length;
+  }
+
+  get usoBajo(): number {
+    return this.uso.filter(u => u.nivel === 'BAJO').length;
+  }
+
+  get usoActivo(): number {
+    return this.uso.filter(u => u.nivel === 'ACTIVO').length;
+  }
+
+  etiquetaNivel(nivel: string): string {
+    if (nivel === 'SIN_USO') { return 'Sin uso'; }
+    if (nivel === 'BAJO') { return 'Uso bajo'; }
+    return 'Activo';
+  }
+
+  claseNivel(nivel: string): string {
+    if (nivel === 'SIN_USO') { return 'nivel-sin'; }
+    if (nivel === 'BAJO') { return 'nivel-bajo'; }
+    return 'nivel-activo';
+  }
+
   // ------------------------------------------------------------ descarga
 
   /**
@@ -196,6 +254,27 @@ export class ReportesRendicionComponent implements OnInit {
                     String(t.impSoles ?? 0), t.fecCarga ?? '', t.fecEnvio ?? '',
                     String(t.horasEspera ?? ''), String(t.diasEspera ?? ''),
                     t.usuarioCarga ?? '']);
+      }
+    } else if (this.vista === 'centros') {
+      nombre = 'gasto_por_centro_de_costos';
+      filas = [['Codigo', 'Centro de costos', 'Rendiciones', 'Comprobantes', 'Importe S/', '% del total']];
+      for (const c of this.centros) {
+        filas.push([c.codCCostos, c.desCCostos, String(c.rendiciones), String(c.comprobantes),
+                    String(c.importeSoles ?? 0), String(c.porcentaje ?? 0)]);
+      }
+    } else if (this.vista === 'uso') {
+      nombre = 'uso_de_regina';
+      filas = [['Usuario', 'Usuario del sistema', 'Correo', 'Nivel', 'Rendiciones',
+                'Comprobantes', 'Ultima rendicion']];
+      for (const u of this.uso) {
+        filas.push([u.usuario, u.username ?? '', u.email ?? '', this.etiquetaNivel(u.nivel),
+                    String(u.rendiciones), String(u.comprobantes), u.ultimaRendicion ?? '']);
+      }
+    } else if (this.vista === 'observaciones') {
+      nombre = 'motivos_de_observacion';
+      filas = [['Motivo', 'Veces', 'Importe S/', '% de las observaciones']];
+      for (const m of this.observaciones?.motivos ?? []) {
+        filas.push([m.desMotivo, String(m.veces), String(m.importe ?? 0), String(m.porcentaje ?? 0)]);
       }
     } else {
       return;

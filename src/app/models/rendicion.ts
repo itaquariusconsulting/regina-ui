@@ -73,6 +73,13 @@ export class RendicionDetDTO extends OrdenPagoDetDTO {
   /** 'S' | 'N' */
   indIngresoManual?: string;
 
+  /** Observación de contabilidad. NULL = nadie lo revisó todavía. */
+  indObservado?: string;
+  codMotivoObs?: string;
+  motivoObs?: string;
+  fecObserva?: string;
+  userIdObserva?: number;
+
   userIdCrea?: number;
   fecCrea?: string;
   userIdModif?: number;

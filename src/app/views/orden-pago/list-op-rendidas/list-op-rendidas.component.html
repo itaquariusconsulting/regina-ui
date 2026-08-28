@@ -67,6 +67,7 @@
         <th class="text-end">Rendido</th>
         <th class="text-end">Diferencia</th>
         <th class="text-center">Estado</th>
+        <th class="text-center">Revisión</th>
       </thead>
       <tbody>
         <tr *ngFor="let op of pagina">
@@ -98,10 +99,17 @@
               Por liquidar
             </span>
           </td>
+
+          <td class="text-center">
+            <button class="general-button btn-secondary btn-sm" (click)="revisar(op)"
+                    title="Ver los comprobantes y marcar los que no cuadran con el físico">
+              <i class="fa fa-magnifying-glass"></i>
+            </button>
+          </td>
         </tr>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
-          <td colspan="10" class="text-center text-muted py-4">
+          <td colspan="11" class="text-center text-muted py-4">
             No hay órdenes rendidas con esos filtros.
           </td>
         </tr>
@@ -128,6 +136,69 @@
           </li>
         </ul>
       </nav>
+    </div>
+  </div>
+</div>
+
+<!-- ================== REVISIÓN DE UNA RENDICIÓN ================== -->
+<div class="rev-fondo" *ngIf="opEnRevision" (click)="cerrarRevision()"></div>
+
+<div class="rev-panel" *ngIf="opEnRevision">
+  <div class="rev-cabecera">
+    <div>
+      <h6 class="mb-0">OP {{ opEnRevision.numOrden }}</h6>
+      <small>{{ opEnRevision.desAuxiliar || opEnRevision.codAuxiliar }}</small>
+    </div>
+    <button class="general-button btn-secondary btn-sm" (click)="cerrarRevision()">
+      <i class="fa fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="rev-aviso">
+    <i class="fa fa-circle-info"></i>
+    Observar un comprobante <strong>no deshace el asiento</strong>: contabilidad ya lo
+    tiene y sacarlo por atrás rompe el cuadre del mes. Queda registrado que no
+    sustenta, con el motivo, para el descuento al personal.
+  </div>
+
+  <div class="rev-resumen" *ngIf="comprobantes.length">
+    <strong>{{ comprobantes.length }}</strong> comprobante(s)
+    <span class="separador">·</span>
+    <strong>{{ observadosEnRevision }}</strong> observado(s)
+  </div>
+
+  <div class="rev-lista">
+    <div class="rev-item" *ngFor="let c of comprobantes" [class.observado]="estaObservado(c)">
+      <div class="rev-item-datos">
+        <div class="rev-item-titulo">
+          {{ descripcion(c) }}
+          <span class="rev-marca" *ngIf="estaObservado(c)">Observado</span>
+        </div>
+        <div class="rev-item-sub">
+          {{ c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor' }}
+          <span class="separador">·</span>
+          S/ {{ c.impSoles | number:'1.2-2' }}
+        </div>
+        <div class="rev-item-motivo" *ngIf="estaObservado(c) && c.motivoObs">
+          {{ c.motivoObs }}
+        </div>
+      </div>
+
+      <div class="rev-item-accion">
+        <button class="general-button btn-danger btn-sm" *ngIf="!estaObservado(c)"
+                [disabled]="guardando" (click)="observar(c)">
+          <i class="fa fa-flag"></i> Observar
+        </button>
+        <button class="general-button btn-secondary btn-sm" *ngIf="estaObservado(c)"
+                [disabled]="guardando" (click)="levantar(c)"
+                title="Quitar la observación si se puso por error">
+          <i class="fa fa-rotate-left"></i> Levantar
+        </button>
+      </div>
+    </div>
+
+    <div class="rev-vacio" *ngIf="!comprobantes.length">
+      Esta rendición no tiene comprobantes cargados en REGINA.
     </div>
   </div>
 </div>
