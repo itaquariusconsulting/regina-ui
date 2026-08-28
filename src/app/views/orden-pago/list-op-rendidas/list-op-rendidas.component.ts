@@ -92,6 +92,12 @@ export class ListOpRendidasComponent implements OnInit {
     // que casi siempre quiere ver. Si no hay, se muestra todo.
     this.filtro.anio = sessionStorage.getItem('periodo_year') ?? '';
     this.filtro.mes = sessionStorage.getItem('periodo_month') ?? '';
+
+    this.observacionService.catalogoEstados().subscribe({
+      next: (c) => this.estadosCatalogo = c ?? [],
+      error: (e) => console.error('[op-rendidas] no se pudo cargar el catálogo de estados:', e)
+    });
+
     this.buscar();
   }
 
@@ -123,92 +129,160 @@ export class ListOpRendidasComponent implements OnInit {
 
   // ------------------------------------------------- proceso contable
 
-  /** Los tres pasos, en orden. Vacío es "sin tomar". */
-  private readonly pasos = ['', 'RECEPCIONADA', 'EN_PROCESO', 'LIQUIDADA'];
+  /**
+   * Los cinco estados del recorrido y qué significa cada uno.
+   *
+   * Se piden al backend en vez de escribirlos acá: la regla que los deduce
+   * vive allá, y dos copias del mismo texto se desincronizan en la primera
+   * corrección que alguien haga de un lado solo.
+   */
+  estadosCatalogo: { estado: string; etiqueta: string; explicacion: string }[] = [];
 
   etiquetaProceso(estado?: string): string {
+    const encontrado = this.estadosCatalogo.find(e => e.estado === estado);
+    if (encontrado) { return encontrado.etiqueta; }
+
     switch (estado) {
-      case 'RECEPCIONADA': return 'Recepcionada';
+      case 'PENDIENTE':    return 'Pendiente';
       case 'EN_PROCESO':   return 'En proceso';
-      case 'LIQUIDADA':    return 'Liquidada';
-      default:             return 'Sin tomar';
+      case 'RECEPCIONADO': return 'Recepcionado';
+      case 'OBSERVADO':    return 'Observado';
+      case 'LIQUIDADO':    return 'Liquidado';
+      default:             return 'Pendiente';
     }
+  }
+
+  explicacionProceso(estado?: string): string {
+    return this.estadosCatalogo.find(e => e.estado === estado)?.explicacion ?? '';
   }
 
   claseProceso(estado?: string): string {
     switch (estado) {
-      case 'RECEPCIONADA': return 'proc-recep';
       case 'EN_PROCESO':   return 'proc-proceso';
-      case 'LIQUIDADA':    return 'proc-liq';
+      case 'RECEPCIONADO': return 'proc-recep';
+      case 'OBSERVADO':    return 'proc-obs';
+      case 'LIQUIDADO':    return 'proc-liq';
       default:             return 'proc-sin';
     }
   }
 
-  /** El paso que sigue, o vacío si ya está liquidada. */
-  siguientePaso(op: OpRendida): string {
-    const i = this.pasos.indexOf(op.estProceso ?? '');
-    return (i >= 0 && i < this.pasos.length - 1) ? this.pasos[i + 1] : '';
+  /** Solo se puede recepcionar lo que ya se envió y todavía no llegó. */
+  puedeRecepcionar(op: OpRendida): boolean {
+    return op.estProceso === 'EN_PROCESO';
+  }
+
+  yaRecepcionada(op: OpRendida): boolean {
+    return !!op.fecRecepcion;
   }
 
   /**
-   * Avanza el estado un paso.
+   * El check: contabilidad confirma que llegaron los comprobantes físicos.
    *
-   * Solo hacia adelante y de a uno: saltarse la recepción dejaría vacío el
-   * tramo "recepción → liquidación" justo en las que se hicieron rápido, que
-   * son las que interesa medir.
+   * Es lo único que se marca a mano en todo el recorrido. Al confirmarlo se
+   * le avisa por correo a quien rindió — el envío lo hizo esa persona y ya lo
+   * sabe, pero si los papeles llegaron no tiene forma de enterarse.
    */
-  avanzar(op: OpRendida): void {
-    const siguiente = this.siguientePaso(op);
-    if (!siguiente || this.guardando) { return; }
-
-    const avisa = siguiente === 'EN_PROCESO';
+  recepcionar(op: OpRendida): void {
+    if (!this.puedeRecepcionar(op) || this.guardando) { return; }
 
     Swal.fire({
-      title: `Marcar como ${this.etiquetaProceso(siguiente)}`,
-      html: avisa
-        ? `<div style="text-align:left;font-size:0.88rem;color:#555;">
-             Se le avisa por correo a quien rindió la OP ${op.numOrden}.
-           </div>`
-        : `<div style="text-align:left;font-size:0.88rem;color:#555;">
-             OP ${op.numOrden}. No se envía ningún correo en este paso.
-           </div>`,
-      input: avisa ? 'textarea' : undefined,
+      title: `Marcar recepción de la OP ${op.numOrden}`,
+      html: `<div style="text-align:left;font-size:0.88rem;color:#555;">
+               Confirmás que llegaron los comprobantes físicos de
+               <b>${op.desAuxiliar || op.codAuxiliar}</b>.
+               Se le avisa por correo.
+             </div>`,
+      input: 'textarea',
       inputPlaceholder: 'Nota opcional para el correo',
       showCancelButton: true,
-      confirmButtonText: 'Confirmar',
+      confirmButtonText: 'Confirmar recepción',
       cancelButtonText: 'Cancelar',
     }).then((r) => {
       if (!r.isConfirmed) { return; }
-      this.guardando = true;
+      this.enviarRecepcion(op, { nota: (r.value ?? '').toString().trim() });
+    });
+  }
 
-      this.observacionService.avanzarEstado({
-        codEmpresa: this.codEmpresa,
-        codSucursal: this.codSucursal,
-        numOrden: op.numOrden ?? '',
-        estado: siguiente,
-        userId: this.usuarioActual(),
-        nota: (r.value ?? '').toString().trim(),
-      }).subscribe({
-        next: (resp: any) => {
-          this.guardando = false;
-          op.estProceso = siguiente;
-          Swal.fire({
-            toast: true, position: 'top-end', icon: 'success',
-            title: resp?.mensaje ?? 'Estado actualizado',
-            showConfirmButton: false, timer: 2800, timerProgressBar: true,
-          });
-        },
-        error: (err) => {
-          this.guardando = false;
-          console.error('[op-rendidas] no se pudo avanzar el estado:', err);
-          Swal.fire({
-            icon: err?.status === 409 ? 'warning' : 'error',
-            title: 'No se pudo cambiar el estado',
-            text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
-            confirmButtonText: 'Entendido',
-          });
-        }
-      });
+  /** Deshace una recepción marcada por error, si todavía no se liquidó. */
+  deshacerRecepcion(op: OpRendida): void {
+    if (this.guardando) { return; }
+
+    Swal.fire({
+      icon: 'question',
+      title: '¿Deshacer la recepción?',
+      text: `La OP ${op.numOrden} vuelve a quedar en proceso.`,
+      showCancelButton: true,
+      confirmButtonText: 'Deshacer',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) { return; }
+      this.enviarRecepcion(op, { deshacer: true });
+    });
+  }
+
+  private enviarRecepcion(op: OpRendida, cuerpo: { nota?: string; deshacer?: boolean }): void {
+    this.guardando = true;
+
+    this.observacionService.marcarRecepcion({
+      codEmpresa: this.codEmpresa,
+      codSucursal: this.codSucursal,
+      numOrden: op.numOrden ?? '',
+      userId: this.usuarioActual(),
+      ...cuerpo,
+    }).subscribe({
+      next: (estado: any) => {
+        this.guardando = false;
+        // La fila se actualiza con lo que devolvió el servidor y no con lo
+        // que supone la pantalla: el estado lo decide el backend a partir de
+        // las fechas, y adivinarlo acá sería tener dos reglas.
+        op.estProceso = estado?.estado ?? op.estProceso;
+        op.fecRecepcion = estado?.fecRecepcion;
+        op.observados = estado?.observados ?? op.observados;
+
+        Swal.fire({
+          toast: true, position: 'top-end', icon: 'success',
+          title: cuerpo.deshacer ? 'Recepción deshecha' : 'Recepción registrada',
+          showConfirmButton: false, timer: 2500, timerProgressBar: true,
+        });
+      },
+      error: (err) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo marcar la recepción:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se pudo registrar',
+          text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+        });
+      }
+    });
+  }
+
+  /** La leyenda con los cinco estados. */
+  verLeyenda(): void {
+    const filas = this.estadosCatalogo.length
+      ? this.estadosCatalogo
+      : ['PENDIENTE', 'EN_PROCESO', 'RECEPCIONADO', 'OBSERVADO', 'LIQUIDADO']
+          .map(e => ({ estado: e, etiqueta: this.etiquetaProceso(e), explicacion: '' }));
+
+    const html = filas.map(f => `
+      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+        <span style="flex-shrink:0;padding:2px 9px;border-radius:999px;font-size:0.72rem;
+                     font-weight:700;background:#f1f5f9;color:#334155;">${f.etiqueta}</span>
+        <span style="font-size:0.83rem;color:#555;">${f.explicacion}</span>
+      </div>`).join('');
+
+    Swal.fire({
+      title: 'Los estados de una rendición',
+      html: `<div style="text-align:left;">${html}
+             <div style="border-top:1px solid #dee2e6;margin-top:10px;padding-top:8px;
+                         font-size:0.79rem;color:#777;">
+               Solo <b>Recepcionado</b> se marca a mano. Los demás los deduce REGINA
+               de las fechas: cuándo se creó, cuándo se envió y cuándo el ERP la
+               dio por liquidada.
+             </div></div>`,
+      width: 560,
+      confirmButtonText: 'Entendido',
     });
   }
 

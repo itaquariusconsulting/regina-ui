@@ -36,11 +36,13 @@ export class OpRendida {
   numComprobantes?: number;
 
   /**
-   * Dónde va dentro de contabilidad: vacío = sin tomar, RECEPCIONADA,
-   * EN_PROCESO o LIQUIDADA. Lo registra REGINA porque el ERP no guarda
-   * cuándo cambia de estado.
+   * Dónde va el recorrido: PENDIENTE, EN_PROCESO, RECEPCIONADO, OBSERVADO o
+   * LIQUIDADO. Cuatro se deducen de las fechas; el único que alguien marca
+   * es RECEPCIONADO, porque es un hecho del mundo físico que no deja rastro
+   * en ninguna base.
    */
   estProceso?: string;
+  fecRecepcion?: string;
   fecLiquida?: string;
   /** Comprobantes que contabilidad marcó como que no sustentan. */
   observados?: number;

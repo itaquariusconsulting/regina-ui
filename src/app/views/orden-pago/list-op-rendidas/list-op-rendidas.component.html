@@ -67,7 +67,12 @@
         <th class="text-end">Rendido</th>
         <th class="text-end">Diferencia</th>
         <th class="text-center">Estado</th>
-        <th class="text-center">Proceso</th>
+        <th class="text-center">
+          Estado
+          <i class="fa fa-circle-question leyenda-icono" (click)="verLeyenda()"
+             title="Qué significa cada estado"></i>
+        </th>
+        <th class="text-center">Recepción</th>
         <th class="text-center">Revisión</th>
       </thead>
       <tbody>
@@ -101,22 +106,38 @@
             </span>
           </td>
 
-          <!-- El proceso contable lo registra REGINA: el ERP no guarda
-               cuando cambia de estado, asi que sin esto el tiempo hasta la
-               aprobacion no se puede medir. -->
+          <!-- El recorrido lo registra REGINA: el ERP no guarda cuándo
+               cambia de estado, así que sin esto el tiempo hasta la
+               aprobación no se puede medir. -->
           <td class="text-center">
-            <span class="marca-proc" [ngClass]="claseProceso(op.estProceso)">
+            <span class="marca-proc" [ngClass]="claseProceso(op.estProceso)"
+                  [title]="explicacionProceso(op.estProceso)">
               {{ etiquetaProceso(op.estProceso) }}
             </span>
-            <button class="general-button btn-primary btn-sm ms-1"
-                    *ngIf="siguientePaso(op)" [disabled]="guardando"
-                    (click)="avanzar(op)"
-                    [title]="'Marcar como ' + etiquetaProceso(siguientePaso(op))">
-              <i class="fa fa-arrow-right"></i>
-            </button>
             <small class="obs-marca" *ngIf="op.observados">
               {{ op.observados }} obs.
             </small>
+          </td>
+
+          <!-- El único check manual de todo el recorrido. -->
+          <td class="text-center">
+            <button class="general-button btn-primary btn-sm"
+                    *ngIf="puedeRecepcionar(op)" [disabled]="guardando"
+                    (click)="recepcionar(op)"
+                    title="Confirmar que llegaron los comprobantes físicos">
+              <i class="fa fa-check"></i> Recibí
+            </button>
+
+            <span class="recep-ok" *ngIf="yaRecepcionada(op)"
+                  [title]="'Recepcionada el ' + (op.fecRecepcion | date:'dd-MM-yyyy HH:mm')">
+              <i class="fa fa-check"></i>
+              {{ op.fecRecepcion | date:'dd-MM-yyyy' }}
+              <a class="recep-deshacer" *ngIf="op.estProceso !== 'LIQUIDADO'"
+                 (click)="deshacerRecepcion(op)" title="Se marcó por error">deshacer</a>
+            </span>
+
+            <small class="recep-nada"
+                   *ngIf="!puedeRecepcionar(op) && !yaRecepcionada(op)">—</small>
           </td>
 
           <td class="text-center">
@@ -128,7 +149,7 @@
         </tr>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
-          <td colspan="12" class="text-center text-muted py-4">
+          <td colspan="13" class="text-center text-muted py-4">
             No hay órdenes rendidas con esos filtros.
           </td>
         </tr>

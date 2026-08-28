@@ -54,20 +54,27 @@ export class ObservacionService {
   }
 
   /**
-   * Mueve la rendición al siguiente estado del proceso contable.
+   * El check de contabilidad: llegaron los comprobantes físicos.
    *
-   * Existe porque el ERP no registra cuándo contabilidad aprueba: no anota
-   * fecha de cambio de estado, CXP_LIQUIDACION está vacía y las aplicaciones
-   * cubren 2 de cada 167 liquidadas. Sin esto, "tiempo hasta la aprobación"
-   * no se puede responder.
+   * Es la única marca manual del recorrido. Los otros cuatro estados se
+   * deducen de fechas que el sistema ya tiene —creación, envío, liquidación
+   * detectada en el ERP— así que pedirle a contabilidad que también los
+   * marque sería hacerle escribir lo que ya sabemos.
    */
-  avanzarEstado(cuerpo: {
+  marcarRecepcion(cuerpo: {
     codEmpresa: string; codSucursal: string; numOrden: string;
-    estado: string; userId?: number; nota?: string;
+    userId?: number; nota?: string; deshacer?: boolean;
   }): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrlProcess}rendicion/proceso/avanzar`,
+      `${this.apiUrlProcess}rendicion/proceso/recepcion`,
       cuerpo, { headers: this.cabeceras() });
+  }
+
+  /** Los cinco estados con su explicación, para la leyenda. */
+  catalogoEstados(): Observable<{ estado: string; etiqueta: string; explicacion: string }[]> {
+    return this.http.get<{ estado: string; etiqueta: string; explicacion: string }[]>(
+      `${this.apiUrlProcess}rendicion/proceso/catalogo`,
+      { headers: this.cabeceras() });
   }
 
   private cabeceras(): HttpHeaders {
