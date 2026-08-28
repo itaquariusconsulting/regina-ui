@@ -869,6 +869,7 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this.getImpuestos();
     this.validarTipoDocumentoPorRuc(true); // emite alerta si la combinación es ilegal
+    this.programarValidacionSunat();
   }
 
   // ──────────────────────────────────────────────────────────────────────
@@ -965,6 +966,8 @@ export class EditRendirCuentaComponent implements OnInit {
     // Validación instantánea de la regla "RUC 20XXX = solo facturas"
     this.validarTipoDocumentoPorRuc(false);
 
+    this.programarValidacionSunat();
+
     // Carga de anexos: solo cuando ya hay 11 dígitos válidos, con debounce
     // de 500ms para evitar spammear al backend si el usuario aún tipea.
     if (this._rucDebounce) clearTimeout(this._rucDebounce);
@@ -993,9 +996,11 @@ export class EditRendirCuentaComponent implements OnInit {
     if (normalizado !== anterior) {
       this.validaComprobante = false;
     }
+    this.programarValidacionSunat();
   }
 
   onMonedaChange() {
+    this.programarValidacionSunat();
   }
 
   private handleRucResponse(response: Response, skipRule = false): void {
@@ -1803,6 +1808,86 @@ export class EditRendirCuentaComponent implements OnInit {
     setTimeout(() => this.validarComprobante(true), 0);
   }
 
+  /** Timer de la revalidacion automatica mientras el usuario edita. */
+  private _validacionDebounce: any;
+
+  /** La ultima combinacion de datos que ya se le mando a SUNAT. */
+  private _ultimaClaveValidada = '';
+
+  /**
+   * Los seis datos con los que SUNAT identifica al comprobante.
+   *
+   * Sirve para no repetir la consulta con lo mismo. Sin esto, cada tecla del
+   * importe seria una llamada a SUNAT con datos que ya se consultaron.
+   */
+  private claveDeValidacion(): string {
+    const docNro = parseNroComprobante(
+      this.dataImagen.documentNumber ?? '',
+      this.devolverDocumento(this.codDocumentoGeneral),
+    );
+    return [
+      (this.ruc || '').trim(),
+      (this.getDocumentoSeleccionado()?.codSunat ?? '').trim(),
+      docNro.serie,
+      docNro.numero,
+      this.formatFecha(this.modelIni),
+      String(this.total),
+    ].join('|');
+  }
+
+  /**
+   * Programa una validacion contra SUNAT para cuando el usuario deje de
+   * escribir.
+   *
+   * El caso que resuelve es el del ingreso manual. Cuando el OCR no lee
+   * —tickets termicos, sobre todo— el usuario llena los campos a mano y el
+   * comprobante nunca se validaba: no porque SUNAT no lo conociera, sino
+   * porque nadie volvia a preguntarle. Todos salian marcados "no validado en
+   * SUNAT" aunque los datos estuvieran bien.
+   *
+   * Se dispara desde los campos que SUNAT necesita. La espera de 1,2 s es
+   * para que escribir "55" no dispare una consulta con "5".
+   */
+  programarValidacionSunat(): void {
+    if (this._validacionDebounce) {
+      clearTimeout(this._validacionDebounce);
+    }
+    this._validacionDebounce = setTimeout(() => this.validarSiEstaCompleto(), 1200);
+  }
+
+  /**
+   * Consulta a SUNAT si ya estan los seis datos y todavia no se consulto por
+   * ellos.
+   *
+   * No avisa cuando faltan datos: el usuario esta en medio de escribirlos y
+   * un toast por cada campo incompleto seria ruido. El aviso de datos
+   * faltantes sigue saliendo donde tiene sentido, al terminar el escaneo.
+   */
+  private validarSiEstaCompleto(): void {
+    if (this.validaComprobante) {
+      return;                        // ya validado, no hay nada que preguntar
+    }
+
+    const docNro = parseNroComprobante(
+      this.dataImagen.documentNumber ?? '',
+      this.devolverDocumento(this.codDocumentoGeneral),
+    );
+    if (this.faltantesParaSunat(docNro).length) {
+      return;
+    }
+
+    const clave = this.claveDeValidacion();
+    if (clave === this._ultimaClaveValidada) {
+      return;                        // mismos datos, misma respuesta
+    }
+    this._ultimaClaveValidada = clave;
+
+    // Rechazo discreto: esta validacion la dispara el usuario escribiendo, no
+    // apretando un boton. Un dialogo modal en medio de la carga lo interrumpe
+    // sin que lo haya pedido; el toast le dice lo mismo y lo deja seguir.
+    this.validarComprobante(true, true);
+  }
+
   /**
    * Avisa que la validacion automatica no pudo correr, y por que.
    *
@@ -1881,6 +1966,7 @@ export class EditRendirCuentaComponent implements OnInit {
     if (typeof this.onPeriodoDeclaracionChange === 'function') {
       try { this.onPeriodoDeclaracionChange(); } catch { /* noop */ }
     }
+    this.programarValidacionSunat();
     return true;
   }
 
@@ -2519,6 +2605,9 @@ export class EditRendirCuentaComponent implements OnInit {
     this.recalcularImportes();
     // Recalcular saldo con debounce (evita parpadeo y múltiples Swal seguidos).
     this.recalcularSaldos();
+    // SUNAT valida por monto, asi que corregir el importe invalida la
+    // consulta anterior y hay que volver a preguntar.
+    this.programarValidacionSunat();
   }
 
   /** true si ya hay un importe cargado, venga del OCR o del usuario. */
@@ -3150,7 +3239,7 @@ export class EditRendirCuentaComponent implements OnInit {
    *        los datos incompletos no interrumpen. El rechazo de SUNAT si
    *        interrumpe siempre, porque exige una decision.
    */
-  validarComprobante(silencioso: boolean = false) {
+  validarComprobante(silencioso: boolean = false, rechazoDiscreto: boolean = false) {
     // El parseo tolerante vive en comprobante-numero.util.ts y es el mismo
     // algoritmo que usa el OCR, asi que lo que lee el OCR y lo que valida el
     // frontend nunca discrepan.
@@ -3337,6 +3426,24 @@ export class EditRendirCuentaComponent implements OnInit {
             text: correccion ? `${correccion.antes} -> ${correccion.ahora}` : info.titulo,
             showConfirmButton: false,
             timer: 5000,
+            timerProgressBar: true,
+          });
+          return;
+        }
+
+        // El rechazo llega como toast cuando la consulta la disparo el usuario
+        // escribiendo. Interrumpirlo con un modal que no pidio, mientras
+        // todavia esta llenando el formulario, lo unico que logra es que lo
+        // cierre sin leerlo.
+        if (rechazoDiscreto) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: info.tipo === 'success' ? 'success' : 'warning',
+            title: info.titulo,
+            text: info.mensaje,
+            showConfirmButton: false,
+            timer: 6000,
             timerProgressBar: true,
           });
           return;
