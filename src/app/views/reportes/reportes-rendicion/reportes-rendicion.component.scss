@@ -214,3 +214,94 @@
   color: #cbd5e1;
   font-weight: 400;
 }
+
+/* BUSCADOR DE PERSONA
+   Se escribe y la lista se achica. Con seis personas un combo alcanza; con
+   sesenta, no — y la lista crece sola a medida que la gente usa REGINA. */
+.rr-buscador { position: relative; }
+
+.rr-busca-caja {
+  position: relative;
+
+  .form-control { padding-right: 30px; }
+}
+
+.rr-busca-limpiar {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+
+  &:hover { color: #475569; }
+}
+
+.rr-busca-lista {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+  max-height: 260px;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 12px;
+    font-size: 0.83rem;
+    color: #0f172a;
+    cursor: pointer;
+
+    &:hover, &.resaltada { background: #eff6ff; }
+  }
+}
+
+.rr-busca-nombre { flex: 1; min-width: 0; }
+
+.rr-busca-cuantos {
+  flex-shrink: 0;
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.71rem;
+  font-weight: 700;
+}
+
+.rr-busca-vacio {
+  color: #94a3b8;
+  font-style: italic;
+  cursor: default;
+
+  &:hover { background: transparent; }
+}
+
+/* La familia va en cada fila y no como encabezado de grupo: al filtrar, los
+   encabezados quedan sueltos o desaparecen, y el usuario pierde de vista si
+   está eligiendo un área o un proyecto. */
+.rr-busca-grupo {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &.interna { color: #0369a1; }
+}

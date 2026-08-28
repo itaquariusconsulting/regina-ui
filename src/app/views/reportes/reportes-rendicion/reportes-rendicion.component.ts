@@ -2,11 +2,13 @@ import { CommonModule, Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { LoadingService } from '../../../services/loading.service';
 import { ReporteRendicionService } from '../../../services/reporte-rendicion.service';
+import { DatosGerenciales, ReportsService } from '../../../services/reports.service';
 import {
   FiltroReporte,
   ObservacionesResumen,
@@ -61,6 +63,18 @@ export class ReportesRendicionComponent implements OnInit {
   centrosInternos: OpcionFiltro[] = [];
   centrosProyecto: OpcionFiltro[] = [];
 
+  // --- buscador de persona: se escribe y la lista se achica
+  personaTexto = '';
+  mostrarPersonas = false;
+  indicePersona = -1;
+  private cerrarPersonasTimer: any;
+
+  // --- lo mismo para el centro de costos
+  centroTexto = '';
+  mostrarCentros = false;
+  indiceCentro = -1;
+  private cerrarCentrosTimer: any;
+
   readonly estados = [
     { valor: '',           etiqueta: 'Todos' },
     { valor: 'RENDIDA',    etiqueta: 'Enviadas a contabilidad' },
@@ -75,8 +89,11 @@ export class ReportesRendicionComponent implements OnInit {
   paginaActual = 0;
   readonly tamanioPagina = 15;
 
+  generandoPdf = false;
+
   constructor(
     private servicio: ReporteRendicionService,
+    private reportsService: ReportsService,
     private loadingService: LoadingService,
     private ruta: ActivatedRoute,
     private location: Location
@@ -110,6 +127,184 @@ export class ReportesRendicionComponent implements OnInit {
       },
       error: (err) => console.error('[reportes] no se pudieron cargar los filtros:', err)
     });
+  }
+
+  /**
+   * Las personas que coinciden con lo tecleado.
+   *
+   * Busca por cualquier parte del nombre, no solo por el principio: la lista
+   * viene como "APELLIDO, Nombre" y la gente teclea el nombre de pila tanto
+   * como el apellido. Sin espacios ni mayúsculas de por medio, porque nadie
+   * escribe los apellidos igual que como están cargados.
+   */
+  get personasFiltradas(): OpcionFiltro[] {
+    const texto = this.normalizar(this.personaTexto);
+    if (!texto) {
+      return this.personas;
+    }
+    return this.personas.filter(p => this.normalizar(p.etiqueta).includes(texto));
+  }
+
+  private normalizar(valor: string): string {
+    return (valor ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')   // saca tildes: "GARCIA" encuentra "GARCÍA"
+      .trim();
+  }
+
+  abrirPersonas(): void {
+    if (this.cerrarPersonasTimer) { clearTimeout(this.cerrarPersonasTimer); }
+    this.mostrarPersonas = true;
+    this.indicePersona = -1;
+  }
+
+  /**
+   * Cierra la lista, con un respiro.
+   *
+   * El blur del input llega antes que el click en la opción; cerrar de
+   * inmediato haría que el primer clic no seleccione nada y el usuario
+   * tenga que hacerlo dos veces.
+   */
+  cerrarPersonas(): void {
+    this.cerrarPersonasTimer = setTimeout(() => {
+      this.mostrarPersonas = false;
+      this.indicePersona = -1;
+      // Si quedó texto escrito que no corresponde a nadie elegido, se
+      // limpia: dejarlo daría la impresión de un filtro que no está puesto.
+      if (!this.filtro.userId) { this.personaTexto = ''; }
+    }, 180);
+  }
+
+  alTeclearPersona(): void {
+    this.mostrarPersonas = true;
+    this.indicePersona = -1;
+    // Escribir invalida la selección anterior: el texto y el filtro no
+    // pueden decir cosas distintas.
+    if (this.filtro.userId) { this.filtro.userId = ''; }
+  }
+
+  elegirPersona(p: OpcionFiltro): void {
+    if (this.cerrarPersonasTimer) { clearTimeout(this.cerrarPersonasTimer); }
+    this.filtro.userId = p.valor;
+    this.personaTexto = p.etiqueta;
+    this.mostrarPersonas = false;
+    this.indicePersona = -1;
+    this.buscar();
+  }
+
+  limpiarPersona(): void {
+    this.filtro.userId = '';
+    this.personaTexto = '';
+    this.mostrarPersonas = false;
+    this.buscar();
+  }
+
+  /** Flechas para recorrer, Enter para elegir, Escape para cerrar. */
+  teclaEnPersona(evento: KeyboardEvent): void {
+    const lista = this.personasFiltradas;
+
+    if (evento.key === 'ArrowDown') {
+      evento.preventDefault();
+      this.mostrarPersonas = true;
+      this.indicePersona = Math.min(this.indicePersona + 1, lista.length - 1);
+
+    } else if (evento.key === 'ArrowUp') {
+      evento.preventDefault();
+      this.indicePersona = Math.max(this.indicePersona - 1, 0);
+
+    } else if (evento.key === 'Enter') {
+      evento.preventDefault();
+      // Sin nada resaltado pero con una sola coincidencia, se elige esa:
+      // es lo que el usuario quiere cuando terminó de escribir un apellido.
+      const elegida = this.indicePersona >= 0 ? lista[this.indicePersona]
+                    : (lista.length === 1 ? lista[0] : undefined);
+      if (elegida) { this.elegirPersona(elegida); }
+
+    } else if (evento.key === 'Escape') {
+      this.mostrarPersonas = false;
+      this.indicePersona = -1;
+    }
+  }
+
+  /**
+   * Los centros que coinciden con lo tecleado.
+   *
+   * Busca en la descripcion y tambien en el codigo: contabilidad los conoce
+   * por numero y el resto por el nombre del cliente. Un buscador que solo
+   * mire uno de los dos deja afuera a la mitad de la gente.
+   *
+   * <p>Se ordenan las areas internas primero, igual que en el combo: son una
+   * docena contra casi doscientos proyectos, y sin ese orden desaparecen.
+   */
+  get centrosFiltrados(): OpcionFiltro[] {
+    const texto = this.normalizar(this.centroTexto);
+    const todos = [...this.centrosInternos, ...this.centrosProyecto];
+    if (!texto) {
+      return todos;
+    }
+    return todos.filter(c =>
+      this.normalizar(c.etiqueta).includes(texto) || c.valor.includes(texto));
+  }
+
+  abrirCentros(): void {
+    if (this.cerrarCentrosTimer) { clearTimeout(this.cerrarCentrosTimer); }
+    this.mostrarCentros = true;
+    this.indiceCentro = -1;
+  }
+
+  cerrarCentros(): void {
+    this.cerrarCentrosTimer = setTimeout(() => {
+      this.mostrarCentros = false;
+      this.indiceCentro = -1;
+      if (!this.filtro.codCCostos) { this.centroTexto = ''; }
+    }, 180);
+  }
+
+  alTeclearCentro(): void {
+    this.mostrarCentros = true;
+    this.indiceCentro = -1;
+    if (this.filtro.codCCostos) { this.filtro.codCCostos = ''; }
+  }
+
+  elegirCentro(c: OpcionFiltro): void {
+    if (this.cerrarCentrosTimer) { clearTimeout(this.cerrarCentrosTimer); }
+    this.filtro.codCCostos = c.valor;
+    this.centroTexto = c.etiqueta;
+    this.mostrarCentros = false;
+    this.indiceCentro = -1;
+    this.buscar();
+  }
+
+  limpiarCentro(): void {
+    this.filtro.codCCostos = '';
+    this.centroTexto = '';
+    this.mostrarCentros = false;
+    this.buscar();
+  }
+
+  teclaEnCentro(evento: KeyboardEvent): void {
+    const lista = this.centrosFiltrados;
+
+    if (evento.key === 'ArrowDown') {
+      evento.preventDefault();
+      this.mostrarCentros = true;
+      this.indiceCentro = Math.min(this.indiceCentro + 1, lista.length - 1);
+
+    } else if (evento.key === 'ArrowUp') {
+      evento.preventDefault();
+      this.indiceCentro = Math.max(this.indiceCentro - 1, 0);
+
+    } else if (evento.key === 'Enter') {
+      evento.preventDefault();
+      const elegido = this.indiceCentro >= 0 ? lista[this.indiceCentro]
+                    : (lista.length === 1 ? lista[0] : undefined);
+      if (elegido) { this.elegirCentro(elegido); }
+
+    } else if (evento.key === 'Escape') {
+      this.mostrarCentros = false;
+      this.indiceCentro = -1;
+    }
   }
 
   cambiarVista(v: Vista): void {
@@ -185,6 +380,10 @@ export class ReportesRendicionComponent implements OnInit {
 
   limpiar(): void {
     this.filtro = new FiltroReporte();
+    this.personaTexto = '';
+    this.centroTexto = '';
+    this.mostrarPersonas = false;
+    this.mostrarCentros = false;
     this.buscar();
   }
 
@@ -258,6 +457,146 @@ export class ReportesRendicionComponent implements OnInit {
     if (nivel === 'SIN_USO') { return 'nivel-sin'; }
     if (nivel === 'BAJO') { return 'nivel-bajo'; }
     return 'nivel-activo';
+  }
+
+  // ------------------------------------------------------------ gerencial
+
+  /**
+   * El PDF con todo el panorama, no solo la pestaña abierta.
+   *
+   * Un reporte que va a una gerencia tiene que responder las seis preguntas
+   * juntas; entregar "lo que estabas mirando" obliga a generar seis PDF y
+   * pegarlos. Por eso se piden los seis reportes en paralelo antes de armarlo.
+   *
+   * <p>Cada consulta cae en null si falla, y el PDF sale igual con las
+   * secciones que sí respondieron: quedarse sin reporte porque una de seis
+   * falló es peor que un reporte con una sección en blanco.
+   */
+  exportarGerencial(): void {
+    if (this.generandoPdf) { return; }
+    this.generandoPdf = true;
+    this.loadingService.show();
+
+    const e = this.codEmpresa;
+    const s = this.codSucursal;
+    const f = this.filtro;
+    const sinFallar = <T>(o: Observable<T>) => o.pipe(catchError(() => of(null as any)));
+
+    forkJoin({
+      resumen:       sinFallar(this.servicio.resumen(e, s, f)),
+      usuarios:      sinFallar(this.servicio.porUsuario(e, s, f)),
+      centros:       sinFallar(this.servicio.porCentroCosto(e, s, f)),
+      observaciones: sinFallar(this.servicio.observaciones(e, s, f)),
+      etapas:        sinFallar(this.servicio.etapas(e, s, f)),
+      uso:           sinFallar(this.servicio.uso(e, s, f)),
+      tiempos:       sinFallar(this.servicio.tiempos(e, s, f, 5000)),
+    }).subscribe({
+      next: (r) => {
+        this.reportsService.reporteGerencialRendicion(this.armarGerencial(r))
+          .subscribe(() => {
+            this.generandoPdf = false;
+            this.loadingService.hide();
+          });
+      },
+      error: (err) => {
+        this.generandoPdf = false;
+        this.loadingService.hide();
+        console.error('[reportes] no se pudo armar el reporte gerencial:', err);
+      }
+    });
+  }
+
+  private armarGerencial(r: any): DatosGerenciales {
+    const resumen: ResumenRendiciones | null = r.resumen;
+    const obs: ObservacionesResumen | null = r.observaciones;
+    const etapas: TiemposEtapa | null = r.etapas;
+    const uso: UsoRegina[] = r.uso ?? [];
+    const tiempos: TiempoComprobante[] = r.tiempos ?? [];
+
+    // El promedio de carga a envío se calcula acá y no en el backend porque
+    // ese dato es por comprobante y el resto viene por rendición.
+    const conEspera = tiempos.filter(t => t.diasEspera != null);
+    const diasCargaAEnvio = conEspera.length
+      ? Math.round((conEspera.reduce((a, t) => a + (t.diasEspera ?? 0), 0) / conEspera.length) * 10) / 10
+      : null;
+
+    const sinUso = uso.filter(u => u.nivel === 'SIN_USO');
+
+    return {
+      alcance: this.textoDelAlcance(),
+      desdeCuando: resumen?.hayDatosDesde
+        ? `La antesala registra desde el ${new Date(resumen.hayDatosDesde).toLocaleDateString('es-PE')}. Un corte anterior sale en cero por falta de registro, no de actividad.`
+        : undefined,
+
+      recibidas: resumen?.recibidas ?? 0,
+      abiertas: resumen?.abiertas ?? 0,
+      rechazadas: resumen?.rechazadas ?? 0,
+      comprobantes: resumen?.comprobantes ?? 0,
+      importeSoles: resumen?.importeSoles ?? 0,
+      personas: resumen?.usuarios ?? 0,
+
+      // Null y no cero cuando contabilidad todavía no revisó nada: 0% diría
+      // "no hay observaciones", que es lo contrario de "nadie miró".
+      porcentajeObservadas: obs && obs.rendicionesRevisadas > 0
+        ? obs.porcentajeRendiciones : null,
+
+      diasCargaAEnvio,
+      diasEnvioARecepcion: etapas?.diasEnvioARecepcion ?? null,
+      diasProcesoALiquidacion: etapas?.diasProcesoALiquidacion ?? null,
+      diasEnvioALiquidacion: etapas?.diasEnvioALiquidacion ?? null,
+
+      usuarios: (r.usuarios ?? []).map((u: RendicionPorUsuario) => ({
+        usuario: u.usuario,
+        rendiciones: u.rendiciones,
+        comprobantes: u.comprobantes,
+        importeSoles: u.importeSoles,
+        ultimoEnvio: u.ultimoEnvio,
+      })),
+      centros: (r.centros ?? []).map((c: RendicionPorCentroCosto) => ({
+        desCCostos: c.desCCostos,
+        rendiciones: c.rendiciones,
+        comprobantes: c.comprobantes,
+        importeSoles: c.importeSoles,
+        porcentaje: c.porcentaje,
+      })),
+      motivos: (obs?.motivos ?? []).map(m => ({
+        desMotivo: m.desMotivo,
+        veces: m.veces,
+        importe: m.importe,
+        porcentaje: m.porcentaje,
+      })),
+
+      sinUso: sinUso.length,
+      usoBajo: uso.filter(u => u.nivel === 'BAJO').length,
+      usoActivo: uso.filter(u => u.nivel === 'ACTIVO').length,
+      // Se cortan en 25: una lista de cien nombres en un PDF gerencial no se
+      // lee, y el número de arriba ya da la magnitud.
+      sinUsoNombres: sinUso.slice(0, 25).map(u => u.usuario),
+    };
+  }
+
+  /** El periodo y los filtros, en una linea que se pueda citar. */
+  private textoDelAlcance(): string {
+    const partes: string[] = [];
+
+    if (this.filtro.desde || this.filtro.hasta) {
+      const desde = this.filtro.desde ? this.aFechaCorta(this.filtro.desde) : 'el inicio';
+      const hasta = this.filtro.hasta ? this.aFechaCorta(this.filtro.hasta) : 'hoy';
+      partes.push(`Periodo: de ${desde} a ${hasta}`);
+    } else {
+      partes.push('Periodo: todo el historial');
+    }
+
+    if (this.personaTexto && this.filtro.userId) { partes.push(`Persona: ${this.personaTexto}`); }
+    if (this.centroTexto && this.filtro.codCCostos) { partes.push(`Centro: ${this.centroTexto}`); }
+    if (this.filtro.estado) { partes.push(`Estado: ${this.filtro.estado}`); }
+
+    return partes.join('  ·  ');
+  }
+
+  private aFechaCorta(iso: string): string {
+    const [a, m, d] = iso.split('-');
+    return `${d}/${m}/${a}`;
   }
 
   // ------------------------------------------------------------ descarga

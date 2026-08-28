@@ -18,6 +18,48 @@ import { WrapperRequestOrdenPagoDet } from '../models/wrappers/wrapper-request-o
 import { WrapperRequestPlanillaMovilidadCab } from '../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import { Response } from '../models/response';
 
+/**
+ * Lo que la pantalla de reportes le pasa al PDF gerencial.
+ *
+ * Es un tipo propio y no los DTO sueltos a proposito: el PDF depende de un
+ * puñado de numeros, no de la forma de seis respuestas del backend. Si
+ * mañana cambia un endpoint, cambia el armado en la pantalla y el PDF sigue
+ * igual.
+ *
+ * Los campos que pueden venir en null son los tramos y porcentajes que
+ * todavia nadie recorrio. Null se dibuja como raya; cero diria otra cosa.
+ */
+export interface DatosGerenciales {
+  /** "Del 01/08/2026 al 28/08/2026 · Persona: ... · Centro: ..." */
+  alcance: string;
+  desdeCuando?: string;
+
+  recibidas: number;
+  abiertas: number;
+  rechazadas: number;
+  comprobantes: number;
+  importeSoles: number;
+  personas: number;
+
+  porcentajeObservadas?: number | null;
+
+  diasCargaAEnvio?: number | null;
+  diasEnvioARecepcion?: number | null;
+  diasProcesoALiquidacion?: number | null;
+  diasEnvioALiquidacion?: number | null;
+
+  usuarios: { usuario: string; rendiciones: number; comprobantes: number;
+              importeSoles: number; ultimoEnvio?: string }[];
+  centros: { desCCostos: string; rendiciones: number; comprobantes: number;
+             importeSoles: number; porcentaje: number }[];
+  motivos: { desMotivo: string; veces: number; importe: number; porcentaje: number }[];
+
+  sinUso: number;
+  usoBajo: number;
+  usoActivo: number;
+  sinUsoNombres: string[];
+}
+
 type RGB = [number, number, number];
 
 interface PaletteSpec {
@@ -321,6 +363,164 @@ export class ReportsService {
     drawFirma(marginX + firmaW + 16, 'V° B° SUPERVISOR', 'Aprobación / Conformidad');
 
     return y + 50;
+  }
+
+  /* =====================================================
+     REPORTE GERENCIAL DE RENDICIONES
+
+     Recibe los datos ya cargados por la pantalla en vez de
+     traerlos de nuevo: la pantalla los tiene y son seis
+     consultas. Pedirlas otra vez duplicaria el trabajo del
+     servidor para armar un PDF con lo mismo que se esta viendo.
+  ===================================================== */
+
+  /**
+   * Arma el reporte gerencial con lo que la pantalla ya tiene cargado.
+   *
+   * Los tramos y porcentajes que todavia no tienen datos salen como raya y
+   * no como cero: en un reporte que va a una gerencia, un cero se lee como
+   * "tardan cero dias" o "no hay observaciones", que es lo contrario de
+   * "todavia nadie recorrio ese tramo".
+   */
+  reporteGerencialRendicion(datos: DatosGerenciales): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      try {
+        this.construirPDFGerencial(datos);
+        subscriber.next(true);
+      } catch (e) {
+        console.error('[reporte gerencial] no se pudo construir el PDF', e);
+        subscriber.next(false);
+      }
+      subscriber.complete();
+    });
+  }
+
+  private construirPDFGerencial(d: DatosGerenciales): void {
+    const u = this.getUserCtx();
+    const doc = this.newDoc('p');
+    const fechaImp = this.formatDateLong(new Date());
+    const redibujar = () => this.drawHeader(doc, 'REPORTE GERENCIAL DE RENDICIONES',
+      u.isAdmin ? 'Vista Global' : `Usuario: ${u.username}`);
+    redibujar();
+    let y = 36;
+    const ctx = { y, redibujarHeader: redibujar };
+    const { usableW } = this.pageMetrics(doc);
+
+    const raya = (v: number | null | undefined, sufijo = '') =>
+      (v === null || v === undefined) ? '—' : `${v}${sufijo}`;
+
+    // --- El alcance primero. Un tablero sin decir de que periodo es y con
+    //     que filtros, no se puede citar en una reunion.
+    y = this.sectionTitle(doc, '1. ALCANCE', y, ctx);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...this.palette.grayText);
+    doc.text(d.alcance, 14, y);
+    y += 5;
+    if (d.desdeCuando) {
+      doc.text(d.desdeCuando, 14, y);
+      y += 5;
+    }
+    y += 2;
+
+    // --- Indicadores
+    y = this.sectionTitle(doc, '2. INDICADORES', y, ctx);
+    y = this.drawKpiBoxes(doc, [
+      { label: 'RECIBIDAS',    value: String(d.recibidas),    color: this.palette.success },
+      { label: 'COMPROBANTES', value: String(d.comprobantes), color: this.palette.info },
+      { label: 'IMPORTE S/',   value: this.fmt(d.importeSoles), color: this.palette.primaryDk },
+      { label: 'PERSONAS',     value: String(d.personas),     color: this.palette.primary },
+    ], y, ctx);
+    y = this.drawKpiBoxes(doc, [
+      { label: 'ABIERTAS',     value: String(d.abiertas),     color: this.palette.warning },
+      { label: 'RECHAZADAS',   value: String(d.rechazadas),   color: this.palette.danger },
+      { label: '% OBSERVADAS', value: raya(d.porcentajeObservadas, '%'), color: this.palette.warning },
+      { label: 'DIAS A LIQUIDAR', value: raya(d.diasEnvioALiquidacion, ' d'), color: this.palette.primary },
+    ], y, ctx);
+    y += 4;
+
+    // --- Por usuario
+    if (d.usuarios.length) {
+      y = this.sectionTitle(doc, '3. RENDICIONES POR PERSONA', y, ctx);
+      const w = [usableW - (22 + 26 + 34 + 26), 22, 26, 34, 26];
+      y = this.drawTable(doc,
+        ['Persona', 'Rend.', 'Compr.', 'Importe S/', 'Ultimo envio'],
+        d.usuarios.map(x => [x.usuario, String(x.rendiciones), String(x.comprobantes),
+                             this.fmt(x.importeSoles), this.formatDate(x.ultimoEnvio)]),
+        w, y, ctx, ['L', 'C', 'C', 'R', 'C']);
+      y += 4;
+    }
+
+    // --- Por centro de costos
+    if (d.centros.length) {
+      y = this.sectionTitle(doc, '4. GASTO POR CENTRO DE COSTOS', y, ctx);
+      const w = [usableW - (22 + 26 + 34 + 22), 22, 26, 34, 22];
+      y = this.drawTable(doc,
+        ['Centro de costos', 'Rend.', 'Compr.', 'Importe S/', '% total'],
+        d.centros.map(x => [x.desCCostos, String(x.rendiciones), String(x.comprobantes),
+                            this.fmt(x.importeSoles), `${(x.porcentaje ?? 0).toFixed(1)}%`]),
+        w, y, ctx, ['L', 'C', 'C', 'R', 'R']);
+      y += 4;
+    }
+
+    // --- Observaciones
+    y = this.sectionTitle(doc, '5. OBSERVACIONES DE CONTABILIDAD', y, ctx);
+    if (d.motivos.length) {
+      const w = [usableW - (22 + 34 + 26), 22, 34, 26];
+      y = this.drawTable(doc,
+        ['Motivo', 'Veces', 'Importe S/', '% obs.'],
+        d.motivos.map(m => [m.desMotivo, String(m.veces), this.fmt(m.importe),
+                            `${(m.porcentaje ?? 0).toFixed(1)}%`]),
+        w, y, ctx, ['L', 'C', 'R', 'R']);
+    } else {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(...this.palette.grayText);
+      doc.text('Sin observaciones registradas en el periodo.', 14, y + 2);
+      y += 8;
+    }
+    y += 4;
+
+    // --- Tiempos
+    y = this.sectionTitle(doc, '6. TIEMPOS DEL PROCESO', y, ctx);
+    const wT = [usableW - 40, 40];
+    y = this.drawTable(doc,
+      ['Tramo', 'Dias promedio'],
+      [
+        ['Carga del comprobante -> envio a contabilidad', raya(d.diasCargaAEnvio, ' d')],
+        ['Envio -> recepcion en contabilidad',            raya(d.diasEnvioARecepcion, ' d')],
+        ['Revision -> liquidacion',                       raya(d.diasProcesoALiquidacion, ' d')],
+        ['Envio -> liquidacion',                          raya(d.diasEnvioALiquidacion, ' d')],
+      ],
+      wT, y, ctx, ['L', 'R']);
+    y += 4;
+
+    // --- Adopcion
+    y = this.sectionTitle(doc, '7. ADOPCION DE REGINA', y, ctx);
+    y = this.drawKpiBoxes(doc, [
+      { label: 'SIN USO', value: String(d.sinUso),    color: this.palette.danger },
+      { label: 'USO BAJO', value: String(d.usoBajo),  color: this.palette.warning },
+      { label: 'ACTIVOS',  value: String(d.usoActivo), color: this.palette.success },
+    ], y, ctx);
+
+    if (d.sinUsoNombres.length) {
+      y += 2;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...this.palette.grayText);
+      const lineas = doc.splitTextToSize(
+        'Sin uso: ' + d.sinUsoNombres.join(' · '), usableW);
+      doc.text(lineas, 14, y);
+      y += lineas.length * 4;
+    }
+
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      this.drawFooter(doc, i, total, fechaImp);
+    }
+
+    this.salvarYAbrir(doc, `reporte_gerencial_rendiciones_${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   private salvarYAbrir(doc: jsPDF, filename: string): void {
