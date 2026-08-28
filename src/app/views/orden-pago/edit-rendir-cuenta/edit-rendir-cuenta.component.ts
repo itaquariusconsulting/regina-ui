@@ -1705,10 +1705,8 @@ export class EditRendirCuentaComponent implements OnInit {
       day: date.getDate()
     };
 
-    // Sincronizar el flag fechaDocValida con la fecha cargada por OCR.
-    // Si la fecha extraída es ANTERIOR a la fecha de la Orden de Pago,
-    // disparamos el Swal de advertencia y bloqueamos el botón Guardar
-    // (vía isSaveDisabled que lee fechaDocValida).
+    // Si la fecha que leyó el OCR es anterior a la de la Orden de Pago se
+    // avisa, pero no se bloquea nada: el comprobante se guarda observado.
     this.fechaDocValida = this.isFechaValida(this.modelIni);
     if (!this.fechaDocValida) {
       this.mostrarSwalFechaInvalida();
@@ -1916,47 +1914,61 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   /**
-   * Bandera reactiva que indica si la fecha actual del documento es válida
-   * respecto a la fecha de generación de la OP. Se usa en `isSaveDisabled()`
-   * para bloquear el guardado sin necesidad de destruir los datos cargados.
+   * Días previos a la fecha de la OP que se aceptan sin observar.
+   *
+   * La gente adelanta gastos: paga el pasaje o el hotel unos días antes de
+   * que salga la orden. Cinco días es el margen que definió contabilidad.
+   * Más atrás que eso el comprobante entra igual, pero marcado.
+   *
+   * El backend tiene el mismo número en RendicionService.DIAS_ANTES_TOLERADOS.
+   * Si cambia uno tiene que cambiar el otro: acá decide qué cartel se muestra,
+   * allá decide qué se guarda.
+   */
+  static readonly DIAS_ANTES_TOLERADOS = 5;
+
+  /**
+   * Indica si la fecha del documento cae dentro de la ventana aceptada.
+   * Ya no bloquea el guardado: decide si se avisa que quedará observado.
    */
   fechaDocValida: boolean = true;
 
-  isFechaValida(model: any): boolean {
-    if (!model || !this.orden?.fecOrden) return false;
+  /** El día más antiguo que se acepta sin observar, o null si no hay OP. */
+  private get fechaMinimaAceptada(): Date | null {
+    if (!this.orden?.fecOrden) return null;
+    const limite = new Date(this.orden.fecOrden);
+    limite.setHours(0, 0, 0, 0);
+    limite.setDate(limite.getDate() - EditRendirCuentaComponent.DIAS_ANTES_TOLERADOS);
+    return limite;
+  }
 
-    const fechaOrden = new Date(this.orden.fecOrden);
-    fechaOrden.setHours(0, 0, 0, 0);
+  isFechaValida(model: any): boolean {
+    const limite = this.fechaMinimaAceptada;
+    if (!model || !limite) return false;
 
     // Convertir NgbDateStruct a Date
     const fechaModel = new Date(model.year, model.month - 1, model.day);
     fechaModel.setHours(0, 0, 0, 0);
 
-    // ❌ No puede ser menor que la fecha de la orden
-    if (fechaModel < fechaOrden) return false;
-
-    return true;
+    // Solo se mira hacia atrás: un comprobante posterior a la OP es lo normal.
+    return fechaModel >= limite;
   }
 
   /**
    * Se dispara cuando el usuario cambia la fecha del documento.
    *
-   * IMPORTANTE: NO debe limpiar los datos cargados del OCR — solo avisa al
-   * usuario que la fecha está fuera de rango y bloquea el guardado mediante
-   * `fechaDocValida = false` y `validaComprobante = false`. El usuario puede
-   * corregir la fecha sin tener que volver a subir la imagen.
+   * NO limpia lo que cargó el OCR y NO bloquea el guardado: si la fecha es
+   * anterior a la de la orden de pago solo avisa, y el comprobante se guarda
+   * observado. `fechaDocValida` se conserva porque la pantalla lo usa para
+   * pintar el aviso, pero ya no lo lee isSaveDisabled().
    */
   changeDate(): boolean {
     const ok = this.isFechaValida(this.modelIni);
     this.fechaDocValida = ok;
 
     if (!ok) {
-      // El flag fechaDocValida lo lee isSaveDisabled() para inhabilitar
-      // el botón Guardar. NO tocamos validaComprobante — así, al corregir
-      // la fecha el botón vuelve a habilitarse SIN necesidad de re-validar
-      // SUNAT (porque el comprobante por RUC+serie+número sigue siendo el
-      // mismo; SUNAT no depende de la fecha del documento).
-      // Tampoco tocamos this.dataImagen / padronRuc / ordenPagoDet.
+      // Se avisa una sola vez por fecha para no repetir el cartel en cada
+      // tecla. NO tocamos validaComprobante ni dataImagen: SUNAT valida por
+      // RUC, serie y número, que no dependen de esta fecha.
       this.mostrarSwalFechaInvalida();
       return false;
     }
@@ -1978,16 +1990,22 @@ export class EditRendirCuentaComponent implements OnInit {
    *   - El OCR cargó una fecha menor a la de la OP (mapDetectedData)
    */
   private mostrarSwalFechaInvalida(): void {
-    const fechaOrdenTxt = this.orden?.fecOrden
-      ? new Date(this.orden.fecOrden).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      : '';
+    const comoFecha = (d: Date) =>
+      d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    const limite = this.fechaMinimaAceptada;
+    const dias = EditRendirCuentaComponent.DIAS_ANTES_TOLERADOS;
 
     Swal.fire({
       icon: 'warning',
-      title: 'Fecha del documento inválida',
-      html: `La fecha del documento no puede ser <b>anterior</b> a la fecha de la Orden de Pago` +
-            (fechaOrdenTxt ? ` (<b>${fechaOrdenTxt}</b>).` : '.') +
-            `<br><br><em>Corrija la fecha del comprobante para habilitar el botón Guardar.</em>`,
+      title: `El comprobante es de más de ${dias} días antes de la orden`,
+      html: `Se aceptan comprobantes de hasta <b>${dias} días</b> antes de la ` +
+            `Orden de Pago` +
+            (limite ? `, o sea desde el <b>${comoFecha(limite)}</b>.` : '.') +
+            `<br><br>Se puede guardar igual, pero queda <b>observado</b> y ` +
+            `contabilidad lo va a revisar.` +
+            `<br><br><em>Si la fecha está mal escrita, corregila ahora y la ` +
+            `observación se levanta sola.</em>`,
       confirmButtonText: 'Entendido'
     });
   }
@@ -2554,9 +2572,13 @@ export class EditRendirCuentaComponent implements OnInit {
         || 'El tipo de documento no corresponde al RUC del proveedor.');
     }
 
-    if (!this.fechaDocValida) {
-      motivos.push('La fecha del comprobante es anterior a la fecha de la orden de pago.');
-    }
+    // La fecha anterior a la de la OP YA NO bloquea el guardado.
+    //
+    // El gasto existe igual y hay que rendirlo igual. Bloquearlo solo lograba
+    // que el usuario corrigiera la fecha a mano para poder guardar, o sea que
+    // el bloqueo producia el dato falso que pretendia evitar. Ahora entra, se
+    // le avisa, y el backend lo marca observado con el motivo FECHA_PREVIA
+    // para que contabilidad lo vea al revisar y decida.
 
     if (!docNum) {
       motivos.push('Falta el Nro. de Documento.');
