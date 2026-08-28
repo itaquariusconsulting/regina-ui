@@ -1,0 +1,151 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">Vencimientos de Rendición</div>
+    <div class="d-flex gap-2">
+      <button (click)="descargarPdf()" class="general-button btn-danger" [disabled]="generandoPdf">
+        <i class="fa fa-file-pdf"></i>PDF
+      </button>
+      <button (click)="descargarCsv()" class="general-button btn-secondary">
+        <i class="fa fa-download"></i>CSV
+      </button>
+      <button (click)="volver()" class="general-button btn-secondary">
+        <i class="fa fa-arrow-left"></i>Regresar
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicadores. Se calculan sobre el rango de fechas, no sobre el resto
+       de los filtros: si cambiaran al buscar una persona, dejarían de servir
+       para comparar. -->
+  <div class="venc-tarjetas">
+    <div class="venc-tarjeta t-vencida" [class.activa]="tramo === 'vencidas'"
+         (click)="cambiarTramo('vencidas')">
+      <div class="venc-num">{{ vencidas }}</div>
+      <div class="venc-rot">Vencidas</div>
+      <div class="venc-pie">S/ {{ importeVencido | number:'1.2-2' }}</div>
+    </div>
+    <div class="venc-tarjeta t-urgente" [class.activa]="tramo === 'siete'"
+         (click)="cambiarTramo('siete')">
+      <div class="venc-num">{{ vencenEn7 }}</div>
+      <div class="venc-rot">Vencen en ≤ 7 días</div>
+      <div class="venc-pie">Avisar ahora</div>
+    </div>
+    <div class="venc-tarjeta t-proxima" [class.activa]="tramo === 'treinta'"
+         (click)="cambiarTramo('treinta')">
+      <div class="venc-num">{{ vencenEn30 }}</div>
+      <div class="venc-rot">Vencen en 8 a 30 días</div>
+      <div class="venc-pie">Con tiempo</div>
+    </div>
+    <div class="venc-tarjeta t-todas" [class.activa]="tramo === 'todas'"
+         (click)="cambiarTramo('todas')">
+      <div class="venc-num">{{ vencidas + vencenEn7 + vencenEn30 }}</div>
+      <div class="venc-rot">En riesgo</div>
+      <div class="venc-pie">Ver todas</div>
+    </div>
+  </div>
+
+  <!-- El rango acota por fecha de la orden, así que las vencidas más viejas
+       —que son las que más importan— pueden quedar afuera. Se avisa. -->
+  <div class="venc-aviso" *ngIf="vencidasFueraDelRango">
+    <i class="fa fa-triangle-exclamation"></i>
+    Hay <strong>{{ vencidasFueraDelRango }}</strong> orden(es) vencida(s) con fecha
+    anterior al rango elegido.
+    <a class="venc-link" (click)="verTodoElHistorial()">Ver todo el historial</a>
+  </div>
+
+  <div class="venc-filtros">
+    <div class="filtro">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Nro. de OP</label>
+      <input type="text" class="form-control" placeholder="Ej.: 000016647"
+             [(ngModel)]="numOrden" />
+    </div>
+    <div class="filtro filtro--ancho">
+      <label class="form-label">Persona</label>
+      <input type="text" class="form-control" placeholder="Nombre o código de auxiliar"
+             [(ngModel)]="persona" />
+    </div>
+    <div class="filtro filtro--check">
+      <label class="form-check-label">
+        <input type="checkbox" class="form-check-input me-1" [(ngModel)]="soloSinRendir" />
+        Solo sin rendir
+      </label>
+    </div>
+    <div class="filtro-acciones">
+      <button (click)="rangoUltimoMes()" class="general-button btn-secondary"
+              title="Volver al último mes">
+        <i class="fa fa-calendar"></i>Último mes
+      </button>
+      <button (click)="limpiar()" class="general-button btn-secondary" title="Quitar los filtros">
+        <i class="fa fa-eraser"></i>Limpiar
+      </button>
+      <button (click)="buscar()" class="general-button btn-primary" title="Volver a traer del servidor">
+        <i class="fa fa-rotate"></i>Actualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="venc-resumen" *ngIf="buscoAlgunaVez">
+    Mostrando <strong>{{ filtradas.length }}</strong> de {{ ordenes.length }} orden(es) en riesgo
+  </div>
+
+  <div class="table-container table-responsive">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <th class="text-center">Orden</th>
+        <th class="text-center">Fecha OP</th>
+        <th class="text-start">Persona</th>
+        <th class="text-center">Vence</th>
+        <th class="text-center">Plazo</th>
+        <th class="text-center">Estado ERP</th>
+        <th class="text-center">Rendición</th>
+        <th class="text-end">Importe</th>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of pagina">
+          <td class="text-center">{{ o.numOrden }}</td>
+          <td class="text-center">{{ o.fecOrden | date:'dd-MM-yyyy' }}</td>
+          <td class="text-start">{{ o.cdesAuxiliar || o.codAuxiliar }}</td>
+          <td class="text-center">{{ o.fecRendicion | date:'dd-MM-yyyy' }}</td>
+          <td class="text-center">
+            <span class="venc-plazo" [ngClass]="claseFila(o)">{{ etiquetaDias(o) }}</span>
+          </td>
+          <td class="text-center">{{ o.tipEstado }}</td>
+          <td class="text-center">
+            <span class="venc-rend" *ngIf="o.estadoRendicion === 'RENDIDA'">Rendida</span>
+            <span class="venc-rend abierta" *ngIf="o.estadoRendicion === 'ABIERTA'">En preparación</span>
+            <span class="venc-rend sin" *ngIf="!o.estadoRendicion">Sin empezar</span>
+          </td>
+          <td class="text-end">{{ o.impOrdPago | number:'1.2-2' }}</td>
+        </tr>
+
+        <tr *ngIf="buscoAlgunaVez && !filtradas.length">
+          <td colspan="8" class="text-center venc-vacio">
+            No hay órdenes en riesgo con estos filtros.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="venc-paginado" *ngIf="totalPaginas > 1">
+    <button class="general-button btn-secondary" (click)="irAPagina(paginaActual - 1)"
+            [disabled]="paginaActual === 0">« Anterior</button>
+    <span>Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
+    <button class="general-button btn-secondary" (click)="irAPagina(paginaActual + 1)"
+            [disabled]="paginaActual + 1 >= totalPaginas">Siguiente »</button>
+  </div>
+
+</div>

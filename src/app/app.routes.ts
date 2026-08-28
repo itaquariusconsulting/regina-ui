@@ -24,6 +24,7 @@ import { authGuard } from './guards/auth.guard';
 import { DashboardComponent } from './views/dashboard/dashboard.component';
 import { ReportesComponent } from './views/reportes/reportes.component';
 import { ReportesRendicionComponent } from './views/reportes/reportes-rendicion/reportes-rendicion.component';
+import { VencimientosComponent } from './views/reportes/vencimientos/vencimientos.component';
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 
 export const routes: Routes = [
@@ -90,6 +91,12 @@ export const routes: Routes = [
         // escribe nada, ni en REGINA ni en contabilidad.
         path: 'reportes-rendicion',
         component: ReportesRendicionComponent
+      },
+      {
+        // Vencimientos como pantalla con filtros. El PDF sigue existiendo,
+        // pero como un boton adentro y no como el unico camino.
+        path: 'vencimientos',
+        component: VencimientosComponent
       },
       {
         path: 'planilla-movilidad',

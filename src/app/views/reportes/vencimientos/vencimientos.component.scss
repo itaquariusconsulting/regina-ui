@@ -1,0 +1,150 @@
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+/* TARJETAS
+   Son botones además de indicadores: el número y el filtro que lo produce
+   son la misma cosa, y separarlos obliga a leer el número acá y buscar el
+   filtro allá. */
+.venc-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.venc-tarjeta {
+  --c: #64748b;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--c);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08); }
+
+  &.activa {
+    border-color: var(--c);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 25%, transparent);
+  }
+
+  &.t-vencida { --c: #dc2626; }
+  &.t-urgente { --c: #f59e0b; }
+  &.t-proxima { --c: #0ea5e9; }
+  &.t-todas   { --c: #475569; }
+}
+
+.venc-num { font-size: 1.5rem; font-weight: 700; color: #0f172a; line-height: 1.15; }
+.venc-rot { font-size: 0.8rem; font-weight: 600; color: #334155; margin-top: 2px; }
+.venc-pie { font-size: 0.71rem; color: #94a3b8; margin-top: 2px; }
+
+.venc-aviso {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.81rem;
+  margin-bottom: 12px;
+
+  i { margin-right: 6px; }
+}
+
+.venc-link {
+  margin-left: 8px;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* FILTROS */
+.venc-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  .filtro {
+    display: flex;
+    flex-direction: column;
+    min-width: 145px;
+
+    &--ancho { min-width: 210px; flex: 1; }
+    &--check { justify-content: flex-end; padding-bottom: 6px; min-width: auto; }
+  }
+
+  .form-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .form-check-label { font-size: 0.82rem; color: #334155; cursor: pointer; }
+
+  .filtro-acciones { display: flex; gap: 8px; }
+}
+
+.venc-resumen {
+  font-size: 0.82rem;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+/* TABLA */
+.venc-plazo {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.venc-vencida { background: #fee2e2; color: #991b1b; }
+  &.venc-urgente { background: #fef3c7; color: #92400e; }
+  &.venc-proxima { background: #e0f2fe; color: #0369a1; }
+  &.venc-lejana  { background: #f1f5f9; color: #64748b; }
+}
+
+.venc-rend {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+
+  &.abierta { background: #fef3c7; color: #92400e; }
+  &.sin     { background: #f1f5f9; color: #64748b; }
+}
+
+.venc-vacio {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 22px 0;
+}
+
+.venc-paginado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+@media (max-width: 700px) {
+  .venc-filtros .filtro { min-width: 100%; }
+}

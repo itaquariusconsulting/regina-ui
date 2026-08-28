@@ -80,10 +80,12 @@ export class ReportesComponent {
     {
       emoji: '⚠️',
       title: 'Reporte de Vencimientos',
-      description: 'Listado de OPs con fecha de rendición vencida o próxima a vencer (≤ 30 días).',
+      description: 'OPs con el plazo de rendición vencido o por vencer, con filtros por fecha y persona.',
       color: '#dc2626',
       available: true,
-      action: () => this.runReport(6, () => this.reportsService.reporteVencimientos())
+      // Abre la pantalla en vez de bajar el PDF de una: el PDF quedo como
+      // un boton adentro, para cuando hay que mandarlo o archivarlo.
+      action: () => this.router.navigate(['/vencimientos'])
     },
     {
       emoji: '🧾',
