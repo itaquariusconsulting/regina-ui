@@ -412,9 +412,9 @@
               <small class="rr-encurso" *ngIf="t.enCurso" title="El recorrido no terminó: el reloj sigue">corriendo</small>
             </td>
           </tr>
-          <tr *ngIf="buscoAlgunaVez && !tiempos.length">
+          <tr *ngIf="buscoAlgunaVez && !tiemposOrden.length">
             <td colspan="11" class="text-center rr-vacio">
-              No hay comprobantes enviados en este rango.
+              No hay ordenes con rendicion en este rango.
             </td>
           </tr>
         </tbody>
@@ -434,8 +434,8 @@
   <ng-container *ngIf="vista === 'centros'">
     <div class="rr-aviso" style="margin-bottom:12px;">
       <i class="fa fa-circle-info"></i>
-      El centro de costos está en el comprobante, no en la rendición: una misma
-      rendición con gastos de dos centros aporta a los dos. No hay tabla de
+      El centro de costos lo trae cada comprobante. El gasto se suma por centro
+      leyendo comprobante por comprobante, no por rendición. No hay tabla de
       "áreas" en el ERP; esto es lo que agrupa el gasto por unidad.
     </div>
 
@@ -530,64 +530,111 @@
         </tbody>
       </table>
     </div>
+
+    <h6 class="rr-subtitulo">Quién acumula las observaciones</h6>
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <th>Personal</th>
+          <th class="text-center">Rendiciones observadas</th>
+          <th class="text-center">Comprobantes observados</th>
+          <th class="text-end">Importe S/</th>
+          <th class="text-end">% de las observaciones</th>
+        </thead>
+        <tbody>
+          <tr *ngFor="let x of observaciones.porPersona">
+            <td>
+              {{ x.usuario }}
+              <small class="rr-username" *ngIf="x.username">({{ x.username }})</small>
+            </td>
+            <td class="text-center">{{ x.rendiciones }}</td>
+            <td class="text-center"><strong>{{ x.comprobantesObservados }}</strong></td>
+            <td class="text-end">{{ x.importe | number:'1.2-2' }}</td>
+            <td class="text-end">{{ x.porcentaje | number:'1.1-1' }}%</td>
+          </tr>
+          <tr *ngIf="!observaciones.porPersona?.length">
+            <td colspan="5" class="text-center rr-vacio">
+              Nadie tiene comprobantes observados en este rango.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </ng-container>
 
   <!-- ======================== 6. USO DE REGINA ============================ -->
   <ng-container *ngIf="vista === 'uso'">
 
+    <div class="rr-aviso" style="margin-bottom:12px;">
+      <i class="fa fa-circle-info"></i>
+      El universo son las <strong>personas con órdenes de pago a rendir</strong>
+      en el período, no el padrón completo de usuarios. Quien nunca recibió
+      plata no tiene nada que rendir, y contarlo como "sin uso" tapaba los
+      casos que sí importan.
+    </div>
+
     <div class="rr-tarjetas">
+      <div class="rr-tarjeta principal">
+        <div class="rr-num">{{ personasConOrden }}</div>
+        <div class="rr-rot">Con OP</div>
+        <div class="rr-pie">Personas con entregas en el período</div>
+      </div>
       <div class="rr-tarjeta" style="border-left-color:#dc2626;">
-        <div class="rr-num">{{ sinUso }}</div>
-        <div class="rr-rot">Sin uso</div>
-        <div class="rr-pie">No rindieron nada</div>
+        <div class="rr-num">{{ personasSinRendir }}</div>
+        <div class="rr-rot">Sin rendir</div>
+        <div class="rr-pie">Recibieron y no cargaron nada</div>
       </div>
       <div class="rr-tarjeta" style="border-left-color:#f59e0b;">
-        <div class="rr-num">{{ usoBajo }}</div>
-        <div class="rr-rot">Uso bajo</div>
-        <div class="rr-pie">1 o 2 rendiciones</div>
+        <div class="rr-num">{{ ordenesSinRendir }}</div>
+        <div class="rr-rot">OP sin rendición</div>
+        <div class="rr-pie">Órdenes que faltan cargar</div>
       </div>
-      <div class="rr-tarjeta principal">
-        <div class="rr-num">{{ usoActivo }}</div>
-        <div class="rr-rot">Activos</div>
-        <div class="rr-pie">3 o más</div>
+      <div class="rr-tarjeta tenue">
+        <div class="rr-num">{{ personasSinUsuario }}</div>
+        <div class="rr-rot">Sin usuario</div>
+        <div class="rr-pie">Sin acceso conocido a REGINA</div>
       </div>
     </div>
 
     <div class="table-container table-responsive">
       <table class="table global-table table-striped table-hover">
         <thead>
-          <th>Usuario</th>
-          <th>Correo</th>
-          <th class="text-center">Nivel</th>
-          <th class="text-center">Rendiciones</th>
+          <th class="text-center">Código</th>
+          <th>Personal</th>
+          <th class="text-center" title="Órdenes de pago a rendir en el período, según el ERP.">OP asignadas</th>
+          <th class="text-center" title="De esas, cuántas ya tienen rendición cargada en REGINA.">OP rendidas</th>
+          <th class="text-center">% rendido</th>
           <th class="text-center">Comprobantes</th>
-          <th class="text-center">Última</th>
+          <th class="text-center">Última rendición</th>
+          <th class="text-center">Usuario REGINA</th>
         </thead>
         <tbody>
           <tr *ngFor="let u of uso">
+            <td class="text-center">{{ u.codAuxiliar }}</td>
             <td>
               {{ u.usuario }}
               <small class="rr-username" *ngIf="u.username">({{ u.username }})</small>
             </td>
-            <td>
-              <span *ngIf="u.email">{{ u.email }}</span>
-              <small class="rr-vacio" *ngIf="!u.email">sin correo</small>
+            <td class="text-center">{{ u.ordenesAsignadas }}</td>
+            <td class="text-center">{{ u.ordenesRendidas }}</td>
+            <td class="text-center" [ngClass]="claseRendido(u.porcentajeRendido)">
+              {{ u.porcentajeRendido != null ? (u.porcentajeRendido | number:'1.0-1') + '%' : '—' }}
             </td>
-            <td class="text-center">
-              <span class="rr-espera" [ngClass]="claseNivel(u.nivel)">
-                {{ etiquetaNivel(u.nivel) }}
-              </span>
-            </td>
-            <td class="text-center">{{ u.rendiciones }}</td>
             <td class="text-center">{{ u.comprobantes }}</td>
             <td class="text-center">
               <span *ngIf="u.ultimaRendicion">{{ u.ultimaRendicion | date:'dd/MM/yyyy' }}</span>
               <small class="rr-vacio" *ngIf="!u.ultimaRendicion">nunca</small>
             </td>
+            <td class="text-center">
+              <span class="rr-espera" [ngClass]="u.sinUsuario ? 'nivel-sin' : 'nivel-activo'"
+                    [title]="u.email || (u.sinUsuario ? 'No se le conoce usuario en REGINA' : '')">
+                {{ u.sinUsuario ? 'No' : 'Sí' }}
+              </span>
+            </td>
           </tr>
           <tr *ngIf="buscoAlgunaVez && !uso.length">
-            <td colspan="6" class="text-center rr-vacio">
-              No se pudo leer el padrón de usuarios.
+            <td colspan="8" class="text-center rr-vacio">
+              No hay personas con órdenes de pago a rendir en este período.
             </td>
           </tr>
         </tbody>

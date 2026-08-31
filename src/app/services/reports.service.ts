@@ -498,10 +498,19 @@ export class ReportsService {
     // --- Adopcion
     y = this.sectionTitle(doc, '7. ADOPCION DE REGINA', y, ctx);
     y = this.drawKpiBoxes(doc, [
-      { label: 'SIN USO', value: String(d.sinUso),    color: this.palette.danger },
-      { label: 'USO BAJO', value: String(d.usoBajo),  color: this.palette.warning },
-      { label: 'ACTIVOS',  value: String(d.usoActivo), color: this.palette.success },
+      { label: 'SIN RENDIR', value: String(d.sinUso),   color: this.palette.danger },
+      { label: 'USO BAJO',  value: String(d.usoBajo),   color: this.palette.warning },
+      { label: 'ACTIVOS',   value: String(d.usoActivo), color: this.palette.success },
     ], y, ctx);
+
+    // El universo es quien tiene algo que rendir, no el padron completo:
+    // sin esta linea el numero se lee como "usuarios del sistema".
+    y += 2;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(...this.palette.grayText);
+    doc.text('Sobre las personas con ordenes de pago a rendir en el periodo.', 14, y);
+    y += 4;
 
     if (d.sinUsoNombres.length) {
       y += 2;

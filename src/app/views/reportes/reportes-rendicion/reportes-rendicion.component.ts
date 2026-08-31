@@ -450,7 +450,7 @@ export class ReportesRendicionComponent implements OnInit {
 
   // ------------------------------------------------------------ tiempos
 
-  get paginaDeTiempos(): TiempoOrden[] {
+  get paginaTiempos(): TiempoOrden[] {
     const desde = this.paginaActual * this.tamanioPagina;
     return this.tiemposOrden.slice(desde, desde + this.tamanioPagina);
   }
@@ -485,6 +485,25 @@ export class ReportesRendicionComponent implements OnInit {
       undefined);
   }
 
+  /** La pastilla del estado del recorrido, con los colores de la leyenda. */
+  claseProceso(estado?: string): string {
+    switch (estado) {
+      case 'LIQUIDADO':    return 'p-liq';
+      case 'OBSERVADO':    return 'p-obs';
+      case 'RECEPCIONADO': return 'p-recep';
+      case 'EN_PROCESO':   return 'p-proc';
+      default:             return 'p-pend';
+    }
+  }
+
+  /** Verde hasta 9 dias, ambar hasta 20, rojo mas alla. */
+  claseDias(dias?: number): string {
+    if (dias == null) { return ''; }
+    if (dias <= 9)  { return 'd-ok'; }
+    if (dias <= 20) { return 'd-medio'; }
+    return 'd-tarde';
+  }
+
   /** Cuántas siguen con el reloj corriendo: el recorrido no terminó. */
   get ordenesEnCurso(): number {
     return this.tiemposOrden.filter(t => t.enCurso).length;
@@ -499,6 +518,40 @@ export class ReportesRendicionComponent implements OnInit {
   }
 
   // ------------------------------------------------------------ uso
+
+  /**
+   * El universo del reporte son las personas que tienen algo que rendir en
+   * el rango, no el padrón de usuarios. Contar los 135 usuarios del sistema
+   * daba 128 "sin uso" que en su mayoría nunca recibieron una orden: ese
+   * número no medía nada y tapaba los pocos casos reales.
+   */
+  get personasConOrden(): number {
+    return this.uso.length;
+  }
+
+  /** Recibieron plata a rendir y no cargaron ni una rendición. */
+  get personasSinRendir(): number {
+    return this.uso.filter(u => u.ordenesRendidas === 0).length;
+  }
+
+  /** El total de entregas que siguen sin rendición cargada. */
+  get ordenesSinRendir(): number {
+    return this.uso.reduce(
+      (t, u) => t + Math.max(0, u.ordenesAsignadas - u.ordenesRendidas), 0);
+  }
+
+  /** Personas con orden de pago a las que no se les conoce usuario REGINA. */
+  get personasSinUsuario(): number {
+    return this.uso.filter(u => u.sinUsuario).length;
+  }
+
+  /** Verde desde 80%, ámbar desde 40%, rojo abajo. */
+  claseRendido(p?: number): string {
+    if (p == null) { return ''; }
+    if (p >= 80) { return 'd-ok'; }
+    if (p >= 40) { return 'd-medio'; }
+    return 'd-tarde';
+  }
 
   get sinUso(): number {
     return this.uso.filter(u => u.nivel === 'SIN_USO').length;
@@ -934,21 +987,50 @@ export class ReportesRendicionComponent implements OnInit {
     ], (o.motivos ?? []).map(m => [
       m.desMotivo, String(m.veces), nro(m.importe), nro(m.porcentaje) + ' %'
     ]));
+
+    // El motivo dice que se observa; esto dice a quien. Sin la segunda tabla
+    // el reporte no permite hacer nada al respecto.
+    pdf.seccion('Quién acumula las observaciones').tabla([
+      { titulo: 'Personal', ancho: 250, alineacion: 'l' },
+      { titulo: 'Rendiciones', ancho: 80, alineacion: 'c' },
+      { titulo: 'Comprobantes', ancho: 90, alineacion: 'c' },
+      { titulo: 'Importe S/', ancho: 100, alineacion: 'r' },
+      { titulo: '% de las observaciones', ancho: 110, alineacion: 'r' },
+    ], (o.porPersona ?? []).map(x => [
+      x.usuario, String(x.rendiciones), String(x.comprobantesObservados),
+      nro(x.importe), nro(x.porcentaje) + ' %'
+    ]));
   }
 
   private pdfUso(pdf: ReportePdf): void {
+    const tarjetas: TarjetaPdf[] = [
+      { rotulo: 'CON OP', valor: String(this.personasConOrden), color: [37, 78, 138] },
+      { rotulo: 'SIN RENDIR', valor: String(this.personasSinRendir), color: [176, 68, 45] },
+      { rotulo: 'OP SIN RENDIR', valor: String(this.ordenesSinRendir), color: [176, 132, 24] },
+      { rotulo: 'SIN USUARIO', valor: String(this.personasSinUsuario), color: [61, 63, 69] },
+    ];
+    pdf.tarjetas(tarjetas);
+
     const cols: ColumnaPdf[] = [
-      { titulo: 'Usuario', ancho: 200, alineacion: 'l' },
-      { titulo: 'Correo', ancho: 220, alineacion: 'l' },
-      { titulo: 'Nivel', ancho: 80, alineacion: 'c' },
-      { titulo: 'Rendiciones', ancho: 80, alineacion: 'c' },
-      { titulo: 'Comprobantes', ancho: 85, alineacion: 'c' },
-      { titulo: 'Última rendición', ancho: 100, alineacion: 'c' },
+      { titulo: 'Cód.', ancho: 55, alineacion: 'l' },
+      { titulo: 'Personal', ancho: 200, alineacion: 'l' },
+      { titulo: 'OP', ancho: 40, alineacion: 'c' },
+      { titulo: 'Rendidas', ancho: 55, alineacion: 'c' },
+      { titulo: '% rend.', ancho: 55, alineacion: 'c' },
+      { titulo: 'Usuario', ancho: 55, alineacion: 'c' },
+      { titulo: 'Comp.', ancho: 45, alineacion: 'c' },
+      { titulo: 'Última rendición', ancho: 90, alineacion: 'c' },
     ];
     const filas = this.uso.map(u => [
-      u.usuario, u.email ?? '', this.etiquetaNivel(u.nivel),
-      String(u.rendiciones), String(u.comprobantes), fmtFecha(u.ultimaRendicion)
+      u.codAuxiliar ?? '', u.usuario,
+      String(u.ordenesAsignadas), String(u.ordenesRendidas),
+      u.porcentajeRendido != null ? `${u.porcentajeRendido}%` : '—',
+      u.sinUsuario ? 'NO' : 'Sí',
+      String(u.comprobantes), fmtFecha(u.ultimaRendicion)
     ]);
-    pdf.seccion('Quién usa REGINA').tabla(cols, filas);
+    pdf.seccion('Personas con órdenes de pago en el período').tabla(cols, filas);
+    pdf.nota('El universo son las personas con entregas a rendir en el rango, '
+           + 'no el padrón completo de usuarios. "Usuario NO" es alguien que '
+           + 'recibió plata y no tiene acceso conocido a REGINA.');
   }
 }

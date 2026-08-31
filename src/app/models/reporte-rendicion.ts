@@ -128,6 +128,20 @@ export interface ObservacionesResumen {
   rendicionesRechazadas: number;
 
   motivos: MotivoConteo[];
+
+  /** Quién acumula las observaciones. El motivo dice qué; esto dice quién. */
+  porPersona: ObservadoPorPersona[];
+}
+
+/** Una persona y lo que le observaron en el período. */
+export interface ObservadoPorPersona {
+  userId?: number;
+  usuario: string;
+  username?: string;
+  rendiciones: number;
+  comprobantesObservados: number;
+  importe: number;
+  porcentaje: number;
 }
 
 /** Una persona y cuánto usa REGINA. Incluye a los que no lo usan. */
@@ -144,6 +158,21 @@ export interface UsoRegina {
 
   /** SIN_USO | BAJO | ACTIVO. */
   nivel: string;
+
+  /** El auxiliar del ERP: la persona a la que se le entregó la plata. */
+  codAuxiliar?: string;
+
+  /** Cuántas entregas a rendir tiene en el rango, según el ERP. */
+  ordenesAsignadas: number;
+
+  /** De esas, cuántas ya tienen rendición en REGINA. */
+  ordenesRendidas: number;
+
+  /** Qué parte de lo suyo rindió. */
+  porcentajeRendido?: number;
+
+  /** true si esta persona no tiene usuario en REGINA. */
+  sinUsuario: boolean;
 }
 
 /** Un motivo del catálogo, para el combo de observación. */
