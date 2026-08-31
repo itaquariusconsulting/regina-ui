@@ -82,7 +82,21 @@ const PREFIJOS_PROHIBIDOS = [
   'RUC', 'DNI', 'TELF', 'TELEFONO', 'CEL', 'CELULAR', 'CUENTA', 'CTA', 'CCI',
   'IGV', 'TOTAL', 'SUBTOTAL', 'FECHA', 'HORA', 'CAJA', 'MESA', 'PEDIDO',
   'ORDEN', 'GUIA',
+  // El rotulo real termina en la ultima palabra, no en la primera:
+  // "GUIA DE REMISION: T003-6341" no termina en "GUIA" sino en "REMISION",
+  // asi que el numero de la guia pasaba el filtro y le ganaba al de la
+  // factura.
+  'REMISION', 'REMITENTE', 'COMPRA', 'COTIZACION', 'PROFORMA',
+  'VENCIMIENTO', 'REFERENCIA', 'PLACA',
 ];
+
+/**
+ * Letras de serie que NO son de un comprobante de pago.
+ *
+ * La guia de remision electronica lleva serie T###. Comparte hoja y formato
+ * con la factura, y no es lo que se manda a SUNAT.
+ */
+const LETRAS_DE_OTRO_DOCUMENTO = new Set(['T']);
 
 const PALABRAS_TITULO = [
   'FACTURA', 'BOLETA', 'NOTA DE CREDITO', 'NOTA DE DEBITO', 'RECIBO',
@@ -234,7 +248,10 @@ function puntuar(base: number, texto: string, ini: number, fin: number, serie: s
                  numero: string, reparado: boolean, tipoDoc?: string | null): number {
   let p = base;
 
-  if (serie && LETRAS_SERIE_VALIDAS.has(serie[0])) { p += 12; }
+  // Una serie T### es de guia de remision. Se castiga fuerte en vez de
+  // descartarla, por si es el unico candidato legible y el usuario corrige.
+  if (serie && LETRAS_DE_OTRO_DOCUMENTO.has(serie[0])) { p -= 40; }
+  else if (serie && LETRAS_SERIE_VALIDAS.has(serie[0])) { p += 12; }
   else if (/^\d+$/.test(serie)) { p -= 5; }
 
   if (tipoDoc) {

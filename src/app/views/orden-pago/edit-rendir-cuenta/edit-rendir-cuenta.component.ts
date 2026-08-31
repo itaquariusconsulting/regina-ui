@@ -852,6 +852,7 @@ export class EditRendirCuentaComponent implements OnInit {
 
         this.recalcularImportes();
         this.onListaAuxiliares();
+
       },
       (error) => {
         console.error('Error al cargar impuestos', error);
@@ -1783,153 +1784,32 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.cargarItems(this.dataImagen.items);
 
-    // Con el formulario ya lleno, se valida contra SUNAT sin que el usuario
-    // tenga que apretar nada. Si falta algun dato no se llama a SUNAT: el
-    // guard lo detecta y se avisa en silencio (el usuario lo vera al darle a
-    // Validar, con la lista de lo que falta).
-    this.validarComprobanteTrasEscanear();
+    // Terminado el escaneo NO se consulta a SUNAT. El usuario revisa lo que
+    // leyo el OCR —el tipo de documento, sobre todo— y recien entonces
+    // aprieta Validar. Validar antes de esa revision consultaba con datos que
+    // el propio usuario iba a corregir, y el rechazo que volvia no decia nada
+    // sobre el comprobante.
 
     return true;
   }
 
   /**
-   * Dispara la validacion de SUNAT despues de que el OCR lleno el formulario.
+   * Ya no se valida solo. La validacion contra SUNAT la dispara el usuario
+   * con el boton Validar, y nada mas.
    *
-   * Se hace en modo silencioso: si el comprobante es correcto aparece un
-   * toast y el boton Guardar se habilita; solo interrumpe con dialogo si
-   * SUNAT lo rechaza, que es cuando el usuario tiene que hacer algo.
-   */
-  private validarComprobanteTrasEscanear(): void {
-    const docNro = parseNroComprobante(
-      this.dataImagen.documentNumber ?? '',
-      this.devolverDocumento(this.codDocumentoGeneral),
-    );
-
-    const faltantes = this.faltantesParaSunat(docNro);
-
-    if (faltantes.length) {
-      // Antes esto se salteaba en silencio, y era peor de lo que parece: el
-      // usuario ve que el comprobante se escaneo bien, da por hecho que
-      // valido, y despues encuentra el boton Grabar apagado sin nada en
-      // pantalla que lo explique.
-      //
-      // El aviso es discreto y solo sale cuando hay algo que corregir, asi
-      // que no se convierte en ruido de fondo.
-      console.info('[validacion automatica] no se llama a SUNAT, faltan datos', faltantes);
-      this.avisarQueFaltaParaValidar(faltantes);
-      return;
-    }
-
-    // setTimeout(0) para dejar que Angular termine de asentar el formulario
-    // (this.total, this.ruc y el tipo de documento se acaban de asignar).
-    setTimeout(() => this.validarComprobante(true), 0);
-  }
-
-  /** Timer de la revalidacion automatica mientras el usuario edita. */
-  private _validacionDebounce: any;
-
-  /** La ultima combinacion de datos que ya se le mando a SUNAT. */
-  private _ultimaClaveValidada = '';
-
-  /**
-   * Los seis datos con los que SUNAT identifica al comprobante.
+   * Habia una revalidacion automatica con debounce colgada de los campos que
+   * SUNAT necesita. Traia tres problemas: cambiar el foco del combo de tipo
+   * de documento volvia a disparar la consulta una y otra vez; salia un aviso
+   * incluso cuando el comprobante estaba bien, que el usuario no habia
+   * pedido; y mientras el formulario estaba a medio llenar avisaba de datos
+   * faltantes que el usuario justamente estaba por escribir.
    *
-   * Sirve para no repetir la consulta con lo mismo. Sin esto, cada tecla del
-   * importe seria una llamada a SUNAT con datos que ya se consultaron.
-   */
-  private claveDeValidacion(): string {
-    const docNro = parseNroComprobante(
-      this.dataImagen.documentNumber ?? '',
-      this.devolverDocumento(this.codDocumentoGeneral),
-    );
-    return [
-      (this.ruc || '').trim(),
-      (this.getDocumentoSeleccionado()?.codSunat ?? '').trim(),
-      docNro.serie,
-      docNro.numero,
-      this.formatFecha(this.modelIni),
-      String(this.total),
-    ].join('|');
-  }
-
-  /**
-   * Programa una validacion contra SUNAT para cuando el usuario deje de
-   * escribir.
-   *
-   * El caso que resuelve es el del ingreso manual. Cuando el OCR no lee
-   * —tickets termicos, sobre todo— el usuario llena los campos a mano y el
-   * comprobante nunca se validaba: no porque SUNAT no lo conociera, sino
-   * porque nadie volvia a preguntarle. Todos salian marcados "no validado en
-   * SUNAT" aunque los datos estuvieran bien.
-   *
-   * Se dispara desde los campos que SUNAT necesita. La espera de 1,2 s es
-   * para que escribir "55" no dispare una consulta con "5".
+   * El metodo se conserva vacio porque lo llaman los campos del formulario;
+   * dejarlo aca y no borrar seis llamadas mantiene el cambio acotado y hace
+   * evidente que la decision fue deliberada y no un olvido.
    */
   programarValidacionSunat(): void {
-    if (this._validacionDebounce) {
-      clearTimeout(this._validacionDebounce);
-    }
-    this._validacionDebounce = setTimeout(() => this.validarSiEstaCompleto(), 1200);
-  }
-
-  /**
-   * Consulta a SUNAT si ya estan los seis datos y todavia no se consulto por
-   * ellos.
-   *
-   * No avisa cuando faltan datos: el usuario esta en medio de escribirlos y
-   * un toast por cada campo incompleto seria ruido. El aviso de datos
-   * faltantes sigue saliendo donde tiene sentido, al terminar el escaneo.
-   */
-  private validarSiEstaCompleto(): void {
-    if (this.validaComprobante) {
-      return;                        // ya validado, no hay nada que preguntar
-    }
-
-    const docNro = parseNroComprobante(
-      this.dataImagen.documentNumber ?? '',
-      this.devolverDocumento(this.codDocumentoGeneral),
-    );
-    if (this.faltantesParaSunat(docNro).length) {
-      return;
-    }
-
-    const clave = this.claveDeValidacion();
-    if (clave === this._ultimaClaveValidada) {
-      return;                        // mismos datos, misma respuesta
-    }
-    this._ultimaClaveValidada = clave;
-
-    // Rechazo discreto: esta validacion la dispara el usuario escribiendo, no
-    // apretando un boton. Un dialogo modal en medio de la carga lo interrumpe
-    // sin que lo haya pedido; el toast le dice lo mismo y lo deja seguir.
-    this.validarComprobante(true, true);
-  }
-
-  /**
-   * Avisa que la validacion automatica no pudo correr, y por que.
-   *
-   * Los textos de `faltantesParaSunat` traen etiquetas <b> porque estan
-   * pensados para el dialogo grande; aca se limpian, porque un toast con
-   * markup se ve roto.
-   */
-  private avisarQueFaltaParaValidar(faltantes: string[]): void {
-    const limpio = (t: string) => t.replace(/<[^>]+>/g, '');
-
-    const detalle = faltantes.length === 1
-      ? limpio(faltantes[0])
-      : faltantes.slice(0, 2).map(limpio).join(' ')
-        + (faltantes.length > 2 ? ` (+${faltantes.length - 2} mas)` : '');
-
-    Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'warning',
-      title: 'Falta un dato para validar en SUNAT',
-      text: detalle,
-      showConfirmButton: false,
-      timer: 6000,
-      timerProgressBar: true,
-    });
+    // Intencionalmente sin efecto: la validacion es manual.
   }
 
   /**
