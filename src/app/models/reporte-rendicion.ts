@@ -116,6 +116,9 @@ export interface MotivoConteo {
 
 /** Cuántas rendiciones vienen con observaciones, y por qué. */
 export interface ObservacionesResumen {
+  /** Todas las del período, enviadas o no. Es el denominador. */
+  rendicionesPeriodo: number;
+  /** Las que contabilidad tuvo en la mano. Va aparte. */
   rendicionesRevisadas: number;
   rendicionesConObservacion: number;
   porcentajeRendiciones: number;

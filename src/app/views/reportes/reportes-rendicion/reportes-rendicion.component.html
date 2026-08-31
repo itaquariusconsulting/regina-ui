@@ -475,7 +475,7 @@
         <div class="rr-rot">Rendiciones con observación</div>
         <div class="rr-pie">
           {{ observaciones.rendicionesConObservacion }} de
-          {{ observaciones.rendicionesRevisadas }} revisadas
+          {{ observaciones.rendicionesPeriodo }} del período
         </div>
       </div>
       <div class="rr-tarjeta">
@@ -498,12 +498,14 @@
       </div>
     </div>
 
-    <div class="rr-aviso" *ngIf="!observaciones.rendicionesRevisadas" style="margin-bottom:14px;">
+    <div class="rr-aviso" style="margin-bottom:14px;">
       <i class="fa fa-circle-info"></i>
-      Todavía no hay rendiciones revisadas por contabilidad en este rango. El
-      porcentaje se calcula sobre lo revisado, no sobre todo: dividir por
-      rendiciones que nadie miró daría un número que baja solo con que entren
-      rendiciones nuevas.
+      El porcentaje va sobre las <strong>{{ observaciones.rendicionesPeriodo }}</strong>
+      rendiciones del período, enviadas o no. El comprobante fuera de fecha se
+      marca al cargarlo, así que una rendición sin enviar ya puede traer
+      observaciones. De esas,
+      <strong>{{ observaciones.rendicionesRevisadas }}</strong>
+      pasaron por la revisión de contabilidad.
     </div>
 
     <h6 class="rr-subtitulo">Principales motivos</h6>
@@ -615,8 +617,8 @@
               {{ u.usuario }}
               <small class="rr-username" *ngIf="u.username">({{ u.username }})</small>
             </td>
-            <td class="text-center">{{ u.ordenesAsignadas }}</td>
-            <td class="text-center">{{ u.ordenesRendidas }}</td>
+            <td class="text-center">{{ u.ordenesAsignadas ?? 0 }}</td>
+            <td class="text-center">{{ u.ordenesRendidas ?? 0 }}</td>
             <td class="text-center" [ngClass]="claseRendido(u.porcentajeRendido)">
               {{ u.porcentajeRendido != null ? (u.porcentajeRendido | number:'1.0-1') + '%' : '—' }}
             </td>

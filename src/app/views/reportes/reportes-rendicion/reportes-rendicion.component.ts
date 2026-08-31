@@ -529,20 +529,27 @@ export class ReportesRendicionComponent implements OnInit {
     return this.uso.length;
   }
 
-  /** Recibieron plata a rendir y no cargaron ni una rendición. */
+  /**
+   * Recibieron plata a rendir y no cargaron ni una rendición.
+   *
+   * Los campos van con ?? 0 a propósito: si el API todavía es el anterior no
+   * los manda, y sin la guarda las tarjetas mostraban NaN en vez de quedarse
+   * en cero mientras el backend termina de subir.
+   */
   get personasSinRendir(): number {
-    return this.uso.filter(u => u.ordenesRendidas === 0).length;
+    return this.uso.filter(u => (u.ordenesAsignadas ?? 0) > 0
+                             && (u.ordenesRendidas ?? 0) === 0).length;
   }
 
   /** El total de entregas que siguen sin rendición cargada. */
   get ordenesSinRendir(): number {
     return this.uso.reduce(
-      (t, u) => t + Math.max(0, u.ordenesAsignadas - u.ordenesRendidas), 0);
+      (t, u) => t + Math.max(0, (u.ordenesAsignadas ?? 0) - (u.ordenesRendidas ?? 0)), 0);
   }
 
   /** Personas con orden de pago a las que no se les conoce usuario REGINA. */
   get personasSinUsuario(): number {
-    return this.uso.filter(u => u.sinUsuario).length;
+    return this.uso.filter(u => u.sinUsuario === true).length;
   }
 
   /** Verde desde 80%, ámbar desde 40%, rojo abajo. */
@@ -653,9 +660,9 @@ export class ReportesRendicionComponent implements OnInit {
       importeSoles: resumen?.importeSoles ?? 0,
       personas: resumen?.usuarios ?? 0,
 
-      // Null y no cero cuando contabilidad todavía no revisó nada: 0% diría
-      // "no hay observaciones", que es lo contrario de "nadie miró".
-      porcentajeObservadas: obs && obs.rendicionesRevisadas > 0
+      // Null y no cero cuando no hay ninguna rendición en el período: 0%
+      // diría "no hay observaciones", que es lo contrario de "no hay nada".
+      porcentajeObservadas: obs && obs.rendicionesPeriodo > 0
         ? obs.porcentajeRendiciones : null,
 
       diasCargaAEnvio,
@@ -972,7 +979,7 @@ export class ReportesRendicionComponent implements OnInit {
 
     pdf.tarjetas([
       { rotulo: 'RENDICIONES CON OBSERVACIÓN', valor: String(o.rendicionesConObservacion),
-        pie: `de ${o.rendicionesRevisadas} revisadas`, color: [176, 68, 45] },
+        pie: `de ${o.rendicionesPeriodo} del período`, color: [176, 68, 45] },
       { rotulo: 'COMPROBANTES OBSERVADOS', valor: String(o.comprobantesObservados),
         pie: `de ${o.comprobantes}`, color: [176, 132, 24] },
       { rotulo: 'IMPORTE OBSERVADO', valor: 'S/ ' + nro(o.importeObservado), color: [37, 78, 138] },
@@ -1023,7 +1030,7 @@ export class ReportesRendicionComponent implements OnInit {
     ];
     const filas = this.uso.map(u => [
       u.codAuxiliar ?? '', u.usuario,
-      String(u.ordenesAsignadas), String(u.ordenesRendidas),
+      String(u.ordenesAsignadas ?? 0), String(u.ordenesRendidas ?? 0),
       u.porcentajeRendido != null ? `${u.porcentajeRendido}%` : '—',
       u.sinUsuario ? 'NO' : 'Sí',
       String(u.comprobantes), fmtFecha(u.ultimaRendicion)
