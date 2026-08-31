@@ -2,9 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
-import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
 
+import { ColumnaPdf, ReportePdf, fecha as fmtFecha, nro } from '../../../shared/reporte-pdf';
 import { CruceService } from '../../../services/cruce.service';
 import { FiltroCruce, OpCruce } from '../../../models/op-cruce';
 
@@ -216,233 +216,75 @@ export class OpRendicionesComponent implements OnInit {
   // -------------------------------------------------------------- PDF
 
   /**
-   * El PDF con el armado de la casa: marca, parámetros usados, tarjetas de
-   * resumen y la tabla.
+   * El reporte en PDF.
    *
-   * Los parámetros van impresos a propósito. Un PDF que circula por correo sin
-   * decir con qué filtros salió no se puede volver a citar dos semanas después,
-   * y alguien termina discutiendo dos cifras que respondían a preguntas
-   * distintas.
+   * El armado —marca, filtros, tarjetas, tabla, pie— vive en ReportePdf y lo
+   * comparten todos los reportes: acá solo se decide qué va en cada parte. Si
+   * cada pantalla dibujara lo suyo, en un mes habría cinco variantes y un
+   * margen corregido en una sola.
    */
   descargarPDF(): void {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-    const ancho = doc.internal.pageSize.getWidth();
-    const alto = doc.internal.pageSize.getHeight();
-    const margen = 28;
+    const pdf = new ReportePdf('landscape');
 
-    // Cada color como tres numeros sueltos: jsPDF tipa setFillColor con
-    // sobrecargas y un spread de tupla no siempre resuelve la correcta.
-    const AZUL_R = 37, AZUL_G = 78, AZUL_B = 138;
-    const GRIS_R = 110, GRIS_G = 118, GRIS_B = 130;
-    const LIN_R = 222, LIN_G = 226, LIN_B = 232;
+    pdf.cabecera({
+      reporte: 'Órdenes de pago y rendiciones',
+      empresa: this.codEmpresa,
+      usuario: this.usuarioActual
+    }).filtros(this.chipsDeFiltros());
 
-    let y = margen;
+    pdf.tarjetas([
+      { rotulo: 'ÓRDENES', valor: String(this.totalOrdenes),
+        pie: 'S/ ' + nro(this.totalEntregado) + ' entregados', color: [37, 78, 138] },
+      { rotulo: 'SIN RENDIR', valor: String(this.sinRendir),
+        pie: 'nadie las empezó', color: [176, 68, 45] },
+      { rotulo: 'EN CONTABILIDAD', valor: String(this.enProceso),
+        pie: 'enviadas o recepcionadas', color: [176, 132, 24] },
+      { rotulo: 'LIQUIDADAS', valor: String(this.liquidadas),
+        pie: 'S/ ' + nro(this.totalRendido) + ' rendidos', color: [37, 118, 74] },
+    ]);
 
-    // ---------------------------------------------------------- marca
-    doc.setFillColor(AZUL_R, AZUL_G, AZUL_B);
-    doc.roundedRect(margen, y, 26, 26, 4, 4, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.text('R', margen + 9, y + 18);
-
-    doc.setTextColor(AZUL_R, AZUL_G, AZUL_B);
-    doc.setFontSize(15);
-    doc.text('REGINA', margen + 34, y + 12);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(GRIS_R, GRIS_G, GRIS_B);
-    doc.text('Rendición de cuentas', margen + 34, y + 22);
-
-    const derecha = ancho - margen;
-    doc.setFontSize(8);
-    const cabeceraDerecha = [
-      ['Reporte: ', 'Órdenes de pago y rendiciones'],
-      ['Empresa: ', this.codEmpresa],
-      ['Generado: ', new Date().toLocaleString('es-PE')],
-      ['Usuario: ', this.usuarioActual || '—'],
-    ];
-    cabeceraDerecha.forEach((par, i) => {
-      const linY = y + 6 + i * 10;
-      doc.setTextColor(GRIS_R, GRIS_G, GRIS_B);
-      const valorAncho = doc.getTextWidth(par[1]);
-      doc.text(par[0], derecha - valorAncho - doc.getTextWidth(par[0]), linY);
-      doc.setTextColor(40, 44, 52);
-      doc.setFont('helvetica', 'bold');
-      doc.text(par[1], derecha - valorAncho, linY);
-      doc.setFont('helvetica', 'normal');
-    });
-
-    y += 40;
-    doc.setDrawColor(AZUL_R, AZUL_G, AZUL_B);
-    doc.setLineWidth(1);
-    doc.line(margen, y, derecha, y);
-    y += 16;
-
-    // ----------------------------------------------------- parámetros
-    const chips = this.chipsDeFiltros();
-    let x = margen;
-    doc.setFontSize(7.5);
-    for (const chip of chips) {
-      const w = doc.getTextWidth(chip) + 14;
-      if (x + w > derecha) { x = margen; y += 18; }
-      doc.setFillColor(243, 245, 248);
-      doc.roundedRect(x, y - 9, w, 15, 7, 7, 'F');
-      doc.setTextColor(70, 78, 92);
-      doc.text(chip, x + 7, y + 1);
-      x += w + 6;
-    }
-    y += 24;
-
-    // -------------------------------------------------------- tarjetas
-    const tarjetas: Array<{ rot: string; valor: string; r: number; g: number; b: number }> = [
-      { rot: 'ÓRDENES',    valor: String(this.totalOrdenes), r: AZUL_R, g: AZUL_G, b: AZUL_B },
-      { rot: 'SIN RENDIR', valor: String(this.sinRendir),    r: 176, g: 68,  b: 45 },
-      { rot: 'EN PROCESO', valor: String(this.enProceso),    r: 176, g: 132, b: 24 },
-      { rot: 'LIQUIDADAS', valor: String(this.liquidadas),   r: 37,  g: 118, b: 74 },
-    ];
-    const anchoT = (derecha - margen - 3 * 10) / 4;
-    tarjetas.forEach((t, i) => {
-      const tx = margen + i * (anchoT + 10);
-      doc.setDrawColor(LIN_R, LIN_G, LIN_B);
-      doc.setLineWidth(0.6);
-      doc.roundedRect(tx, y, anchoT, 40, 3, 3, 'S');
-      doc.setFillColor(t.r, t.g, t.b);
-      doc.rect(tx, y, anchoT, 2.5, 'F');
-      doc.setFontSize(6.5);
-      doc.setTextColor(GRIS_R, GRIS_G, GRIS_B);
-      doc.text(t.rot, tx + 10, y + 16);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(t.r, t.g, t.b);
-      doc.text(t.valor, tx + 10, y + 34);
-      doc.setFont('helvetica', 'normal');
-    });
-    y += 54;
-
-    doc.setFillColor(AZUL_R, AZUL_G, AZUL_B);
-    doc.rect(margen, y - 8, 3, 11, 'F');
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(AZUL_R, AZUL_G, AZUL_B);
-    doc.text('Detalle por orden de pago', margen + 9, y);
-    doc.setFont('helvetica', 'normal');
-    y += 12;
-
-    // ----------------------------------------------------------- tabla
-    const cols: Array<[string, number, 'l' | 'r' | 'c']> = [
-      ['Orden', 58, 'l'],
-      ['Fecha', 48, 'c'],
-      ['Personal', 170, 'l'],
-      ['CC', 50, 'l'],
-      ['Mon.', 30, 'c'],
-      ['Entregado', 62, 'r'],
-      ['Rendido', 62, 'r'],
-      ['Saldo', 58, 'r'],
-      ['ERP', 44, 'c'],
-      ['Rend.', 32, 'c'],
-      ['Estado REGINA', 78, 'c'],
-      ['Comp.', 32, 'c'],
-      ['Días', 32, 'c'],
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Orden', ancho: 58, alineacion: 'l' },
+      { titulo: 'Fecha', ancho: 48, alineacion: 'c' },
+      { titulo: 'Personal', ancho: 132, alineacion: 'l' },
+      { titulo: 'Centro de costos', ancho: 118, alineacion: 'l' },
+      { titulo: 'Mon.', ancho: 30, alineacion: 'c' },
+      { titulo: 'Entregado', ancho: 62, alineacion: 'r' },
+      { titulo: 'Rendido', ancho: 62, alineacion: 'r' },
+      { titulo: 'Saldo', ancho: 58, alineacion: 'r' },
+      { titulo: 'ERP', ancho: 44, alineacion: 'c' },
+      { titulo: 'Rend.', ancho: 32, alineacion: 'c' },
+      { titulo: 'Estado REGINA', ancho: 78, alineacion: 'c' },
+      { titulo: 'Comp.', ancho: 32, alineacion: 'c' },
+      { titulo: 'Días', ancho: 32, alineacion: 'c' },
     ];
 
-    const dibujarCabecera = (yy: number): number => {
-      doc.setFillColor(AZUL_R, AZUL_G, AZUL_B);
-      doc.rect(margen, yy, derecha - margen, 16, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      let cx = margen;
-      for (const [titulo, w, al] of cols) {
-        this.texto(doc, titulo, cx, yy + 11, w, al);
-        cx += w;
-      }
-      doc.setFont('helvetica', 'normal');
-      return yy + 16;
-    };
+    const filas = this.filas.map(f => [
+      f.numOrden,
+      fmtFecha(f.fecOrden),
+      (f.desAuxiliar || f.codAuxiliar || '').substring(0, 33),
+      (f.desCCostos || f.codCCostos || '').substring(0, 30),
+      f.desMoneda || '',
+      nro(f.impOrdPago),
+      nro(f.impRendido),
+      nro(f.saldo),
+      f.desEstado || '',
+      f.tieneRendicion ? 'Sí' : 'No',
+      f.etiquetaProceso || '',
+      String(f.comprobantes ?? 0),
+      f.diasSinRendir == null ? '' : String(f.diasSinRendir),
+    ]);
 
-    y = dibujarCabecera(y);
+    pdf.seccion('Detalle por orden de pago')
+       .tabla(cols, filas, [
+         'TOTAL', '', String(this.totalOrdenes) + ' órdenes', '', '',
+         nro(this.totalEntregado), nro(this.totalRendido), nro(this.totalSaldo)
+       ]);
 
-    doc.setFontSize(6.8);
-    let impar = false;
-
-    for (const f of this.filas) {
-      if (y > alto - 60) {
-        doc.addPage();
-        y = margen;
-        y = dibujarCabecera(y);
-        doc.setFontSize(6.8);
-      }
-
-      if (impar) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(margen, y, derecha - margen, 13, 'F');
-      }
-      impar = !impar;
-
-      const celdas: string[] = [
-        f.numOrden,
-        f.fecOrden ? new Date(f.fecOrden).toLocaleDateString('es-PE') : '',
-        (f.desAuxiliar || f.codAuxiliar || '').substring(0, 42),
-        (f.codCCostos || ''),
-        (f.desMoneda || ''),
-        this.numero(f.impOrdPago),
-        this.numero(f.impRendido),
-        this.numero(f.saldo),
-        (f.desEstado || ''),
-        f.tieneRendicion ? 'Sí' : 'No',
-        (f.etiquetaProceso || ''),
-        String(f.comprobantes ?? 0),
-        f.diasSinRendir == null ? '' : String(f.diasSinRendir),
-      ];
-
-      let cx = margen;
-      doc.setTextColor(40, 44, 52);
-      celdas.forEach((v, i) => {
-        const [, w, al] = cols[i];
-        if (i === 9 && v === 'No') { doc.setTextColor(176, 68, 45); }
-        this.texto(doc, v, cx, y + 9, w, al);
-        doc.setTextColor(40, 44, 52);
-        cx += w;
-      });
-
-      doc.setDrawColor(LIN_R, LIN_G, LIN_B);
-      doc.setLineWidth(0.3);
-      doc.line(margen, y + 13, derecha, y + 13);
-      y += 13;
-    }
-
-    // ------------------------------------------------------------ total
-    if (y > alto - 50) { doc.addPage(); y = margen; }
-    doc.setFillColor(232, 239, 249);
-    doc.rect(margen, y, derecha - margen, 16, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.2);
-    doc.setTextColor(AZUL_R, AZUL_G, AZUL_B);
-    let cx = margen;
-    const totales = ['TOTAL', '', String(this.totalOrdenes) + ' órdenes', '', '',
-                     this.numero(this.totalEntregado), this.numero(this.totalRendido),
-                     this.numero(this.totalSaldo), '', '', '', '', ''];
-    totales.forEach((v, i) => {
-      const [, w, al] = cols[i];
-      this.texto(doc, v, cx, y + 11, w, al);
-      cx += w;
-    });
-    doc.setFont('helvetica', 'normal');
-
-    // -------------------------------------------------------------- pie
-    const paginas = doc.getNumberOfPages();
-    for (let i = 1; i <= paginas; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7.5);
-      doc.setTextColor(GRIS_R, GRIS_G, GRIS_B);
-      doc.text(`Página ${i} de ${paginas}`, ancho / 2, alto - 18, { align: 'center' });
-    }
-
-    doc.save(`ordenes_y_rendiciones_${this.aISO(new Date())}.pdf`);
+    pdf.guardar(`ordenes_y_rendiciones_${this.aISO(new Date())}.pdf`);
   }
 
-  /** Los filtros aplicados, tal como se van a imprimir arriba del reporte. */
+  /** Los filtros aplicados, tal como se imprimen arriba del reporte. */
   private chipsDeFiltros(): string[] {
     const c: string[] = [];
     if (this.filtro.desde) { c.push(`desde: ${this.filtro.desde}`); }
@@ -459,29 +301,10 @@ export class OpRendicionesComponent implements OnInit {
     if (this.filtro.estProceso) {
       c.push(`estado REGINA: ${this.etiqueta(this.estadosRegina, this.filtro.estProceso)}`);
     }
-    if (!c.length) { c.push('sin filtros: todas las órdenes'); }
     return c;
   }
 
   private etiqueta(lista: { valor: string; etiqueta: string }[], valor: string): string {
     return lista.find(x => x.valor === valor)?.etiqueta ?? valor;
-  }
-
-  private numero(v?: number): string {
-    return (v ?? 0).toLocaleString('es-PE', {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-  }
-
-  /** Escribe dentro de una columna respetando su alineación. */
-  private texto(doc: jsPDF, valor: string, x: number, y: number,
-                ancho: number, alineacion: 'l' | 'r' | 'c'): void {
-    if (alineacion === 'r') {
-      doc.text(valor, x + ancho - 5, y, { align: 'right' });
-    } else if (alineacion === 'c') {
-      doc.text(valor, x + ancho / 2, y, { align: 'center' });
-    } else {
-      doc.text(valor, x + 5, y);
-    }
   }
 }

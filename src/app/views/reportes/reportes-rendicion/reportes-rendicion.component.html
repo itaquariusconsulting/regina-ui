@@ -135,9 +135,13 @@
       <button (click)="limpiar()" class="general-button btn-secondary" title="Quitar todos los filtros">
         <i class="fa fa-eraser"></i>Limpiar
       </button>
-      <button (click)="descargar()" class="general-button btn-secondary"
-              *ngIf="vista !== 'resumen'" title="Bajar la tabla como CSV">
-        <i class="fa fa-download"></i>CSV
+      <button (click)="descargarPDF()" class="general-button btn-pdf"
+              title="Esta pestaña en PDF, con los filtros aplicados">
+        <i class="fa fa-file-pdf"></i>PDF
+      </button>
+      <button (click)="descargarExcel()" class="general-button btn-excel"
+              title="Esta pestaña en Excel">
+        <i class="fa fa-file-excel"></i>Excel
       </button>
     </div>
   </div>

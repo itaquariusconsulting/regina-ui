@@ -345,3 +345,8 @@
 .rr-pastilla.p-recep { color: #1f5c3d; background: #dcefe3; }
 .rr-pastilla.p-obs   { color: #8a2d19; background: #fbe2dc; }
 .rr-pastilla.p-liq   { color: #3d3f45; background: #e6e7ea; }
+
+/* Los dos formatos que la gente realmente comparte. El CSV queda para
+   quien quiere la tabla cruda. */
+.btn-pdf   { background: #c0392b; color: #fff; }
+.btn-excel { background: #1d7044; color: #fff; }

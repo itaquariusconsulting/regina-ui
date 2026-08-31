@@ -52,7 +52,7 @@
 
     <div class="filtro">
       <label class="form-label">Centro de costos</label>
-      <input type="text" class="form-control" placeholder="Código"
+      <input type="text" class="form-control" placeholder="Cliente, área o código"
              [(ngModel)]="filtro.codCCostos" (keyup.enter)="buscar()" />
     </div>
 
@@ -119,7 +119,7 @@
         <th>Orden</th>
         <th class="text-center">Fecha</th>
         <th>Personal</th>
-        <th class="text-center">CC</th>
+        <th>Centro de costos</th>
         <th class="text-end">Entregado</th>
         <th class="text-end">Rendido</th>
         <th class="text-end">Saldo</th>
@@ -137,7 +137,10 @@
             {{ f.desAuxiliar || f.codAuxiliar }}
             <small class="opr-cod" *ngIf="f.desAuxiliar">({{ f.codAuxiliar }})</small>
           </td>
-          <td class="text-center">{{ f.codCCostos }}</td>
+          <td class="opr-centro">
+            {{ f.desCCostos || f.codCCostos }}
+            <small class="opr-cod" *ngIf="f.desCCostos">{{ f.codCCostos }}</small>
+          </td>
           <td class="text-end">{{ f.desMoneda }} {{ f.impOrdPago | number:'1.2-2' }}</td>
           <td class="text-end">{{ f.impRendido | number:'1.2-2' }}</td>
           <td class="text-end" [class.opr-saldo]="f.saldo > 0">{{ f.saldo | number:'1.2-2' }}</td>

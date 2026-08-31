@@ -118,3 +118,12 @@
   font-size: 0.85rem;
   color: #5c6672;
 }
+
+/* El centro de costos con su nombre: un código de ocho dígitos no lo
+   reconoce nadie de memoria. El código queda debajo, en chico, para
+   quien sí trabaja con ellos. */
+.opr-centro {
+  line-height: 1.25;
+
+  .opr-cod { display: block; }
+}

@@ -114,4 +114,36 @@ export class ReporteRendicionService {
       'Content-Type': 'application/json'
     });
   }
+
+  /**
+   * La pestaña que se está viendo, en Excel.
+   *
+   * Se pide como blob y lo arma el servidor: un .xlsx con formato necesitaría
+   * sumar una librería al frontend, y en el backend ya estaba POI. Va por
+   * HttpClient y no por un enlace directo para que el token viaje.
+   */
+  excel(codEmpresa: string, codSucursal: string, vista: string,
+        filtro: FiltroReporte, usuario: string): Observable<Blob> {
+    let p = new HttpParams()
+      .set('codEmpresa', codEmpresa)
+      .set('codSucursal', codSucursal)
+      .set('vista', vista);
+
+    const agregar = (clave: string, valor?: string | number | null) => {
+      if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+        p = p.set(clave, String(valor).trim());
+      }
+    };
+
+    agregar('desde', filtro.desde);
+    agregar('hasta', filtro.hasta);
+    agregar('userId', filtro.userId);
+    agregar('codAuxiliar', filtro.codAuxiliar);
+    agregar('codCCostos', filtro.codCCostos);
+    agregar('estado', filtro.estado);
+    agregar('usuario', usuario);
+
+    return this.http.get(`${this.apiUrlProcess}rendicion/reportes/excel`,
+      { params: p, responseType: 'blob' });
+  }
 }

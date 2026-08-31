@@ -7,6 +7,7 @@ import { catchError } from 'rxjs/operators';
 
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { LoadingService } from '../../../services/loading.service';
+import { ColumnaPdf, ReportePdf, TarjetaPdf, fecha as fmtFecha, nro } from '../../../shared/reporte-pdf';
 import { ReporteRendicionService } from '../../../services/reporte-rendicion.service';
 import { DatosGerenciales, ReportsService } from '../../../services/reports.service';
 import {
@@ -654,76 +655,251 @@ export class ReportesRendicionComponent implements OnInit {
 
   // ------------------------------------------------------------ descarga
 
-  /**
-   * Baja la tabla que se está viendo como CSV.
-   *
-   * Con punto y coma y BOM porque el Excel en español abre así sin pedir
-   * nada; con coma parte todo en una sola columna y el usuario termina
-   * pegando a mano.
-   */
-  descargar(): void {
-    let nombre = '';
-    let filas: string[][] = [];
+  /** El usuario logueado, para que el reporte diga quién lo generó. */
+  private get usuarioActual(): string {
+    try {
+      const guardado = sessionStorage.getItem('user');
+      if (!guardado) { return ''; }
+      const u = JSON.parse(guardado);
+      return u?.userUsername ?? u?.username ?? '';
+    } catch {
+      return '';
+    }
+  }
 
-    if (this.vista === 'usuarios') {
-      nombre = 'rendiciones_por_usuario';
-      filas = [['Usuario', 'Usuario del sistema', 'Rendiciones', 'Comprobantes',
-                'Importe S/', 'Comprob. por rendicion',
-                'Pendientes', 'En proceso', 'Recepcionadas', 'Observadas', 'Liquidadas',
-                'Primer envio', 'Ultimo envio']];
-      for (const u of this.usuarios) {
-        filas.push([u.usuario, u.username ?? '', String(u.rendiciones), String(u.comprobantes),
-                    String(u.importeSoles ?? 0), String(u.comprobantesPorRendicion ?? 0),
-                    String(u.pendientes ?? 0), String(u.enProceso ?? 0),
-                    String(u.recepcionadas ?? 0), String(u.observadas ?? 0),
-                    String(u.liquidadas ?? 0),
-                    u.primerEnvio ?? '', u.ultimoEnvio ?? '']);
+  /** El nombre de la pestaña, tal como se ve en la solapa. */
+  private get tituloVista(): string {
+    switch (this.vista) {
+      case 'usuarios':      return 'Rendiciones por usuario';
+      case 'centros':       return 'Gasto por centro de costos';
+      case 'tiempos':       return 'Tiempo de carga a envío';
+      case 'observaciones': return 'Motivos de observación';
+      case 'uso':           return 'Uso de REGINA';
+      default:              return 'Rendiciones recibidas';
+    }
+  }
+
+  private get archivoVista(): string {
+    switch (this.vista) {
+      case 'usuarios':      return 'rendiciones_por_usuario';
+      case 'centros':       return 'gasto_por_centro_de_costos';
+      case 'tiempos':       return 'tiempo_de_carga_a_envio';
+      case 'observaciones': return 'motivos_de_observacion';
+      case 'uso':           return 'uso_de_regina';
+      default:              return 'rendiciones_recibidas';
+    }
+  }
+
+  /** Los filtros aplicados, tal como se imprimen arriba del reporte. */
+  private chipsDeFiltros(): string[] {
+    const c: string[] = [];
+    if (this.filtro.desde) { c.push(`desde: ${this.filtro.desde}`); }
+    if (this.filtro.hasta) { c.push(`hasta: ${this.filtro.hasta}`); }
+    if (this.personaTexto) { c.push(`personal: ${this.personaTexto}`); }
+    if (this.centroTexto) { c.push(`centro: ${this.centroTexto}`); }
+    if (this.filtro.estado) {
+      const e = this.estados.find(x => x.valor === this.filtro.estado);
+      c.push(`estado: ${e?.etiqueta ?? this.filtro.estado}`);
+    }
+    return c;
+  }
+
+  descargarExcel(): void {
+    this.servicio.excel(this.codEmpresa, this.codSucursal, this.vista,
+                        this.filtro, this.usuarioActual).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.archivoVista}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: e => {
+        console.error('[reportes-rendicion] no se pudo bajar el Excel:', e);
+        this.mensajeError = 'No se pudo generar el Excel. Intentá de nuevo en un momento.';
       }
-    } else if (this.vista === 'tiempos') {
-      nombre = 'tiempo_carga_a_envio';
-      filas = [['Orden', 'Item OP', 'Comprobante', 'Tipo', 'Importe S/',
-                'Cargado', 'Enviado', 'Horas', 'Dias', 'Cargado por']];
-      for (const t of this.tiempos) {
-        filas.push([t.numOrden, t.numItemOp ?? '', t.comprobante, t.codDocumento ?? '',
-                    String(t.impSoles ?? 0), t.fecCarga ?? '', t.fecEnvio ?? '',
-                    String(t.horasEspera ?? ''), String(t.diasEspera ?? ''),
-                    t.usuarioCarga ?? '']);
-      }
-    } else if (this.vista === 'centros') {
-      nombre = 'gasto_por_centro_de_costos';
-      filas = [['Codigo', 'Centro de costos', 'Rendiciones', 'Comprobantes', 'Importe S/', '% del total']];
-      for (const c of this.centros) {
-        filas.push([c.codCCostos, c.desCCostos, String(c.rendiciones), String(c.comprobantes),
-                    String(c.importeSoles ?? 0), String(c.porcentaje ?? 0)]);
-      }
-    } else if (this.vista === 'uso') {
-      nombre = 'uso_de_regina';
-      filas = [['Usuario', 'Usuario del sistema', 'Correo', 'Nivel', 'Rendiciones',
-                'Comprobantes', 'Ultima rendicion']];
-      for (const u of this.uso) {
-        filas.push([u.usuario, u.username ?? '', u.email ?? '', this.etiquetaNivel(u.nivel),
-                    String(u.rendiciones), String(u.comprobantes), u.ultimaRendicion ?? '']);
-      }
-    } else if (this.vista === 'observaciones') {
-      nombre = 'motivos_de_observacion';
-      filas = [['Motivo', 'Veces', 'Importe S/', '% de las observaciones']];
-      for (const m of this.observaciones?.motivos ?? []) {
-        filas.push([m.desMotivo, String(m.veces), String(m.importe ?? 0), String(m.porcentaje ?? 0)]);
-      }
-    } else {
-      return;
+    });
+  }
+
+  /**
+   * La pestaña que se está viendo, en PDF.
+   *
+   * El armado —marca, filtros, tarjetas, tabla, pie— vive en ReportePdf y lo
+   * comparten todos los reportes. Acá solo se decide qué va en cada parte.
+   */
+  descargarPDF(): void {
+    const pdf = new ReportePdf(this.vista === 'resumen' ? 'portrait' : 'landscape');
+
+    pdf.cabecera({
+      reporte: this.tituloVista,
+      empresa: this.codEmpresa,
+      usuario: this.usuarioActual
+    }).filtros(this.chipsDeFiltros());
+
+    switch (this.vista) {
+      case 'usuarios':      this.pdfUsuarios(pdf); break;
+      case 'centros':       this.pdfCentros(pdf); break;
+      case 'tiempos':       this.pdfTiempos(pdf); break;
+      case 'observaciones': this.pdfObservaciones(pdf); break;
+      case 'uso':           this.pdfUso(pdf); break;
+      default:              this.pdfResumen(pdf); break;
     }
 
-    const csv = filas
-      .map(f => f.map(c => `"${(c ?? '').replace(/"/g, '""')}"`).join(';'))
-      .join('\r\n');
+    pdf.guardar(`${this.archivoVista}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
 
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${nombre}_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  /**
+   * El resumen no es una lista: va como tarjetas más dos bloques, el recorrido
+   * y los totales. Forzarlo a una sola tabla mezclaría cantidades con importes
+   * en la misma columna, que es como se leen mal los reportes.
+   */
+  private pdfResumen(pdf: ReportePdf): void {
+    const r = this.resumen;
+    if (!r) { pdf.nota('No hay datos para este período.'); return; }
+
+    const tarjetas: TarjetaPdf[] = [
+      { rotulo: 'RECIBIDAS', valor: String(r.recibidas), color: [37, 78, 138] },
+      { rotulo: 'PENDIENTES', valor: String(r.pendientes), color: [176, 132, 24] },
+      { rotulo: 'OBSERVADAS', valor: String(r.observadas), color: [176, 68, 45] },
+      { rotulo: 'LIQUIDADAS', valor: String(r.liquidadas), color: [37, 118, 74] },
+    ];
+    pdf.tarjetas(tarjetas);
+
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Estado', ancho: 240, alineacion: 'l' },
+      { titulo: 'Rendiciones', ancho: 100, alineacion: 'r' },
+    ];
+
+    pdf.seccion('El recorrido').tabla(cols, [
+      ['Pendientes (sin enviar)', String(r.pendientes)],
+      ['En proceso', String(r.enProceso)],
+      ['Recepcionadas', String(r.recepcionadas)],
+      ['Observadas', String(r.observadas)],
+      ['Liquidadas', String(r.liquidadas)],
+    ], ['Recibidas por contabilidad', String(r.recibidas)]);
+
+    pdf.seccion('Totales del período').tabla([
+      { titulo: 'Concepto', ancho: 240, alineacion: 'l' },
+      { titulo: 'Valor', ancho: 100, alineacion: 'r' },
+    ], [
+      ['Comprobantes', String(r.comprobantes)],
+      ['Importe en soles', nro(r.importeSoles)],
+      ['Importe en dólares', nro(r.importeDolares)],
+      ['Personas distintas', String(r.usuarios)],
+      ['Primer envío', fmtFecha(r.primerEnvio)],
+      ['Último envío', fmtFecha(r.ultimoEnvio)],
+    ]);
+
+    if (r.hayDatosDesde) {
+      pdf.nota(`La antesala registra desde el ${fmtFecha(r.hayDatosDesde)}. `
+        + 'Un corte anterior sale en cero por falta de registro, no de actividad.');
+    }
+  }
+
+  private pdfUsuarios(pdf: ReportePdf): void {
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Usuario', ancho: 190, alineacion: 'l' },
+      { titulo: 'Rend.', ancho: 45, alineacion: 'c' },
+      { titulo: 'Comp.', ancho: 50, alineacion: 'c' },
+      { titulo: 'Importe S/', ancho: 80, alineacion: 'r' },
+      { titulo: 'Pend.', ancho: 45, alineacion: 'c' },
+      { titulo: 'En proc.', ancho: 50, alineacion: 'c' },
+      { titulo: 'Recep.', ancho: 48, alineacion: 'c' },
+      { titulo: 'Obs.', ancho: 42, alineacion: 'c' },
+      { titulo: 'Liq.', ancho: 42, alineacion: 'c' },
+      { titulo: 'Primer envío', ancho: 72, alineacion: 'c' },
+      { titulo: 'Último envío', ancho: 72, alineacion: 'c' },
+    ];
+    const filas = this.usuarios.map(u => [
+      u.usuario, String(u.rendiciones), String(u.comprobantes), nro(u.importeSoles),
+      String(u.pendientes ?? 0), String(u.enProceso ?? 0), String(u.recepcionadas ?? 0),
+      String(u.observadas ?? 0), String(u.liquidadas ?? 0),
+      fmtFecha(u.primerEnvio), fmtFecha(u.ultimoEnvio)
+    ]);
+    const totalRend = this.usuarios.reduce((s, u) => s + u.rendiciones, 0);
+    const totalComp = this.usuarios.reduce((s, u) => s + u.comprobantes, 0);
+    const totalImp = this.usuarios.reduce((s, u) => s + (u.importeSoles ?? 0), 0);
+
+    pdf.seccion('Detalle por persona')
+       .tabla(cols, filas, ['TOTAL', String(totalRend), String(totalComp), nro(totalImp)]);
+  }
+
+  private pdfCentros(pdf: ReportePdf): void {
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Código', ancho: 80, alineacion: 'l' },
+      { titulo: 'Centro de costos', ancho: 330, alineacion: 'l' },
+      { titulo: 'Rend.', ancho: 55, alineacion: 'c' },
+      { titulo: 'Comp.', ancho: 55, alineacion: 'c' },
+      { titulo: 'Importe S/', ancho: 90, alineacion: 'r' },
+      { titulo: '% del total', ancho: 70, alineacion: 'r' },
+    ];
+    const filas = this.centros.map(c => [
+      c.codCCostos, c.desCCostos, String(c.rendiciones), String(c.comprobantes),
+      nro(c.importeSoles), nro(c.porcentaje) + ' %'
+    ]);
+    const totalImp = this.centros.reduce((s, c) => s + (c.importeSoles ?? 0), 0);
+
+    pdf.seccion('Detalle por centro de costos')
+       .tabla(cols, filas, ['TOTAL', '', '', '', nro(totalImp), '']);
+  }
+
+  private pdfTiempos(pdf: ReportePdf): void {
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Orden', ancho: 70, alineacion: 'l' },
+      { titulo: 'Comprobante', ancho: 120, alineacion: 'l' },
+      { titulo: 'Tipo', ancho: 45, alineacion: 'c' },
+      { titulo: 'Importe S/', ancho: 80, alineacion: 'r' },
+      { titulo: 'Cargado', ancho: 95, alineacion: 'c' },
+      { titulo: 'Enviado', ancho: 95, alineacion: 'c' },
+      { titulo: 'Horas', ancho: 55, alineacion: 'c' },
+      { titulo: 'Días', ancho: 50, alineacion: 'c' },
+      { titulo: 'Cargado por', ancho: 140, alineacion: 'l' },
+    ];
+    const filas = this.tiempos.map(t => [
+      t.numOrden, t.comprobante, t.codDocumento ?? '', nro(t.impSoles),
+      fmtFecha(t.fecCarga), fmtFecha(t.fecEnvio),
+      String(t.horasEspera ?? ''), nro(t.diasEspera), t.usuarioCarga ?? ''
+    ]);
+    pdf.seccion('Comprobantes que más esperaron').tabla(cols, filas);
+  }
+
+  private pdfObservaciones(pdf: ReportePdf): void {
+    const o = this.observaciones;
+    if (!o) { pdf.nota('No hay observaciones en este período.'); return; }
+
+    pdf.tarjetas([
+      { rotulo: 'RENDICIONES CON OBSERVACIÓN', valor: String(o.rendicionesConObservacion),
+        pie: `de ${o.rendicionesRevisadas} revisadas`, color: [176, 68, 45] },
+      { rotulo: 'COMPROBANTES OBSERVADOS', valor: String(o.comprobantesObservados),
+        pie: `de ${o.comprobantes}`, color: [176, 132, 24] },
+      { rotulo: 'IMPORTE OBSERVADO', valor: 'S/ ' + nro(o.importeObservado), color: [37, 78, 138] },
+      { rotulo: 'RECHAZADAS', valor: String(o.rendicionesRechazadas), color: [110, 118, 130] },
+    ]);
+
+    pdf.seccion('Por qué se observa').tabla([
+      { titulo: 'Motivo', ancho: 330, alineacion: 'l' },
+      { titulo: 'Veces', ancho: 70, alineacion: 'c' },
+      { titulo: 'Importe S/', ancho: 100, alineacion: 'r' },
+      { titulo: '% de las observaciones', ancho: 130, alineacion: 'r' },
+    ], (o.motivos ?? []).map(m => [
+      m.desMotivo, String(m.veces), nro(m.importe), nro(m.porcentaje) + ' %'
+    ]));
+  }
+
+  private pdfUso(pdf: ReportePdf): void {
+    const cols: ColumnaPdf[] = [
+      { titulo: 'Usuario', ancho: 200, alineacion: 'l' },
+      { titulo: 'Correo', ancho: 220, alineacion: 'l' },
+      { titulo: 'Nivel', ancho: 80, alineacion: 'c' },
+      { titulo: 'Rendiciones', ancho: 80, alineacion: 'c' },
+      { titulo: 'Comprobantes', ancho: 85, alineacion: 'c' },
+      { titulo: 'Última rendición', ancho: 100, alineacion: 'c' },
+    ];
+    const filas = this.uso.map(u => [
+      u.usuario, u.email ?? '', this.etiquetaNivel(u.nivel),
+      String(u.rendiciones), String(u.comprobantes), fmtFecha(u.ultimaRendicion)
+    ]);
+    pdf.seccion('Quién usa REGINA').tabla(cols, filas);
   }
 }
