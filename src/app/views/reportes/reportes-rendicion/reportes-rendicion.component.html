@@ -241,7 +241,9 @@
           <th>Usuario</th>
           <th class="text-center">Rendiciones</th>
           <th class="text-center">Comprobantes</th>
-          <th class="text-end">Importe S/</th>
+          <th class="text-end">Entregado S/</th>
+          <th class="text-end">Rendido S/</th>
+          <th class="text-end" title="Qué parte de lo entregado todavía no rindió">% pend.</th>
           <th class="text-center">Comp. por rendición</th>
           <th>Estado</th>
           <th class="text-center">Primer envío</th>
@@ -255,7 +257,15 @@
             </td>
             <td class="text-center"><strong>{{ u.rendiciones }}</strong></td>
             <td class="text-center">{{ u.comprobantes }}</td>
+            <td class="text-end">
+              <span *ngIf="u.importeEntregado != null">{{ u.importeEntregado | number:'1.2-2' }}</span>
+              <span class="rr-sindato" *ngIf="u.importeEntregado == null">—</span>
+            </td>
             <td class="text-end">{{ u.importeSoles | number:'1.2-2' }}</td>
+            <td class="text-end" [ngClass]="clasePendiente(u.porcentajePendiente)">
+              <span *ngIf="u.porcentajePendiente != null">{{ u.porcentajePendiente | number:'1.1-1' }} %</span>
+              <span class="rr-sindato" *ngIf="u.porcentajePendiente == null">—</span>
+            </td>
             <td class="text-center">{{ u.comprobantesPorRendicion | number:'1.1-1' }}</td>
 
             <!-- En qué anda lo de cada uno. Sin esto la gente pregunta por
@@ -277,7 +287,7 @@
             <td class="text-center">{{ u.ultimoEnvio | date:'dd/MM/yyyy' }}</td>
           </tr>
           <tr *ngIf="buscoAlgunaVez && !usuarios.length">
-            <td colspan="8" class="text-center rr-vacio">
+            <td colspan="10" class="text-center rr-vacio">
               Nadie tiene rendiciones en este rango.
             </td>
           </tr>

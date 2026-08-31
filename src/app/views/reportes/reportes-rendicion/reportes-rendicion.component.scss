@@ -369,3 +369,10 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+/* El porcentaje pendiente, con semáforo. Por debajo del 20 suele ser el
+   redondeo de una rendición en curso; por encima del 50 es plata que
+   sigue afuera. */
+.d-ok    { color: #25764a; font-weight: 600; }
+.d-medio { color: #a07716; font-weight: 600; }
+.d-tarde { color: #b0442d; font-weight: 700; }

@@ -61,6 +61,11 @@ export interface RendicionPorUsuario {
 
   comprobantesPorRendicion: number;
 
+  /** Lo que se le entregó según el ERP, sumando las OP de sus rendiciones. */
+  importeEntregado?: number;
+  /** Qué parte de lo entregado todavía no rindió. */
+  porcentajePendiente?: number;
+
   /** En qué anda cada una de sus rendiciones, por estado. */
   pendientes: number;
   enProceso: number;

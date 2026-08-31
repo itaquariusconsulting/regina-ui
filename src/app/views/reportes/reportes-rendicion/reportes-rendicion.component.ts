@@ -653,6 +653,19 @@ export class ReportesRendicionComponent implements OnInit {
     return `${d}/${m}/${a}`;
   }
 
+  /**
+   * Verde hasta 20% pendiente, ámbar hasta 50, rojo más allá.
+   *
+   * El corte no es caprichoso: por debajo del 20 suele ser el redondeo de una
+   * rendición en curso; por encima del 50 es plata que sigue afuera.
+   */
+  clasePendiente(porcentaje?: number): string {
+    if (porcentaje == null) { return ''; }
+    if (porcentaje <= 20) { return 'd-ok'; }
+    if (porcentaje <= 50) { return 'd-medio'; }
+    return 'd-tarde';
+  }
+
   // ------------------------------------------------------------ descarga
 
   /** El usuario logueado, para que el reporte diga quién lo generó. */
@@ -799,11 +812,13 @@ export class ReportesRendicionComponent implements OnInit {
 
   private pdfUsuarios(pdf: ReportePdf): void {
     const cols: ColumnaPdf[] = [
-      { titulo: 'Usuario', ancho: 190, alineacion: 'l' },
-      { titulo: 'Rend.', ancho: 45, alineacion: 'c' },
-      { titulo: 'Comp.', ancho: 50, alineacion: 'c' },
-      { titulo: 'Importe S/', ancho: 80, alineacion: 'r' },
-      { titulo: 'Pend.', ancho: 45, alineacion: 'c' },
+      { titulo: 'Usuario', ancho: 160, alineacion: 'l' },
+      { titulo: 'Rend.', ancho: 38, alineacion: 'c' },
+      { titulo: 'Comp.', ancho: 40, alineacion: 'c' },
+      { titulo: 'Entregado S/', ancho: 78, alineacion: 'r' },
+      { titulo: 'Rendido S/', ancho: 78, alineacion: 'r' },
+      { titulo: '% pend.', ancho: 52, alineacion: 'r' },
+      { titulo: 'Pend.', ancho: 40, alineacion: 'c' },
       { titulo: 'En proc.', ancho: 50, alineacion: 'c' },
       { titulo: 'Recep.', ancho: 48, alineacion: 'c' },
       { titulo: 'Obs.', ancho: 42, alineacion: 'c' },
@@ -812,17 +827,29 @@ export class ReportesRendicionComponent implements OnInit {
       { titulo: 'Último envío', ancho: 72, alineacion: 'c' },
     ];
     const filas = this.usuarios.map(u => [
-      u.usuario, String(u.rendiciones), String(u.comprobantes), nro(u.importeSoles),
+      u.usuario, String(u.rendiciones), String(u.comprobantes),
+      u.importeEntregado == null ? '—' : nro(u.importeEntregado),
+      nro(u.importeSoles),
+      u.porcentajePendiente == null ? '—' : nro(u.porcentajePendiente) + ' %',
       String(u.pendientes ?? 0), String(u.enProceso ?? 0), String(u.recepcionadas ?? 0),
       String(u.observadas ?? 0), String(u.liquidadas ?? 0),
       fmtFecha(u.primerEnvio), fmtFecha(u.ultimoEnvio)
     ]);
+
     const totalRend = this.usuarios.reduce((s, u) => s + u.rendiciones, 0);
     const totalComp = this.usuarios.reduce((s, u) => s + u.comprobantes, 0);
+    const totalEnt = this.usuarios.reduce((s, u) => s + (u.importeEntregado ?? 0), 0);
     const totalImp = this.usuarios.reduce((s, u) => s + (u.importeSoles ?? 0), 0);
+    // El porcentaje del total se calcula sobre los totales, no promediando
+    // los porcentajes de cada fila: promediar porcentajes le da el mismo peso
+    // a quien rindió cincuenta soles que a quien rindió cinco mil.
+    const pendTotal = totalEnt > 0
+      ? nro(Math.max(0, totalEnt - totalImp) * 100 / totalEnt) + ' %'
+      : '—';
 
     pdf.seccion('Detalle por persona')
-       .tabla(cols, filas, ['TOTAL', String(totalRend), String(totalComp), nro(totalImp)]);
+       .tabla(cols, filas, ['TOTAL', String(totalRend), String(totalComp),
+                            nro(totalEnt), nro(totalImp), pendTotal]);
   }
 
   private pdfCentros(pdf: ReportePdf): void {
