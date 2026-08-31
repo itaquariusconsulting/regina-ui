@@ -346,7 +346,17 @@
 .rr-pastilla.p-obs   { color: #8a2d19; background: #fbe2dc; }
 .rr-pastilla.p-liq   { color: #3d3f45; background: #e6e7ea; }
 
-/* Los dos formatos que la gente realmente comparte. El CSV queda para
-   quien quiere la tabla cruda. */
+/* Los dos formatos que la gente realmente comparte, arriba con el resto
+   de las acciones de la pantalla. */
 .btn-pdf   { background: #c0392b; color: #fff; }
 .btn-excel { background: #1d7044; color: #fff; }
+
+/* El gerencial también es un PDF, pero es OTRO PDF: trae las seis pestañas
+   y no la que está abierta. Va en contorno y no en relleno para que no se
+   confunda con el botón de al lado, que es lo único que los distingue
+   cuando alguien va rápido. */
+.btn-gerencial {
+  background: #fff;
+  color: #c0392b;
+  border: 1.5px solid #c0392b;
+}

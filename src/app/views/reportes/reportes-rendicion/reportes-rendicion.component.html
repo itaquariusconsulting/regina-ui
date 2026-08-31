@@ -6,7 +6,18 @@
 
   <div class="bar-buttons-top w-100">
     <div class="title-f6">Reportes de Rendición</div>
-    <button (click)="exportarGerencial()" class="general-button btn-danger"
+    <!-- Las descargas viven arriba, con el resto de las acciones de la
+         pantalla. Abajo, entre Buscar y Limpiar, se leían como un paso más
+         del filtrado y no como lo que son: llevarse lo que ya se ve. -->
+    <button (click)="descargarPDF()" class="general-button btn-pdf"
+            title="Esta pestaña en PDF, con los filtros aplicados">
+      <i class="fa fa-file-pdf"></i>PDF
+    </button>
+    <button (click)="descargarExcel()" class="general-button btn-excel"
+            title="Esta pestaña en Excel">
+      <i class="fa fa-file-excel"></i>Excel
+    </button>
+    <button (click)="exportarGerencial()" class="general-button btn-gerencial"
             [disabled]="generandoPdf"
             title="PDF con todo el panorama, no solo la pestaña abierta">
       <i class="fa fa-file-pdf"></i>Reporte gerencial
@@ -134,14 +145,6 @@
       </button>
       <button (click)="limpiar()" class="general-button btn-secondary" title="Quitar todos los filtros">
         <i class="fa fa-eraser"></i>Limpiar
-      </button>
-      <button (click)="descargarPDF()" class="general-button btn-pdf"
-              title="Esta pestaña en PDF, con los filtros aplicados">
-        <i class="fa fa-file-pdf"></i>PDF
-      </button>
-      <button (click)="descargarExcel()" class="general-button btn-excel"
-              title="Esta pestaña en Excel">
-        <i class="fa fa-file-excel"></i>Excel
       </button>
     </div>
   </div>
