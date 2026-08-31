@@ -352,15 +352,17 @@
       El ERP no guarda ese momento — por eso lo registra REGINA.
     </div>
 
-    <div class="rr-resumen-linea" *ngIf="tiempos.length">
-      <span><strong>{{ tiempos.length }}</strong> comprobante(s)</span>
+    <div class="rr-resumen-linea" *ngIf="tiemposOrden.length">
+      <span><strong>{{ tiemposOrden.length }}</strong> orden(es)</span>
       <span class="separador">·</span>
-      <span>promedio de espera <strong>{{ promedioDias | number:'1.1-1' }}</strong> día(s)</span>
+      <span><strong>{{ ordenesEnCurso }}</strong> con el reloj corriendo</span>
+      <span class="separador">·</span>
+      <span>promedio del recorrido <strong>{{ promedioDias | number:'1.1-1' }}</strong> día(s)</span>
       <ng-container *ngIf="peorEspera">
         <span class="separador">·</span>
-        <span>el que más esperó:
-          <strong>{{ peorEspera.comprobante }}</strong>
-          ({{ peorEspera.diasEspera | number:'1.1-1' }} días, OP {{ peorEspera.numOrden }})
+        <span>la que más lleva:
+          <strong>OP {{ peorEspera.numOrden }}</strong>
+          ({{ peorEspera.diasTotal | number:'1.1-1' }} días, {{ peorEspera.usuario }})
         </span>
       </ng-container>
     </div>
@@ -369,34 +371,49 @@
       <table class="table global-table table-striped table-hover">
         <thead>
           <th class="text-center">Orden</th>
-          <th class="text-center">Ítem</th>
-          <th>Comprobante</th>
-          <th class="text-end">Importe S/</th>
-          <th class="text-center">Cargado</th>
-          <th class="text-center">Enviado</th>
-          <th class="text-center">Espera</th>
-          <th>Cargado por</th>
+          <th>Personal</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Creada</th>
+          <th class="text-center">Enviada</th>
+          <th class="text-center">Recepcionada</th>
+          <th class="text-center">Liquidada</th>
+          <th class="text-center" title="Desde que se creó hasta que se envió. Si no se envió, sigue corriendo.">Pendiente</th>
+          <th class="text-center" title="Desde el envío hasta que contabilidad recibió los físicos.">En proceso</th>
+          <th class="text-center" title="Desde la recepción hasta la liquidación.">En recepción</th>
+          <th class="text-center">Total</th>
         </thead>
         <tbody>
-          <tr *ngFor="let t of paginaDeTiempos">
+          <tr *ngFor="let t of paginaTiempos">
             <td class="text-center">{{ t.numOrden }}</td>
-            <td class="text-center">{{ t.numItemOp }}</td>
             <td>
-              {{ t.comprobante }}
-              <small class="rr-username" *ngIf="t.codDocumento">{{ t.codDocumento }}</small>
+              {{ t.usuario }}
+              <small class="rr-username" *ngIf="t.comprobantes">{{ t.comprobantes }} comp.</small>
             </td>
-            <td class="text-end">{{ t.impSoles | number:'1.2-2' }}</td>
-            <td class="text-center">{{ t.fecCarga | date:'dd/MM/yyyy HH:mm' }}</td>
-            <td class="text-center">{{ t.fecEnvio | date:'dd/MM/yyyy HH:mm' }}</td>
             <td class="text-center">
-              <span class="rr-espera" [ngClass]="colorDeEspera(t.diasEspera)">
-                {{ t.diasEspera | number:'1.1-1' }} d
+              <span class="rr-pastilla" [ngClass]="claseProceso(t.estProceso)">
+                {{ t.etiquetaProceso }}
               </span>
             </td>
-            <td>{{ t.usuarioCarga }}</td>
+            <td class="text-center">{{ t.fecCreada | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">{{ t.fecEnviada | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">{{ t.fecRecepcionada | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center">{{ t.fecLiquidada | date:'dd/MM/yyyy' }}</td>
+            <td class="text-center" [ngClass]="claseDias(t.diasPendiente)">
+              {{ t.diasPendiente != null ? (t.diasPendiente | number:'1.1-1') + ' d' : '—' }}
+            </td>
+            <td class="text-center" [ngClass]="claseDias(t.diasEnProceso)">
+              {{ t.diasEnProceso != null ? (t.diasEnProceso | number:'1.1-1') + ' d' : '—' }}
+            </td>
+            <td class="text-center" [ngClass]="claseDias(t.diasEnRecepcion)">
+              {{ t.diasEnRecepcion != null ? (t.diasEnRecepcion | number:'1.1-1') + ' d' : '—' }}
+            </td>
+            <td class="text-center">
+              <strong>{{ t.diasTotal != null ? (t.diasTotal | number:'1.1-1') + ' d' : '—' }}</strong>
+              <small class="rr-encurso" *ngIf="t.enCurso" title="El recorrido no terminó: el reloj sigue">corriendo</small>
+            </td>
           </tr>
           <tr *ngIf="buscoAlgunaVez && !tiempos.length">
-            <td colspan="8" class="text-center rr-vacio">
+            <td colspan="11" class="text-center rr-vacio">
               No hay comprobantes enviados en este rango.
             </td>
           </tr>

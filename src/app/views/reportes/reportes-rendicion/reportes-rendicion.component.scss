@@ -376,3 +376,11 @@
 .d-ok    { color: #25764a; font-weight: 600; }
 .d-medio { color: #a07716; font-weight: 600; }
 .d-tarde { color: #b0442d; font-weight: 700; }
+
+/* La marca de que el reloj de esa orden sigue corriendo. */
+.rr-encurso {
+  display: block;
+  font-size: 0.68rem;
+  color: #a07716;
+  font-style: italic;
+}

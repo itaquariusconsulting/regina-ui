@@ -193,3 +193,38 @@ export interface OpcionesFiltro {
   personas: OpcionFiltro[];
   centros: OpcionFiltro[];
 }
+
+/**
+ * Cuánto lleva una orden de pago en cada etapa del recorrido.
+ *
+ * Una fila por OP, no por comprobante. Los tramos que todavía no terminaron
+ * siguen corriendo hasta hoy: eso es lo que convierte la lista en algo sobre
+ * lo que se puede actuar.
+ */
+export interface TiempoOrden {
+  numOrden: string;
+  anoPeriodo?: string;
+  codPeriodo?: string;
+
+  userId?: number;
+  usuario: string;
+  username?: string;
+  codAuxiliar?: string;
+
+  estProceso?: string;
+  etiquetaProceso?: string;
+
+  fecCreada?: string;
+  fecEnviada?: string;
+  fecRecepcionada?: string;
+  fecLiquidada?: string;
+
+  diasPendiente?: number;
+  diasEnProceso?: number;
+  diasEnRecepcion?: number;
+  diasTotal?: number;
+
+  enCurso: boolean;
+  comprobantes: number;
+  importeSoles: number;
+}

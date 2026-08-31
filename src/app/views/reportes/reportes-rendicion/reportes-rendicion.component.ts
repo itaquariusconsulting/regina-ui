@@ -19,6 +19,7 @@ import {
   RendicionPorUsuario,
   ResumenRendiciones,
   TiempoComprobante,
+  TiempoOrden,
   TiemposEtapa,
   UsoRegina
 } from '../../../models/reporte-rendicion';
@@ -55,6 +56,8 @@ export class ReportesRendicionComponent implements OnInit {
   usuarios: RendicionPorUsuario[] = [];
   centros: RendicionPorCentroCosto[] = [];
   tiempos: TiempoComprobante[] = [];
+  /** El recorrido por OP: lo que pidió contabilidad para esta pestaña. */
+  tiemposOrden: TiempoOrden[] = [];
   etapas?: TiemposEtapa;
   observaciones?: ObservacionesResumen;
   uso: UsoRegina[] = [];
@@ -423,9 +426,9 @@ export class ReportesRendicionComponent implements OnInit {
             error: e => console.error('[reportes] no se pudieron obtener las etapas:', e)
           });
 
-        this.servicio.tiempos(this.codEmpresa, this.codSucursal, this.filtro)
+        this.servicio.tiemposPorOrden(this.codEmpresa, this.codSucursal, this.filtro)
           .subscribe({
-            next: r => { this.tiempos = r ?? []; this.paginaActual = 0; listo(); },
+            next: r => { this.tiemposOrden = r ?? []; this.paginaActual = 0; listo(); },
             error: fallo
           });
     }
@@ -447,13 +450,13 @@ export class ReportesRendicionComponent implements OnInit {
 
   // ------------------------------------------------------------ tiempos
 
-  get paginaDeTiempos(): TiempoComprobante[] {
+  get paginaDeTiempos(): TiempoOrden[] {
     const desde = this.paginaActual * this.tamanioPagina;
-    return this.tiempos.slice(desde, desde + this.tamanioPagina);
+    return this.tiemposOrden.slice(desde, desde + this.tamanioPagina);
   }
 
   get totalPaginas(): number {
-    return Math.ceil(this.tiempos.length / this.tamanioPagina);
+    return Math.ceil(this.tiemposOrden.length / this.tamanioPagina);
   }
 
   irAPagina(p: number): void {
@@ -462,21 +465,29 @@ export class ReportesRendicionComponent implements OnInit {
     }
   }
 
-  /** El promedio de espera, que es el número que resume la tabla entera. */
+  /**
+   * Cuánto tarda en promedio una orden desde que se crea hasta hoy o hasta
+   * que se liquida. Es el número que resume la tabla entera.
+   */
   get promedioDias(): number {
-    const conDato = this.tiempos.filter(t => t.diasEspera != null);
+    const conDato = this.tiemposOrden.filter(t => t.diasTotal != null);
     if (!conDato.length) {
       return 0;
     }
-    const suma = conDato.reduce((acc, t) => acc + (t.diasEspera ?? 0), 0);
+    const suma = conDato.reduce((acc, t) => acc + (t.diasTotal ?? 0), 0);
     return Math.round((suma / conDato.length) * 10) / 10;
   }
 
-  /** El que más esperó. Es el caso que la gente quiere ver primero. */
-  get peorEspera(): TiempoComprobante | undefined {
-    return this.tiempos.reduce<TiempoComprobante | undefined>(
-      (peor, t) => (!peor || (t.diasEspera ?? 0) > (peor.diasEspera ?? 0)) ? t : peor,
+  /** La orden que más lleva. Es el caso que la gente quiere ver primero. */
+  get peorEspera(): TiempoOrden | undefined {
+    return this.tiemposOrden.reduce<TiempoOrden | undefined>(
+      (peor, t) => (!peor || (t.diasTotal ?? 0) > (peor.diasTotal ?? 0)) ? t : peor,
       undefined);
+  }
+
+  /** Cuántas siguen con el reloj corriendo: el recorrido no terminó. */
+  get ordenesEnCurso(): number {
+    return this.tiemposOrden.filter(t => t.enCurso).length;
   }
 
   /** Verde hasta 3 días, ámbar hasta 10, rojo más allá. */
@@ -873,22 +884,33 @@ export class ReportesRendicionComponent implements OnInit {
 
   private pdfTiempos(pdf: ReportePdf): void {
     const cols: ColumnaPdf[] = [
-      { titulo: 'Orden', ancho: 70, alineacion: 'l' },
-      { titulo: 'Comprobante', ancho: 120, alineacion: 'l' },
-      { titulo: 'Tipo', ancho: 45, alineacion: 'c' },
-      { titulo: 'Importe S/', ancho: 80, alineacion: 'r' },
-      { titulo: 'Cargado', ancho: 95, alineacion: 'c' },
-      { titulo: 'Enviado', ancho: 95, alineacion: 'c' },
-      { titulo: 'Horas', ancho: 55, alineacion: 'c' },
-      { titulo: 'Días', ancho: 50, alineacion: 'c' },
-      { titulo: 'Cargado por', ancho: 140, alineacion: 'l' },
+      { titulo: 'Orden', ancho: 62, alineacion: 'l' },
+      { titulo: 'Personal', ancho: 135, alineacion: 'l' },
+      { titulo: 'Estado', ancho: 70, alineacion: 'c' },
+      { titulo: 'Creada', ancho: 58, alineacion: 'c' },
+      { titulo: 'Enviada', ancho: 58, alineacion: 'c' },
+      { titulo: 'Recepc.', ancho: 58, alineacion: 'c' },
+      { titulo: 'Liquidada', ancho: 58, alineacion: 'c' },
+      { titulo: 'Pend.', ancho: 46, alineacion: 'r' },
+      { titulo: 'En proc.', ancho: 50, alineacion: 'r' },
+      { titulo: 'En recep.', ancho: 52, alineacion: 'r' },
+      { titulo: 'Total', ancho: 46, alineacion: 'r' },
     ];
-    const filas = this.tiempos.map(t => [
-      t.numOrden, t.comprobante, t.codDocumento ?? '', nro(t.impSoles),
-      fmtFecha(t.fecCarga), fmtFecha(t.fecEnvio),
-      String(t.horasEspera ?? ''), nro(t.diasEspera), t.usuarioCarga ?? ''
+
+    const dias = (v?: number) => v == null ? '—' : nro(v) + ' d';
+
+    const filas = this.tiemposOrden.map(t => [
+      t.numOrden, (t.usuario || '').substring(0, 34), t.etiquetaProceso ?? '',
+      fmtFecha(t.fecCreada), fmtFecha(t.fecEnviada),
+      fmtFecha(t.fecRecepcionada), fmtFecha(t.fecLiquidada),
+      dias(t.diasPendiente), dias(t.diasEnProceso),
+      dias(t.diasEnRecepcion), dias(t.diasTotal)
     ]);
-    pdf.seccion('Comprobantes que más esperaron').tabla(cols, filas);
+
+    pdf.seccion('El recorrido de cada orden')
+       .tabla(cols, filas)
+       .nota('Los tramos que todavía no terminaron siguen corriendo hasta hoy: '
+           + `${this.ordenesEnCurso} de ${this.tiemposOrden.length} órdenes están en curso.`);
   }
 
   private pdfObservaciones(pdf: ReportePdf): void {

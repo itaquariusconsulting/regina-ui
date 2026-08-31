@@ -11,6 +11,7 @@ import {
   RendicionPorUsuario,
   ResumenRendiciones,
   TiempoComprobante,
+  TiempoOrden,
   TiemposEtapa,
   UsoRegina
 } from '../models/reporte-rendicion';
@@ -145,5 +146,13 @@ export class ReporteRendicionService {
 
     return this.http.get(`${this.apiUrlProcess}rendicion/reportes/excel`,
       { params: p, responseType: 'blob' });
+  }
+
+  /** El recorrido de cada OP, con sus cuatro fechas y los días de cada etapa. */
+  tiemposPorOrden(codEmpresa: string, codSucursal: string,
+                  filtro: FiltroReporte): Observable<TiempoOrden[]> {
+    return this.http.get<TiempoOrden[]>(
+      `${this.apiUrlProcess}rendicion/reportes/tiempos-por-orden`,
+      { headers: this.cabeceras(), params: this.parametros(codEmpresa, codSucursal, filtro) });
   }
 }
