@@ -1,4 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
+import { DIAS_ANTES_TOLERADOS, fechaMinimaAceptada } from '../../../shared/reglas-comprobante';
 import { Component, ElementRef, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
@@ -1914,35 +1915,21 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   /**
-   * Días previos a la fecha de la OP que se aceptan sin observar.
-   *
-   * La gente adelanta gastos: paga el pasaje o el hotel unos días antes de
-   * que salga la orden. Cinco días es el margen que definió contabilidad.
-   * Más atrás que eso el comprobante entra igual, pero marcado.
-   *
-   * El backend tiene el mismo número en RendicionService.DIAS_ANTES_TOLERADOS.
-   * Si cambia uno tiene que cambiar el otro: acá decide qué cartel se muestra,
-   * allá decide qué se guarda.
-   */
-  static readonly DIAS_ANTES_TOLERADOS = 5;
-
-  /**
    * Indica si la fecha del documento cae dentro de la ventana aceptada.
    * Ya no bloquea el guardado: decide si se avisa que quedará observado.
    */
   fechaDocValida: boolean = true;
 
-  /** El día más antiguo que se acepta sin observar, o null si no hay OP. */
-  private get fechaMinimaAceptada(): Date | null {
-    if (!this.orden?.fecOrden) return null;
-    const limite = new Date(this.orden.fecOrden);
-    limite.setHours(0, 0, 0, 0);
-    limite.setDate(limite.getDate() - EditRendirCuentaComponent.DIAS_ANTES_TOLERADOS);
-    return limite;
+  /**
+   * El día más antiguo que se acepta sin observar, o null si no hay OP.
+   * Se llama distinto que la función importada para que no se confundan.
+   */
+  private get limiteDeFecha(): Date | null {
+    return fechaMinimaAceptada(this.orden?.fecOrden);
   }
 
   isFechaValida(model: any): boolean {
-    const limite = this.fechaMinimaAceptada;
+    const limite = this.limiteDeFecha;
     if (!model || !limite) return false;
 
     // Convertir NgbDateStruct a Date
@@ -1993,8 +1980,8 @@ export class EditRendirCuentaComponent implements OnInit {
     const comoFecha = (d: Date) =>
       d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const limite = this.fechaMinimaAceptada;
-    const dias = EditRendirCuentaComponent.DIAS_ANTES_TOLERADOS;
+    const limite = this.limiteDeFecha;
+    const dias = DIAS_ANTES_TOLERADOS;
 
     Swal.fire({
       icon: 'warning',

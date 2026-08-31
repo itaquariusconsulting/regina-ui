@@ -8,7 +8,13 @@
     <div class="title-f6">Reportes de Rendición</div>
     <!-- Las descargas viven arriba, con el resto de las acciones de la
          pantalla. Abajo, entre Buscar y Limpiar, se leían como un paso más
-         del filtrado y no como lo que son: llevarse lo que ya se ve. -->
+         del filtrado y no como lo que son: llevarse lo que ya se ve.
+
+         Van dentro de un contenedor propio porque .bar-buttons-top reparte
+         a sus hijos con space-between: con el título y un botón queda bien,
+         con cinco los desparrama de punta a punta. Agrupados, el título
+         queda a la izquierda y las acciones juntas a la derecha. -->
+    <div class="rr-acciones-arriba">
     <button (click)="descargarPDF()" class="general-button btn-pdf"
             title="Esta pestaña en PDF, con los filtros aplicados">
       <i class="fa fa-file-pdf"></i>PDF
@@ -25,6 +31,7 @@
     <button (click)="volver()" class="general-button btn-secondary">
       <i class="fa fa-arrow-left"></i>Regresar
     </button>
+    </div>
   </div>
 
   <!-- Pestañas: tres preguntas sobre lo mismo, con los mismos filtros. -->

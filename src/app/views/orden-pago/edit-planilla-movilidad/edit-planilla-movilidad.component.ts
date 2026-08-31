@@ -214,9 +214,14 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       this.importeMaxDiaErrorMsg = data.importeMaxDiaErrorMsg;
     }
 
-    if (this.orden?.fecOrden) {
-      this.minDate = moment(this.orden.fecOrden);
-    }
+    // El calendario NO se ata a la fecha de la orden.
+    //
+    // Antes el mínimo era la propia FEC_ORDEN, así que el usuario abría el
+    // datepicker y encontraba todo el mes en gris con un solo día clickeable,
+    // sin ninguna explicación. Y la regla estaba mal de origen: la movilidad
+    // se hace cuando se hace —los viajes de la semana anterior, o los de un
+    // mes entero— y la orden de pago se emite después. Atarlas obligaba a
+    // poner una fecha falsa para poder guardar.
   }
 
   private setupUI(): void {

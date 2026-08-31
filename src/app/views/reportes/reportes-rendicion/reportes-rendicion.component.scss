@@ -360,3 +360,12 @@
   color: #c0392b;
   border: 1.5px solid #c0392b;
 }
+
+/* Las acciones de la pantalla, juntas a la derecha del título. */
+.rr-acciones-arriba {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
