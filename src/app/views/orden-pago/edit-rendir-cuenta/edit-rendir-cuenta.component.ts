@@ -197,6 +197,16 @@ export class EditRendirCuentaComponent implements OnInit {
   mensaje: string = "";
   mensajeDetalle: string = "";
   padronRuc: PadronRuc = new PadronRuc();
+
+  /**
+   * Estado y condicion del RUC segun la ultima validacion de comprobante.
+   *
+   * Se guardan aparte porque `padronRuc` se reemplaza entero cada vez que se
+   * consulta el padron, y esa consulta traeria de vuelta el dato viejo
+   * pisando el que SUNAT dio en vivo.
+   */
+  private estadoRucDeSunat = '';
+  private condicionRucDeSunat = '';
   validaComprobante: boolean = false;
 
   /**
@@ -1015,6 +1025,14 @@ export class EditRendirCuentaComponent implements OnInit {
       : '';
 
     this.padronRuc = response.resultado;
+
+    // Lo que SUNAT dijo en vivo al validar un comprobante manda sobre el
+    // padron, que es una descarga periodica: un RUC reactivado hace poco
+    // sigue figurando de baja ahi hasta la proxima carga.
+    if (this.padronRuc) {
+      if (this.estadoRucDeSunat)    { this.padronRuc.estado = this.estadoRucDeSunat; }
+      if (this.condicionRucDeSunat) { this.padronRuc.condicion = this.condicionRucDeSunat; }
+    }
 
     // El padron es la fuente oficial: su razon social reemplaza a la del OCR.
     // Pero si el padron no la trae, se conserva la que ya habia leido el OCR
@@ -3412,13 +3430,30 @@ export class EditRendirCuentaComponent implements OnInit {
           </div>
         `;
 
-        // Rellena Estado/Condicion del proveedor con lo que devolvio SUNAT en
-        // la validacion del comprobante (fuente confiable) y limpia el aviso del
-        // padron ("No se pudo consultar SUNAT") si la validacion fue correcta.
-        if (info.valido && this.padronRuc) {
-          if (estadoRucTxt) { this.padronRuc.estado = estadoRucTxt; }
-          if (condDomiTxt)  { this.padronRuc.condicion = condDomiTxt; }
-          if (estadoRucTxt || condDomiTxt) { this.mensaje = ''; }
+        // Estado y condicion del RUC salen de la validacion del comprobante,
+        // que es SUNAT en vivo, y pisan al padron.
+        //
+        // Se aplican pase lo que pase con el comprobante: estadoRuc y
+        // condDomiRuc describen al EMISOR, no al documento, y SUNAT los
+        // devuelve igual cuando el comprobante no existe. Antes solo se
+        // tomaban si el comprobante era valido, asi que un proveedor activo
+        // seguia figurando "no activo" con el dato del padron —que es una
+        // foto y envejece— pese a que SUNAT acababa de decir lo contrario.
+        if (this.padronRuc) {
+          if (estadoRucTxt) {
+            this.padronRuc.estado = estadoRucTxt;
+            this.estadoRucDeSunat = estadoRucTxt;
+          }
+          if (condDomiTxt) {
+            this.padronRuc.condicion = condDomiTxt;
+            this.condicionRucDeSunat = condDomiTxt;
+          }
+          // Las reglas de RUC activo y domicilio habido se evaluan de nuevo
+          // con el dato recien traido: si no, el mensaje del padron queda en
+          // pantalla contradiciendo lo que la misma consulta acaba de decir.
+          if (estadoRucTxt || condDomiTxt) {
+            this.validateRules();
+          }
         }
 
         this.validaComprobante = info.valido;
