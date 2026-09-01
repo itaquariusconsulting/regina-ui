@@ -21,7 +21,7 @@
              2) Cargado pero sin validar     → AMARILLO "COMPROBANTE NO VALIDADO"
              3) Validado en SUNAT (estado 1/3) → VERDE "COMPROBANTE VALIDADO" -->
         <div class="col-md-6 text-end">
-            <span class="badge-validacion-sunat"
+            <span class="badge-validacion-sunat" *ngIf="pestana === 'comprobante'"
                   [ngClass]="{
                     'badge-no-cargado'  : !selectedFile,
                     'badge-no-validado' :  selectedFile && !validaComprobante,
@@ -74,6 +74,12 @@
              nueva línea en lugar de cortarse fuera del viewport, y los
              textos se ocultan dejando solo íconos. -->
         <div class="d-flex flex-wrap align-items-center gap-1 mt-3 toolbar-comprobante">
+
+            <!-- Todo esto es del comprobante: subir, validar en SUNAT, ver la
+                 imagen, guardar. En la pestana de devolucion no aplica nada
+                 —ahi no se valida nada contra SUNAT— asi que se oculta entero
+                 y queda solo Regresar. -->
+            <ng-container *ngIf="pestana === 'comprobante'">
 
             <label *ngIf="!selectedFile" class="general-button btn-primary btn-capture-image"
                 style="height: 32px !important;">
@@ -146,6 +152,8 @@
                     class="btn-porque" [title]="motivoGuardar()">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </button>
+
+            </ng-container>
 
             <button (click)="onBack()" class="general-button btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i>
