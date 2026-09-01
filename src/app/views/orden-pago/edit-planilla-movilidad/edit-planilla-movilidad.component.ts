@@ -1440,10 +1440,16 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       total: this.ordenPagoPlanillaMovilidadCab.total,
       glosa: this.ordenPagoPlanillaMovilidadCab.glosa,
       codAuxiliarBanco: '',
-      codAuxiliarPersonal: '',
-      cCentroCostos: '',
-      monto: 0,
-      recibido: 0,
+
+      // Estos cuatro iban vacios y en cero, y por eso las 64 planillas
+      // cargadas hasta hoy no se pueden atribuir a nadie: la columna que dice
+      // de quien es la planilla nunca se llenaba. Salen de la orden de pago,
+      // que es de donde vienen la persona, su centro de costos y la plata.
+      codAuxiliarPersonal: this.orden?.codAuxiliar || '',
+      cCentroCostos: this.orden?.codCCostos || '',
+      monto: this.orden?.impSoles ?? 0,
+      recibido: this.orden?.impSoles ?? 0,
+
       devolucion: 0,
       statusPlanilla: 'PE'
     };

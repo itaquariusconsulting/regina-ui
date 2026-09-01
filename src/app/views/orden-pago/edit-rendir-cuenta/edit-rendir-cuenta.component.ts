@@ -43,6 +43,8 @@ import { parseNroComprobante, formatearNroDocumento, generarVariantesComprobante
 import type { NroComprobante, VarianteComprobante } from '../../../shared/utils/comprobante-numero.util';
 import { MaeRubro } from '../../../models/mae-rubro';
 import { OrdenPagoDetDTO } from '../../../models/orden-pago-det';
+import { AbonoService } from '../../../services/abono.service';
+import { AbonoRendicion } from '../../../models/abono-rendicion';
 import { MaeTipoGasto } from '../../../models/mae-tipo-gasto';
 import { MaeDocumento } from '../../../models/mae-documento';
 import { MaeMoneda } from '../../../models/mae-moneda';
@@ -119,8 +121,8 @@ export class EditRendirCuentaComponent implements OnInit {
     private configService: ConfigService,
     private config: NgbDatepickerConfig,
     private sanitizer: DomSanitizer,
-    private sunatAnexosService: SunatAnexosService
-  ) {
+    private sunatAnexosService: SunatAnexosService,
+    private abonoService: AbonoService) {
     this.isLoading$ = this.loadingService.loading$;
     this.config.navigation = 'select';
   }
@@ -462,12 +464,24 @@ export class EditRendirCuentaComponent implements OnInit {
       this._saldoBaseDolares = (this.orden.impDolares ?? 0) - (this.orden.impRendidoDolares ?? 0);
       this.saldoSoles = this._saldoBaseSoles;
       this.saldoDolares = this._saldoBaseDolares;
+
+      // La cuenta a la que se devuelve es una sola y esta en config.ini, no
+      // clavada en el codigo: si manana cambia, se cambia el archivo.
+      this.abonoAuxiliarBco = this.configService.get('ABONO_COD_AUXILIAR_BCO');
+      this.abonoBanco = this.configService.get('ABONO_DES_BANCO');
+      this.abonoCuenta = this.configService.get('ABONO_NUM_CUENTA_BCO');
+      this.abonoMoneda = this.configService.get('ABONO_COD_MONEDA') || '01';
+      this.abonoCuentaContable = this.configService.get('ABONO_COD_CUENTA_CONTABLE');
+      this.abonoFormaPago = this.configService.get('ABONO_FORMA_PAGO');
     }
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
       ? JSON.parse(sessionStorage.getItem('user')!)
       : null;
     this.codEmpresa = user?.codEmpresa || '';
+
+    // Va aca y no antes porque necesita codEmpresa, que se acaba de leer.
+    this.cargarAbonos();
 
     this.ordenPagoDetProvs = [];
     this.loadValidationRules();
@@ -2367,6 +2381,162 @@ export class EditRendirCuentaComponent implements OnInit {
       width: 600,
       confirmButtonText: 'Entendido',
     });
+  }
+
+  // ---------------------------------------------------- devolucion de saldo
+
+  /**
+   * Los vouchers con los que el trabajador devuelve lo que le sobro.
+   *
+   * REGINA no genera ningun asiento: el cargo al trabajador ya existe en el
+   * ERP desde que se emitio la orden —vive en la 1413, cuentas por cobrar al
+   * personal— y lo cancela contabilidad al registrar el ingreso en Tesoreria.
+   * Esto es la evidencia de que el deposito ocurrio.
+   */
+  abonos: AbonoRendicion[] = [];
+  devuelto = 0;
+  nuevoAbono: AbonoRendicion | null = null;
+  guardandoAbono = false;
+
+  /** La cuenta a la que se deposita: una sola y fija, sale de config.ini. */
+  abonoBanco = '';
+  abonoCuenta = '';
+  abonoAuxiliarBco = '';
+  abonoMoneda = '01';
+  abonoCuentaContable = '';
+  abonoFormaPago = '';
+
+  /**
+   * Por ahora la seccion es solo para admins.
+   *
+   * Estamos en caliente y el circuito todavia no esta cerrado del otro lado:
+   * si un trabajador ve el bloque, carga su voucher y da por hecho que alguien
+   * lo esta mirando. Cuando contabilidad este siguiendo los abonos, se abre.
+   */
+  get esAdmin(): boolean {
+    try {
+      const u = JSON.parse(sessionStorage.getItem('user') || '{}');
+      return !!u.userAdmin;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Lo que falta devolver: el saldo de la OP menos lo ya abonado. */
+  get saldoPorDevolver(): number {
+    const saldo = (this._saldoBaseSoles || 0) - (this.devuelto || 0);
+    return saldo > 0 ? Math.round(saldo * 100) / 100 : 0;
+  }
+
+  private cargarAbonos(): void {
+    if (!this.orden?.numOrden) { return; }
+    this.abonoService
+      .listar(this.codEmpresa, this.orden.codSucursal!, this.orden.numOrden!)
+      .subscribe({
+        next: r => {
+          this.abonos = r.abonos || [];
+          this.devuelto = r.devuelto || 0;
+        },
+        // Que no haya abonos no es un error que valga interrumpir la carga del
+        // comprobante, que es a lo que el usuario vino.
+        error: e => console.warn('[abonos] no se pudieron leer:', e)
+      });
+  }
+
+  abrirNuevoAbono(): void {
+    const hoy = new Date().toISOString().slice(0, 10);
+    this.nuevoAbono = {
+      codEmpresa: this.codEmpresa,
+      codSucursal: this.orden?.codSucursal || '',
+      numOrden: this.orden?.numOrden || '',
+      fecDeposito: hoy,
+      fecMovimiento: hoy,
+      codAuxiliarBco: this.abonoAuxiliarBco,
+      desBanco: this.abonoBanco,
+      numCuentaBco: this.abonoCuenta,
+      codFormaPago: this.abonoFormaPago,
+      codMoneda: this.abonoMoneda,
+      // Se propone el saldo pendiente, que es lo que casi siempre se deposita.
+      impSoles: this.saldoPorDevolver || undefined,
+      numOperacion: '',
+      glosa: `DEVOLUCION DE OP ${this.orden?.numOrden || ''}`
+    };
+  }
+
+  cerrarNuevoAbono(): void {
+    this.nuevoAbono = null;
+  }
+
+  guardarAbono(): void {
+    if (!this.nuevoAbono) { return; }
+
+    const importe = Number(this.nuevoAbono.impSoles);
+    if (!Number.isFinite(importe) || importe <= 0) {
+      Swal.fire({ icon: 'warning', title: 'Falta el importe',
+                  text: 'Indique cuánto se depositó.' });
+      return;
+    }
+    if (!(this.nuevoAbono.numOperacion || '').trim()) {
+      Swal.fire({ icon: 'warning', title: 'Falta el número de operación',
+                  text: 'Es el dato con el que contabilidad ubica el depósito en el extracto.' });
+      return;
+    }
+
+    this.guardandoAbono = true;
+    const userId = this.usuarioId();
+
+    this.abonoService.crear(this.nuevoAbono, userId).subscribe({
+      next: r => {
+        this.guardandoAbono = false;
+        this.nuevoAbono = null;
+        this.cargarAbonos();
+        // El backend avisa si ese numero de operacion ya estaba cargado. Es un
+        // aviso y no un rechazo: repartir un deposito entre dos ordenes repite
+        // el numero de forma legitima.
+        const repetido = (r?.mensaje || '').startsWith('La operacion');
+        Swal.fire({
+          toast: true, position: 'top-end',
+          icon: repetido ? 'warning' : 'success',
+          title: repetido ? 'Revise el número de operación' : 'Devolución registrada',
+          text: repetido ? r.mensaje : '',
+          showConfirmButton: repetido,
+          timer: repetido ? undefined : 4000
+        });
+      },
+      error: e => {
+        this.guardandoAbono = false;
+        const b = formatHttpError(e, 'Registro de la devolución');
+        Swal.fire({ icon: 'error', title: b.title, html: errorHtml(b), width: 600 });
+      }
+    });
+  }
+
+  anularAbono(a: AbonoRendicion): void {
+    if (!a.idRendAbono) { return; }
+    Swal.fire({
+      icon: 'question',
+      title: '¿Anular esta devolución?',
+      text: 'La fila queda registrada como anulada, con quién y cuándo. No se borra.',
+      showCancelButton: true, confirmButtonText: 'Anular', cancelButtonText: 'Volver'
+    }).then(res => {
+      if (!res.isConfirmed) { return; }
+      this.abonoService.anular(a.idRendAbono!, this.usuarioId()).subscribe({
+        next: () => this.cargarAbonos(),
+        error: e => {
+          const b = formatHttpError(e, 'Anulación de la devolución');
+          Swal.fire({ icon: 'error', title: b.title, html: errorHtml(b), width: 600 });
+        }
+      });
+    });
+  }
+
+  private usuarioId(): number | undefined {
+    try {
+      const u = JSON.parse(sessionStorage.getItem('user') || '{}');
+      return u.userId != null ? Number(u.userId) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   onDescartar() {

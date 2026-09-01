@@ -15,6 +15,107 @@
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   Devolución del saldo.
+
+   Va al final del formulario y no arriba: primero se cargan los gastos,
+   y recién cuando se sabe cuánto se rindió tiene sentido preguntar por
+   lo que sobró. Solo se muestra a admins mientras el circuito no esté
+   cerrado del otro lado.
+   ─────────────────────────────────────────────────────────────────── */
+.dev-bloque {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-left: 4px solid #2563eb;
+  border-radius: 6px;
+  background: rgba(37, 99, 235, 0.03);
+}
+
+.dev-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.dev-titulo {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.dev-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-bottom: 10px;
+}
+
+.dev-dato {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+
+  strong { font-size: 1rem; }
+}
+
+.dev-rot {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6b7280;
+}
+
+/* Lo que falta devolver es el número que se mira: va en rojo cuando hay
+   algo pendiente y en verde cuando ya está saldado. */
+.dev-pendiente strong { color: #b0442d; }
+.dev-pendiente strong:empty { color: inherit; }
+
+.dev-cuenta {
+  font-size: 0.82rem;
+  color: #374151;
+  background: #fff;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 7px 10px;
+  margin-bottom: 12px;
+}
+
+.dev-form {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+/* El anulado queda a la vista, atenuado y tachado: que desaparezca
+   escondería que alguien cargó algo y después lo dio de baja. */
+.dev-anulado {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.dev-pastilla {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.dev-p-vigente { color: #1f5c3d; background: #dcefe3; }
+.dev-p-anulado { color: #6b7280; background: #e6e7ea; }
+
+.dev-vacio {
+  font-size: 0.82rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* ───────────────────────────────────────────────────────────────────
    Cabecera fija: titulo, estado del comprobante, saldos y acciones.
 
    El formulario de rendicion es largo —proveedor, documento, items— y los

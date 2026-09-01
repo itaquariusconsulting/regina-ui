@@ -567,4 +567,126 @@
         </div>
     </div>
 
+    <!-- ================= DEVOLUCION DEL SALDO =========================
+         Solo para admins mientras el circuito no este cerrado del otro
+         lado: una seccion visible es una promesa, y si el trabajador
+         carga su voucher sin que nadie lo revise, es peor que no tenerla.
+         ================================================================ -->
+    <div class="dev-bloque" *ngIf="esAdmin">
+
+        <div class="dev-cabecera">
+            <h6 class="dev-titulo">
+                <i class="fa-solid fa-arrow-rotate-left"></i>
+                Devolución del saldo
+            </h6>
+            <button type="button" class="general-button btn-primary btn-sm"
+                    *ngIf="!nuevoAbono" (click)="abrirNuevoAbono()">
+                <i class="fa-solid fa-plus"></i> Registrar depósito
+            </button>
+        </div>
+
+        <div class="dev-resumen">
+            <div class="dev-dato">
+                <span class="dev-rot">Saldo de la orden</span>
+                <strong>S/ {{ (saldoSoles || 0) | number:'1.2-2' }}</strong>
+            </div>
+            <div class="dev-dato">
+                <span class="dev-rot">Ya devuelto</span>
+                <strong>S/ {{ devuelto | number:'1.2-2' }}</strong>
+            </div>
+            <div class="dev-dato dev-pendiente">
+                <span class="dev-rot">Falta devolver</span>
+                <strong>S/ {{ saldoPorDevolver | number:'1.2-2' }}</strong>
+            </div>
+        </div>
+
+        <div class="dev-cuenta">
+            <i class="fa-solid fa-building-columns"></i>
+            Depositar en <strong>{{ abonoBanco }}</strong>,
+            cuenta <strong>{{ abonoCuenta }}</strong> ({{ abonoFormaPago }}).
+        </div>
+
+        <!-- Formulario de carga -->
+        <div class="dev-form" *ngIf="nuevoAbono">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold mb-1 d-block">Fecha del depósito</label>
+                    <input type="date" class="general-input form-control"
+                           [(ngModel)]="nuevoAbono.fecDeposito">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold mb-1 d-block">N° de operación</label>
+                    <input type="text" class="general-input form-control"
+                           [(ngModel)]="nuevoAbono.numOperacion"
+                           placeholder="El del voucher del banco">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold mb-1 d-block">Importe S/</label>
+                    <input type="text" class="general-input form-control text-end"
+                           [(ngModel)]="nuevoAbono.impSoles" currencyMask
+                           [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="button" class="general-button btn-primary btn-sm"
+                            [disabled]="guardandoAbono" (click)="guardarAbono()">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                    <button type="button" class="general-button btn-secondary btn-sm"
+                            (click)="cerrarNuevoAbono()">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold mb-1 d-block">Glosa</label>
+                    <input type="text" class="general-input form-control"
+                           [(ngModel)]="nuevoAbono.glosa">
+                </div>
+            </div>
+        </div>
+
+        <!-- Lo cargado -->
+        <div class="table-container table-responsive" *ngIf="abonos.length">
+            <table class="table global-table table-striped table-hover">
+                <thead>
+                    <th class="text-center">Fecha</th>
+                    <th>Banco / cuenta</th>
+                    <th class="text-center">N° operación</th>
+                    <th class="text-end">Importe S/</th>
+                    <th>Cargado por</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center"></th>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let a of abonos" [class.dev-anulado]="a.indAnulado === 'S'">
+                        <td class="text-center">{{ a.fecDeposito | date:'dd/MM/yyyy' }}</td>
+                        <td>
+                            {{ a.desBanco || abonoBanco }}
+                            <small class="d-block text-muted">{{ a.numCuentaBco }}</small>
+                        </td>
+                        <td class="text-center">{{ a.numOperacion }}</td>
+                        <td class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
+                        <td>{{ a.usuario }}</td>
+                        <td class="text-center">
+                            <span *ngIf="a.indAnulado === 'S'" class="dev-pastilla dev-p-anulado">Anulado</span>
+                            <span *ngIf="a.indAnulado !== 'S'" class="dev-pastilla dev-p-vigente">Vigente</span>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="general-button btn-danger btn-sm"
+                                    *ngIf="a.indAnulado !== 'S'" title="Anular"
+                                    (click)="anularAbono(a)">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dev-vacio" *ngIf="!abonos.length && !nuevoAbono">
+            No hay depósitos registrados para esta orden.
+        </div>
+    </div>
+
 </div>
