@@ -4,6 +4,12 @@
 
 <div class="form-container">
 
+    <!-- Cabecera fija. Validar y Guardar viven aca arriba, y el formulario es
+         largo: si la barra se va con el scroll, el usuario tiene que subir
+         cada vez que quiere validar o ver si el comprobante quedo validado.
+         Queda pegada al tope del contenedor que scrollea (.form-container). -->
+    <div class="barra-fija">
+
     <div class="row align-items-center mb-2">
         <div class="col-md-6">
             <h6 class="h6-header">{{indMovilidad=='S' ? 'Planilla de Movilidad' : 'Rendir Cuenta '}} de Orden -
@@ -151,6 +157,8 @@
         </div>
 
     </div>
+
+    </div><!-- /.barra-fija -->
 
     <!-- Overlay de loading del OCR: REEMPLAZA al loadingService durante
          todo el procesamiento del comprobante. Muestra al usuario:

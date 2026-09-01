@@ -91,6 +91,20 @@ const PREFIJOS_PROHIBIDOS = [
 ];
 
 /**
+ * Palabras que delatan un numero de cuenta bancaria y no un comprobante.
+ *
+ * No alcanza con mirar el prefijo inmediato: entre la etiqueta y el numero
+ * suele haber otro numero, como en
+ * "BBVA 0011-0921-0200289711 CCI 011-921-000200289711-40". Por eso se buscan
+ * en la ventana de alrededor.
+ */
+const CONTEXTO_BANCARIO = [
+  'CCI', 'CTACTE', 'CTACORRIENTE', 'CUENTA', 'INTERBANCARIA', 'INTERBANCARIO',
+  'SCOTIABANK', 'INTERBANK', 'BANCO', 'BBVA', 'BCP', 'BANBIF', 'PICHINCHA',
+  'DEPOSITO', 'ABONO',
+];
+
+/**
  * Letras de serie que NO son de un comprobante de pago.
  *
  * La guia de remision electronica lleva serie T###. Comparte hoja y formato
@@ -233,6 +247,15 @@ function esFalsoPositivo(texto: string, ini: number, fin: number,
   }
   if (numeroBruto.length === 11 && /^(10|15|17|20)/.test(numeroBruto)) {
     return 'parece un RUC';
+  }
+  // Cuentas y CCI del pie de pagina. Solo aplica a series totalmente
+  // numericas: un comprobante electronico lleva letra (F003, B001, E001), asi
+  // que esta regla no puede descartar uno bueno.
+  if (/^\d+$/.test(serie)) {
+    const alrededor = contexto(texto, ini, fin, 34).replace(/[.: ]/g, '');
+    for (const palabra of CONTEXTO_BANCARIO) {
+      if (alrededor.includes(palabra)) { return `numero de cuenta (${palabra} cerca)`; }
+    }
   }
   if (RE_FECHA.test(contexto(texto, ini, fin, 6)) && /^\d+$/.test(serie)) {
     return 'parece una fecha';

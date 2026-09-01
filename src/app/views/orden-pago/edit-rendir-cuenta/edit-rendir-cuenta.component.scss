@@ -15,6 +15,46 @@
 }
 
 /* ───────────────────────────────────────────────────────────────────
+   Cabecera fija: titulo, estado del comprobante, saldos y acciones.
+
+   El formulario de rendicion es largo —proveedor, documento, items— y los
+   botones de Validar y Guardar estaban solo arriba. El usuario bajaba a
+   completar los datos y tenia que volver al tope para validar, y otra vez
+   para ver si el badge habia pasado a verde. Fijandola, el estado y las
+   acciones estan siempre a la vista.
+
+   El sticky se ancla a .form-container, que es el que scrollea
+   (overflow-y: auto); por eso `top: 0` y no una posicion fija en la ventana.
+   Los margenes negativos compensan el padding del contenedor para que el
+   fondo tape el contenido que pasa por debajo de lado a lado.
+   ─────────────────────────────────────────────────────────────────── */
+.barra-fija {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  background: var(--cui-body-bg, #ffffff);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  margin: 0 -15px 12px;
+  padding: 8px 15px 4px;
+
+  .bar-buttons-top {
+    margin-bottom: 4px;
+  }
+}
+
+/* En pantallas chicas la barra se come demasiado alto: los botones ya van
+   solo con icono, y ademas se deja que el bloque scrollee si se pasa. */
+@media (max-width: 768px) {
+  .barra-fija {
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
    Overlay de loading del OCR.
    REEMPLAZA al `loadingService` durante el procesamiento del comprobante.
    Es un overlay modal full-screen con:
