@@ -2395,6 +2395,20 @@ export class EditRendirCuentaComponent implements OnInit {
    */
   abonos: AbonoRendicion[] = [];
   devuelto = 0;
+
+  /**
+   * Que pestana se esta viendo: el comprobante o la devolucion.
+   *
+   * Son dos tareas distintas sobre la misma orden, y separarlas evita que el
+   * formulario de carga —que ya es largo— siga creciendo. Arranca siempre en
+   * comprobante, que es a lo que la gente entra.
+   */
+  pestana: 'comprobante' | 'devolucion' = 'comprobante';
+
+  /** Cuantos depositos vigentes hay, para el numerito de la pestana. */
+  get abonosVigentes(): number {
+    return this.abonos.filter(a => a.indAnulado !== 'S').length;
+  }
   nuevoAbono: AbonoRendicion | null = null;
   guardandoAbono = false;
 

@@ -138,16 +138,14 @@
                 {{isDesktop ? 'Guardar' : ''}}
             </button>
 
-            <!-- Por que no se puede guardar. Antes el boton quedaba apagado sin
-                 explicacion y habia que adivinar cual de las condiciones fallaba. -->
-            <small *ngIf="isSaveDisabled()" class="text-warning d-block mt-1"
-                   style="font-size:0.78rem; max-width:420px;">
+            <!-- Por que no se puede guardar.
+                 Era un texto al lado del boton, pero se iba a dos lineas y
+                 empujaba toda la barra. Ahora es un icono: el motivo sigue a
+                 un gesto de distancia, sin ocupar lugar. -->
+            <button type="button" *ngIf="isSaveDisabled()"
+                    class="btn-porque" [title]="motivoGuardar()">
                 <i class="fa-solid fa-triangle-exclamation"></i>
-                {{ motivosParaNoGuardar()[0] }}
-                <span *ngIf="motivosParaNoGuardar().length > 1">
-                    (y {{ motivosParaNoGuardar().length - 1 }} más — pase el cursor sobre Guardar)
-                </span>
-            </small>
+            </button>
 
             <button (click)="onBack()" class="general-button btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i>
@@ -157,6 +155,24 @@
         </div>
 
     </div>
+
+        <!-- Comprobante y devolucion son dos tareas distintas sobre la misma
+             orden. Separarlas en pestanas deja el formulario de carga sin
+             agregados y le da a la devolucion un lugar propio en vez del
+             final de una pantalla larga. -->
+        <div class="rc-tabs" *ngIf="esAdmin">
+            <button type="button" class="rc-tab"
+                    [class.activa]="pestana === 'comprobante'"
+                    (click)="pestana = 'comprobante'">
+                <i class="fa-solid fa-receipt"></i> Comprobante
+            </button>
+            <button type="button" class="rc-tab"
+                    [class.activa]="pestana === 'devolucion'"
+                    (click)="pestana = 'devolucion'">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Devolución
+                <span class="rc-tab-num" *ngIf="abonosVigentes">{{ abonosVigentes }}</span>
+            </button>
+        </div>
 
     </div><!-- /.barra-fija -->
 
@@ -231,6 +247,9 @@
             </div>
         </div>
     </div>
+
+    <!-- ===================== PESTANA COMPROBANTE ====================== -->
+    <div [hidden]="pestana !== 'comprobante'">
 
     <div class="mb-1" *ngIf="imageChangedEvent && showImageCropper">
         <div class="card preview-card preview-image">
@@ -567,18 +586,16 @@
         </div>
     </div>
 
+    </div><!-- /pestana comprobante -->
+
     <!-- ================= DEVOLUCION DEL SALDO =========================
          Solo para admins mientras el circuito no este cerrado del otro
          lado: una seccion visible es una promesa, y si el trabajador
          carga su voucher sin que nadie lo revise, es peor que no tenerla.
          ================================================================ -->
-    <div class="dev-bloque" *ngIf="esAdmin">
+    <div class="dev-bloque" *ngIf="esAdmin && pestana === 'devolucion'">
 
         <div class="dev-cabecera">
-            <h6 class="dev-titulo">
-                <i class="fa-solid fa-arrow-rotate-left"></i>
-                Devolución del saldo
-            </h6>
             <button type="button" class="general-button btn-primary btn-sm"
                     *ngIf="!nuevoAbono" (click)="abrirNuevoAbono()">
                 <i class="fa-solid fa-plus"></i> Registrar depósito
