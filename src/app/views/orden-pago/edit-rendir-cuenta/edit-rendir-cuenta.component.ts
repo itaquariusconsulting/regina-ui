@@ -2405,6 +2405,27 @@ export class EditRendirCuentaComponent implements OnInit {
    */
   pestana: 'comprobante' | 'devolucion' = 'comprobante';
 
+  /**
+   * El interruptor de la devolucion. En false la pestana se ve apagada y no
+   * entra.
+   *
+   * Se apaga a mano mientras la cuenta de destino no este definida del todo:
+   * estamos en caliente y un deposito grabado contra una cuenta a medias es
+   * plata que despues hay que ir a buscar al extracto. Para reactivar la
+   * funcion basta poner true aca; el backend, la tabla y la pantalla ya estan.
+   *
+   * Ojo: esto es una traba de interfaz, no una de seguridad. El endpoint
+   * POST /api/rendicion/abono sigue existiendo y respondiendo. Si hiciera
+   * falta cerrarlo de verdad, hay que hacerlo en el API.
+   */
+  readonly devolucionHabilitada: boolean = false;
+
+  /** Unica puerta de entrada a la pestana, y esta cerrada con llave. */
+  irADevolucion(): void {
+    if (!this.devolucionHabilitada) { return; }
+    this.pestana = 'devolucion';
+  }
+
   /** Cuantos depositos vigentes hay, para el numerito de la pestana. */
   get abonosVigentes(): number {
     return this.abonos.filter(a => a.indAnulado !== 'S').length;
@@ -2458,6 +2479,10 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   abrirNuevoAbono(): void {
+    // Segundo cerrojo: aunque alguien llegara a la pestana por otra via, el
+    // formulario no se abre mientras la devolucion este apagada.
+    if (!this.devolucionHabilitada) { return; }
+
     const hoy = new Date().toISOString().slice(0, 10);
     this.nuevoAbono = {
       codEmpresa: this.codEmpresa,
@@ -2482,6 +2507,9 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   guardarAbono(): void {
+    // Tercer cerrojo, el que de verdad interesa: no se graba nada mientras la
+    // devolucion este apagada, sin importar como se haya llegado hasta aca.
+    if (!this.devolucionHabilitada) { return; }
     if (!this.nuevoAbono) { return; }
 
     const importe = Number(this.nuevoAbono.impSoles);

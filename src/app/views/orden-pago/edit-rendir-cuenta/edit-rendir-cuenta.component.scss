@@ -47,6 +47,16 @@
     color: #1e3a5f;
     border-bottom-color: #2563eb;
   }
+
+  /* Pestana inutilizada mientras la devolucion no este lista. Se deja a la
+     vista pero apagada: que se note que existe y que todavia no es de uso,
+     que es distinto de esconderla y que aparezca de golpe otro dia.
+     El :hover va anulado a proposito —si no, se ilumina y parece que responde. */
+  &:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    &:hover { color: #6b7280; background: transparent; }
+  }
 }
 
 /* El contador de depósitos cargados: que se vea desde la otra pestaña que

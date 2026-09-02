@@ -174,9 +174,16 @@
                     (click)="pestana = 'comprobante'">
                 <i class="fa-solid fa-receipt"></i> Comprobante
             </button>
+            <!-- INUTILIZADA A PROPOSITO. La cuenta de destino todavia no esta
+                 definida del todo, asi que la pestana se ve pero no entra: sin
+                 (click) no hay forma de cambiar de pestana, y disabled ademas la
+                 saca del tabulador y del Enter. Cuando la cuenta quede resuelta,
+                 se le devuelve el (click) y se le quita el disabled. -->
             <button type="button" class="rc-tab"
+                    [disabled]="!devolucionHabilitada"
+                    [title]="devolucionHabilitada ? '' : 'En preparación: la devolución todavía no está habilitada'"
                     [class.activa]="pestana === 'devolucion'"
-                    (click)="pestana = 'devolucion'">
+                    (click)="irADevolucion()">
                 <i class="fa-solid fa-arrow-rotate-left"></i> Devolución
                 <span class="rc-tab-num" *ngIf="abonosVigentes">{{ abonosVigentes }}</span>
             </button>
