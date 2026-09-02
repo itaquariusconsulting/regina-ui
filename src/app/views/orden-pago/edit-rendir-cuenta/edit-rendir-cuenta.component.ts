@@ -1051,12 +1051,24 @@ export class EditRendirCuentaComponent implements OnInit {
 
     this.padronRuc = response.resultado;
 
-    // Lo que SUNAT dijo en vivo al validar un comprobante manda sobre el
-    // padron, que es una descarga periodica: un RUC reactivado hace poco
-    // sigue figurando de baja ahi hasta la proxima carga.
+    // El dato del comprobante SOLO PUEDE MEJORAR el estado, nunca empeorarlo.
+    //
+    // Las dos fuentes envejecen, cada una por su lado: la ficha puede no
+    // haberse releido, y el servicio de comprobantes no conoce los RUC
+    // nuevos —al 20612227242, inscrito el 31/07/2026, le devolvia codigo 11
+    // (BAJA DE OFICIO) mientras la ficha decia ACTIVO—.
+    //
+    // La asimetria es deliberada: una fuente desactualizada puede probar que
+    // algo esta ACTIVO, porque lo vio activo. No puede probar lo contrario,
+    // porque su silencio tambien significa "no lo conozco". Antes esto pisaba
+    // en las dos direcciones y por eso marcaba de baja a proveedores sanos.
     if (this.padronRuc) {
-      if (this.estadoRucDeSunat)    { this.padronRuc.estado = this.estadoRucDeSunat; }
-      if (this.condicionRucDeSunat) { this.padronRuc.condicion = this.condicionRucDeSunat; }
+      if (this.esActivo(this.estadoRucDeSunat) && !this.esActivo(this.padronRuc.estado)) {
+        this.padronRuc.estado = this.estadoRucDeSunat;
+      }
+      if (this.esHabido(this.condicionRucDeSunat) && !this.esHabido(this.padronRuc.condicion)) {
+        this.padronRuc.condicion = this.condicionRucDeSunat;
+      }
     }
 
     // El padron es la fuente oficial: su razon social reemplaza a la del OCR.
@@ -1230,6 +1242,15 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   private buildDireccion(data: PadronRuc): string {
+
+    // La ficha de e-consultaruc trae la direccion entera; el padron reducido
+    // la traia en piezas y habia que rearmarla. Si viene armada se usa tal
+    // cual: rearmar lo ya armado solo puede empeorarlo.
+    const completa = (data?.direccion || '').trim();
+    if (completa) {
+      return completa;
+    }
+
     const parts = [
       data.tipoVia && data.nombreVia ? `${data.tipoVia} ${data.nombreVia}` : '',
       data.codZona && data.tipoZona ? `${data.codZona} ${data.tipoZona}` : '',
@@ -2540,6 +2561,145 @@ export class EditRendirCuentaComponent implements OnInit {
     return this.subidoEnRegina - this.publicadoEnErp > 0.01;
   }
 
+  /**
+   * '00' y '0' son el mismo codigo.
+   *
+   * El campo hermano estadoCp viene de UN digito en esta misma respuesta, asi
+   * que comparar contra '00' a secas ya fallo una vez. Se normaliza.
+   */
+  /** Un estado cuenta como ACTIVO si lo dice, venga como texto o como '00'. */
+  private esActivo(v: string | undefined | null): boolean {
+    const t = String(v ?? '').trim().toUpperCase();
+    return t === 'ACTIVO' || t === '00' || t === '0';
+  }
+
+  /** Idem para el domicilio. */
+  private esHabido(v: string | undefined | null): boolean {
+    const t = String(v ?? '').trim().toUpperCase();
+    return t === 'HABIDO' || t === '00' || t === '0';
+  }
+
+  private esCodigoCero(v: unknown): boolean {
+    const t = String(v ?? '').trim();
+    return t === '0' || t === '00';
+  }
+
+  /**
+   * Los estados del RUC segun SUNAT, por su codigo.
+   *
+   * El color no es decorativo, dice que hacer:
+   *   verde  ACTIVO, se puede operar
+   *   ambar  situaciones reversibles —el RUC puede volver a estar activo—
+   *   rojo   bajas definitivas e inhabilitacion
+   *
+   * Ojo: los codigos NO son correlativos (00, 01, 02, 03, 10, 11, 22) y la
+   * numeracion no ordena por gravedad: 03 es una suspension temporal y 10 es
+   * una baja definitiva. Por eso el mapa es explicito y no un rango.
+   */
+  private static readonly ESTADOS_RUC: { [codigo: string]: { texto: string; color: string } } = {
+    '00': { texto: 'ACTIVO',                  color: '#198754' },
+    '01': { texto: 'BAJA PROVISIONAL',        color: '#b45309' },
+    '02': { texto: 'BAJA PROV. POR OFICIO',   color: '#b45309' },
+    '03': { texto: 'SUSPENSIÓN TEMPORAL',     color: '#b45309' },
+    '10': { texto: 'BAJA DEFINITIVA',         color: '#dc3545' },
+    '11': { texto: 'BAJA DE OFICIO',          color: '#dc3545' },
+    '22': { texto: 'INHABILITADO-VENT.ÚNICA', color: '#dc3545' },
+  };
+
+  /**
+   * La condicion de domicilio, por su codigo.
+   *
+   * Tiene CINCO valores, no dos. El codigo hacia
+   *     condDomiRuc === '00' ? 'HABIDO' : 'NO HABIDO'
+   * y con eso un PENDIENTE o un POR VERIFICAR —que no son un problema— se
+   * mostraban en rojo como NO HABIDO, que si lo es. El mismo error que el
+   * estado del RUC, en el campo de al lado.
+   *
+   * Fuente: manual de Consulta Integrada de Validez del CdP de SUNAT.
+   */
+  private static readonly CONDICIONES_DOMI: { [codigo: string]: { texto: string; color: string } } = {
+    '00': { texto: 'HABIDO',        color: '#198754' },
+    '09': { texto: 'PENDIENTE',     color: '#6c757d' },
+    '11': { texto: 'POR VERIFICAR', color: '#6c757d' },
+    '12': { texto: 'NO HABIDO',     color: '#dc3545' },
+    '20': { texto: 'NO HALLADO',    color: '#b45309' },
+  };
+
+  /** Igual que el estado del RUC: se reconoce, o se admite que no. */
+  private leerCondicionDomicilio(valor: unknown): { texto: string; color: string } {
+
+    const crudo = String(valor ?? '').trim();
+    if (!crudo) {
+      return { texto: '', color: '#6c757d' };
+    }
+
+    const codigo = /^\d{1,2}$/.test(crudo) ? crudo.padStart(2, '0') : crudo;
+    const conocido = EditRendirCuentaComponent.CONDICIONES_DOMI[codigo];
+    if (conocido) {
+      return conocido;
+    }
+
+    const t = codigo.toUpperCase();
+    for (const c of Object.values(EditRendirCuentaComponent.CONDICIONES_DOMI)) {
+      if (t === c.texto) {
+        return c;
+      }
+    }
+
+    console.warn('[sunat] condDomiRuc no reconocido:', crudo);
+    return { texto: `no reconocido (${crudo})`, color: '#6c757d' };
+  }
+
+  /**
+   * El estado del RUC, en las palabras que usa SUNAT.
+   *
+   * Antes esto era estadoRuc === '00' ? 'ACTIVO' : 'NO ACTIVO', y el else
+   * hacia de catalogo: cualquier valor inesperado se mostraba en rojo como
+   * "NO ACTIVO", un estado que SUNAT NO TIENE. Le decia a la gente que un
+   * proveedor estaba de baja cuando estaba perfecto.
+   *
+   * Acepta el codigo con o sin el cero de adelante —el campo hermano estadoCp
+   * viene de UN digito en esta misma respuesta, asi que comparar contra '00'
+   * a secas ya fallo una vez—, y tambien el texto por si SUNAT lo manda asi.
+   *
+   * Un codigo que no este en la tabla se muestra tal cual y en gris: no saber
+   * no es una mala noticia, es la ausencia de una noticia. El console.warn
+   * deja el valor para poder agregarlo cuando aparezca.
+   */
+  private leerEstadoRuc(valor: unknown): { texto: string; color: string } {
+
+    const crudo = String(valor ?? '').trim();
+    if (!crudo) {
+      return { texto: '', color: '#6c757d' };
+    }
+
+    // '1' y '01' son el mismo codigo. Solo se rellena si es numerico: un
+    // texto como "ACTIVO" no se toca.
+    const codigo = /^\d{1,2}$/.test(crudo) ? crudo.padStart(2, '0') : crudo;
+
+    const conocido = EditRendirCuentaComponent.ESTADOS_RUC[codigo];
+    if (conocido) {
+      return conocido;
+    }
+
+    // Vino como texto: se busca por el nombre, sin tildes ni mayusculas.
+    const t = codigo.toUpperCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    for (const est of Object.values(EditRendirCuentaComponent.ESTADOS_RUC)) {
+      const nombre = est.texto.toUpperCase()
+                              .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (t === nombre) {
+        return est;
+      }
+    }
+    if (t === 'ACTIVO') {
+      return EditRendirCuentaComponent.ESTADOS_RUC['00'];
+    }
+
+    console.warn('[sunat] estadoRuc no reconocido:', crudo);
+    return { texto: `no reconocido (${crudo})`, color: '#6c757d' };
+  }
+
   /** La moneda de la orden. Si no viniera, se asume soles, que es el 99%. */
   get monedaOrden(): string {
     return (this.orden?.codMoneda || '01').trim();
@@ -3626,22 +3786,27 @@ export class EditRendirCuentaComponent implements OnInit {
           valido: false,
         };
 
-        // Datos adicionales útiles para el usuario (estado del RUC, condición de
-        // domicilio, observaciones). Se muestran solo si vienen en la respuesta.
+        // Datos adicionales del RUC. Se muestran solo si vienen en la respuesta.
         //
-        // SUNAT codifica algunos valores numéricamente y debemos traducirlos:
-        //   estadoRuc:    "00" → ACTIVO        | otro → NO ACTIVO
-        //   condDomiRuc:  "00" → HABIDO        | otro → NO HABIDO
-        const estadoRucTxt = data.estadoRuc !== undefined && data.estadoRuc !== null && data.estadoRuc !== ''
-          ? (String(data.estadoRuc) === '00' ? 'ACTIVO' : 'NO ACTIVO')
-          : '';
-        const condDomiTxt = data.condDomiRuc !== undefined && data.condDomiRuc !== null && data.condDomiRuc !== ''
-          ? (String(data.condDomiRuc) === '00' ? 'HABIDO' : 'NO HABIDO')
-          : '';
+        // OJO CON EL ESTADO DEL RUC. Antes esto era
+        //     estadoRuc === '00' ? 'ACTIVO' : 'NO ACTIVO'
+        // y el else hacia de catalogo: cualquier valor inesperado —un codigo
+        // de un digito, un texto, un campo vacio— se mostraba en rojo como
+        // "NO ACTIVO", que es un estado que SUNAT NO TIENE. Los suyos son
+        // ACTIVO, SUSPENSION TEMPORAL, BAJA PROVISIONAL, BAJA DEFINITIVA y
+        // las dos bajas de oficio. Le decia a la gente que un proveedor
+        // estaba de baja cuando estaba perfecto.
+        //
+        // Ahora se reconoce lo que se puede sostener y se ADMITE cuando no se
+        // reconoce, en gris, mostrando el valor crudo. Un dato que falta se
+        // consulta; una afirmacion falsa se cree.
+        const estadoRuc = this.leerEstadoRuc(data.estadoRuc);
+        const estadoRucTxt = estadoRuc.texto;
+        const condDomi = this.leerCondicionDomicilio(data.condDomiRuc);
+        const condDomiTxt = condDomi.texto;
 
-        // Color visual para resaltar valores positivos vs negativos
-        const colorEstado = estadoRucTxt === 'ACTIVO' ? '#198754' : '#dc3545';
-        const colorDomi   = condDomiTxt   === 'HABIDO' ? '#198754' : '#dc3545';
+        const colorEstado = estadoRuc.color;
+        const colorDomi   = condDomi.color;
 
         const detalles: string[] = [];
         if (estadoRucTxt) {
@@ -3685,13 +3850,19 @@ export class EditRendirCuentaComponent implements OnInit {
         // seguia figurando "no activo" con el dato del padron —que es una
         // foto y envejece— pese a que SUNAT acababa de decir lo contrario.
         if (this.padronRuc) {
+          // Se recuerda lo que dijo el comprobante, pero solo se aplica si
+          // MEJORA lo que ya se sabe. Ver la nota en handleRucResponse.
           if (estadoRucTxt) {
-            this.padronRuc.estado = estadoRucTxt;
             this.estadoRucDeSunat = estadoRucTxt;
+            if (this.esActivo(estadoRucTxt) && !this.esActivo(this.padronRuc.estado)) {
+              this.padronRuc.estado = estadoRucTxt;
+            }
           }
           if (condDomiTxt) {
-            this.padronRuc.condicion = condDomiTxt;
             this.condicionRucDeSunat = condDomiTxt;
+            if (this.esHabido(condDomiTxt) && !this.esHabido(this.padronRuc.condicion)) {
+              this.padronRuc.condicion = condDomiTxt;
+            }
           }
           // Las reglas de RUC activo y domicilio habido se evaluan de nuevo
           // con el dato recien traido: si no, el mensaje del padron queda en
