@@ -28,6 +28,7 @@ import { ReportesRendicionComponent } from './views/reportes/reportes-rendicion/
 import { VencimientosComponent } from './views/reportes/vencimientos/vencimientos.component';
 import { CentroCostosComponent } from './views/reportes/centro-costos/centro-costos.component';
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
+import { ListPlanillasMovilidadComponent } from './views/reportes/list-planillas-movilidad/list-planillas-movilidad.component';
 
 export const routes: Routes = [
 
@@ -109,6 +110,13 @@ export const routes: Routes = [
       {
         path: 'centro-costos',
         component: CentroCostosComponent
+      },
+      {
+        // El reporte de planillas registradas. La ruta se llama asi porque es
+        // la que ya apunta la opcion de menu (MENU_ID 11); cambiarla ahora
+        // dejaria el menu roto en produccion.
+        path: 'list-planillas-movilidad',
+        component: ListPlanillasMovilidadComponent
       },
       {
         path: 'planilla-movilidad',

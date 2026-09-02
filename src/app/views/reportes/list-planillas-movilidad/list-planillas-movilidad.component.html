@@ -1,0 +1,124 @@
+<div class="loading-overlay" *ngIf="isLoading$ | async">
+  <app-loading-dancing-squares [size]="22" [gap]="8"></app-loading-dancing-squares>
+</div>
+
+<div class="container-fluid mt-2">
+
+  <div class="bar-buttons-top w-100">
+    <div class="title-f6">
+      Planillas de Movilidad
+      <!-- Que se sepa de entrada si esta viendo todo o solo lo suyo: sin esto,
+           un usuario con pocas planillas no distingue "no tengo" de "no me
+           estan mostrando". -->
+      <span class="pm-alcance" [class.global]="admin">
+        {{ admin ? 'Vista global' : 'Mis planillas' }}
+      </span>
+    </div>
+    <div class="d-flex gap-2">
+      <button (click)="descargarCsv()" class="general-button btn-secondary"
+              [disabled]="!planillas.length">
+        <i class="fa fa-download"></i>CSV
+      </button>
+      <button (click)="volver()" class="general-button btn-secondary">
+        <i class="fa fa-arrow-left"></i>Regresar
+      </button>
+    </div>
+  </div>
+
+  <div class="pm-tarjetas">
+    <div class="pm-tarjeta principal">
+      <div class="pm-num">{{ cuantas }}</div>
+      <div class="pm-rot">Planillas registradas</div>
+      <div class="pm-pie">En el rango elegido</div>
+    </div>
+    <div class="pm-tarjeta">
+      <div class="pm-num">{{ viajes }}</div>
+      <div class="pm-rot">Viajes</div>
+      <div class="pm-pie">Sumando todas las planillas</div>
+    </div>
+    <div class="pm-tarjeta">
+      <div class="pm-num">S/ {{ gastado | number:'1.2-2' }}</div>
+      <div class="pm-rot">Total</div>
+      <div class="pm-pie">
+        Promedio S/ {{ promedioPorPlanilla | number:'1.2-2' }} por planilla
+      </div>
+    </div>
+  </div>
+
+  <div class="pm-filtros">
+    <div class="filtro">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde" />
+    </div>
+    <div class="filtro">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta" />
+    </div>
+
+    <!-- Solo para admins. A un usuario comun el backend le ignora este filtro,
+         asi que mostrarselo seria ofrecerle algo que no hace nada. -->
+    <div class="filtro filtro--ancho" *ngIf="admin">
+      <label class="form-label">Persona (código de auxiliar)</label>
+      <input type="text" class="form-control" placeholder="Ej. 521874"
+             [(ngModel)]="persona" (keyup.enter)="buscar()" />
+    </div>
+
+    <div class="filtro-acciones">
+      <button class="general-button btn-primary" (click)="buscar()">
+        <i class="fa fa-search"></i>Buscar
+      </button>
+      <button class="general-button btn-secondary" (click)="verTodoElHistorial()">
+        Todo el historial
+      </button>
+      <button class="general-button btn-secondary" *ngIf="admin && persona"
+              (click)="limpiarPersona()">
+        Quitar persona
+      </button>
+    </div>
+  </div>
+
+  <!-- Un fallo del endpoint se ve distinto de "no hay planillas". Si los dos
+       casos se vieran igual, nadie reportaria nunca que el servicio esta
+       caido: lo leerian como que no tienen nada cargado. -->
+  <div class="pm-error" *ngIf="huboError">
+    <i class="fa fa-triangle-exclamation"></i>
+    No se pudo consultar el reporte. Volvé a intentar en un momento; si sigue
+    igual, avisá a sistemas.
+  </div>
+
+  <div class="table-container table-responsive" *ngIf="planillas.length">
+    <table class="table global-table table-striped table-hover">
+      <thead>
+        <tr>
+          <th class="text-center">Fecha</th>
+          <th class="text-center">Orden</th>
+          <th class="text-center">Planilla</th>
+          <th *ngIf="admin">Persona</th>
+          <th class="text-center">Viajes</th>
+          <th class="text-end">Total S/</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of planillas">
+          <td class="text-center">{{ p.fechaPlanilla | date:'dd/MM/yyyy' }}</td>
+          <td class="text-center">{{ p.numOrden }}</td>
+          <td class="text-center">{{ p.codPlanilla }}</td>
+          <td *ngIf="admin">
+            {{ p.persona || '—' }}
+            <small class="d-block text-muted">{{ p.codAuxiliar }}</small>
+          </td>
+          <td class="text-center">{{ p.viajes }}</td>
+          <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pm-vacio" *ngIf="buscoAlgunaVez && !planillas.length && !huboError">
+    No hay planillas de movilidad en este rango.
+    <span *ngIf="!admin">
+      Acá se ven solo las tuyas: las que están asociadas a tus órdenes de pago.
+    </span>
+  </div>
+
+</div>

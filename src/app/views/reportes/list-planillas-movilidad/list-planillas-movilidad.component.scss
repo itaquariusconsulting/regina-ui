@@ -1,0 +1,115 @@
+/* Mismo lenguaje visual que los otros reportes (centro-costos,
+   vencimientos): tarjetas arriba, filtros abajo, tabla al final. Que dos
+   reportes del mismo sistema se vean distinto obliga al usuario a
+   reaprender la pantalla cada vez. */
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+/* El rotulo de alcance: gris cuando ve lo suyo, azul cuando ve todo. */
+.pm-alcance {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+
+  &.global {
+    background: #e0edff;
+    color: #1d4ed8;
+  }
+}
+
+.pm-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.pm-tarjeta {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #64748b;
+  border-radius: 12px;
+  padding: 12px 14px;
+
+  &.principal {
+    border-left-color: var(--primary-color, #1976d2);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+}
+
+.pm-num { font-size: 1.35rem; font-weight: 700; color: #0f172a; line-height: 1.2; }
+.pm-rot { font-size: 0.8rem; font-weight: 600; color: #334155; margin-top: 2px; }
+.pm-pie { font-size: 0.71rem; color: #94a3b8; margin-top: 2px; }
+
+.pm-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  .filtro { flex: 0 0 165px; }
+  .filtro--ancho { flex: 0 0 240px; }
+
+  .form-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 3px;
+  }
+
+  .filtro-acciones {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
+.pm-error {
+  background: #fdf5f3;
+  border: 1px solid rgba(176, 68, 45, 0.45);
+  border-radius: 8px;
+  color: #8c2f1c;
+  font-size: 0.84rem;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+
+  i { margin-right: 6px; }
+}
+
+.pm-vacio {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-style: italic;
+  padding: 18px 4px;
+}
+
+/* En pantallas chicas los filtros se apilan y los botones dejan de irse al
+   borde derecho, donde quedarian fuera de vista. */
+@media (max-width: 640px) {
+  .pm-filtros {
+    .filtro, .filtro--ancho { flex: 1 1 100%; }
+    .filtro-acciones { margin-left: 0; width: 100%; }
+  }
+}
