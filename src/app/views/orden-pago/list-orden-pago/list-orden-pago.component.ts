@@ -568,6 +568,26 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
    * una rendicion sin enviar, y conviene que se lea asi y no como un numero
    * perdido.
    */
+  /**
+   * Lo que falta rendir: el importe de la orden menos lo ya rendido.
+   *
+   * Se calcula contra lo RENDIDO (lo que llego al ERP), no contra lo
+   * cargado: un comprobante subido y sin enviar todavia no descarga nada.
+   *
+   * Puede dar NEGATIVO y se muestra asi a proposito. Significa que se rindio
+   * de mas —hay ordenes con 524 rendidos sobre 500 entregados— y es plata que
+   * alguien tiene que mirar. Recortarlo a cero la haria desaparecer.
+   */
+  pendienteDeRendir(orden: OrdenPago): number {
+    // impOrdPago es uno solo, en la moneda de la orden: no tiene version en
+    // soles y en dolares como los rendidos.
+    const importe = orden?.impOrdPago ?? 0;
+    const rendido = (orden?.codMoneda === '01'
+        ? orden?.impRendidoSoles : orden?.impRendidoDolares) ?? 0;
+
+    return Math.round((importe - rendido) * 100) / 100;
+  }
+
   tienePendienteDeEnviar(orden: OrdenPago): boolean {
     const cargado   = orden?.codMoneda === '01'
       ? (orden?.impCargadoSoles  ?? 0) : (orden?.impCargadoDolares  ?? 0);

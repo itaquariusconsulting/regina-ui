@@ -32,7 +32,7 @@
              habia una sola columna con lo enviado, asi que a quien tenia la
              rendicion abierta le decia 0.00 con todo cargado. -->
         <th class="text-center" title="Lo que lleva subido y aun no envia">Cargado</th>
-        <th class="text-center col-rendido" title="Lo ya enviado a contabilidad">Rendido</th>
+        <th class="text-center col-rendido" title="Lo que falta rendir: el importe menos lo ya rendido">Pendiente</th>
         <th class="text-center">Estado</th>
         <th class="text-center">Acciones</th>
       </thead>
@@ -56,19 +56,22 @@
                  SIN d-block: esa clase de Bootstrap es display:block
                  !important y pisaba el display:none, asi que la linea se
                  mostraba tambien con la columna a la vista. -->
-            <small class="rendido-inline"
-                   [class.sin-enviar]="tienePendienteDeEnviar(reg)">
-              rendido:
-              {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
-                | number: '1.2-2'}}
+            <small class="rendido-inline" [class.en-exceso]="pendienteDeRendir(reg) < 0">
+              pendiente: {{ pendienteDeRendir(reg) | number: '1.2-2' }}
             </small>
           </td>
 
           <!-- Se pinta distinto solo cuando hay algo subido que todavia no
                llego al ERP. Que se destaque siempre no diria nada. -->
-          <td class="text-end col-rendido" [class.sin-enviar]="tienePendienteDeEnviar(reg)">
-            {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
-              | number: '1.2-2'}}
+          <!-- Lo que FALTA rendir, no lo rendido: es la pregunta que se hace
+               quien mira esta tabla. El monto rendido se deduce restandolo
+               del importe. En negativo cuando se rindio de mas, que pasa
+               —hay ordenes con 524 rendidos sobre 500 entregados— y esconderlo
+               lo volveria invisible. -->
+          <td class="text-end col-rendido"
+              [class.sin-enviar]="tienePendienteDeEnviar(reg)"
+              [class.en-exceso]="pendienteDeRendir(reg) < 0">
+            {{ pendienteDeRendir(reg) | number: '1.2-2' }}
           </td>
 
           <td class="text-center">

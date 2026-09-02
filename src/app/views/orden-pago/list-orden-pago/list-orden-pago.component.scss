@@ -130,3 +130,11 @@
   .col-rendido { display: none; }
   .rendido-inline { display: block; }
 }
+
+/* Pendiente en negativo: se rindio mas de lo entregado. No es un error de
+   calculo, es plata de mas, y por eso se ve. Rojo y no ambar: a diferencia
+   de una rendicion sin enviar, esto ya ocurrio y no se arregla solo. */
+.en-exceso {
+  color: #b0442d;
+  font-weight: 700;
+}
