@@ -2587,6 +2587,7 @@ export class EditRendirCuentaComponent implements OnInit {
       desBanco: cta.desBanco,
       numCuentaBco: cta.numCuenta,
       codFormaPago: cta.codFormaPago,
+      codCuentaBco: cta.codCuentaContable,
       codMoneda: cta.codMoneda,
       // Se propone el saldo pendiente, que es lo que casi siempre se deposita.
       impSoles: this.saldoPorDevolver || undefined,
@@ -2611,6 +2612,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.nuevoAbono.desBanco = this.cuentaDestino.desBanco;
     this.nuevoAbono.numCuentaBco = this.cuentaDestino.numCuenta;
     this.nuevoAbono.codFormaPago = this.cuentaDestino.codFormaPago;
+    this.nuevoAbono.codCuentaBco = this.cuentaDestino.codCuentaContable;
     this.nuevoAbono.codMoneda = this.cuentaDestino.codMoneda;
   }
 

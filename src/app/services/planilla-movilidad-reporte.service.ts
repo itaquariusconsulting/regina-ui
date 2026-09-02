@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -24,6 +24,18 @@ export class PlanillaMovilidadReporteService {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Con esta cabecera el interceptor no levanta su modal generico.
+   *
+   * La pantalla ya muestra su propio aviso, que dice que fallo el REPORTE y
+   * que se puede reintentar. El modal decia "Recurso no encontrado / El
+   * recurso solicitado no existe": cierto para el interceptor, inutil para
+   * quien solo queria ver sus planillas.
+   */
+  private get sinModal(): HttpHeaders {
+    return new HttpHeaders({ 'X-Skip-Error-Handler': 'true' });
+  }
+
   buscar(codEmpresa: string, codSucursal: string,
          desde: string, hasta: string,
          codAuxiliar?: string): Observable<PlanillasDeMovilidad> {
@@ -38,7 +50,7 @@ export class PlanillaMovilidadReporteService {
     if (hasta) { params = params.set('hasta', hasta); }
     if (codAuxiliar) { params = params.set('codAuxiliar', codAuxiliar); }
 
-    return this.http.get<Response>(this.base, { params }).pipe(
+    return this.http.get<Response>(this.base, { params, headers: this.sinModal }).pipe(
       map(r => (r?.resultado as PlanillasDeMovilidad)
             ?? { planillas: [], cuantas: 0, viajes: 0, gastado: 0, admin: false })
     );

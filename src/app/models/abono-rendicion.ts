@@ -28,6 +28,15 @@ export interface AbonoRendicion {
   numCuentaBco?: string;
   /** ABONO EN CUENTA, cheque, efectivo. */
   codFormaPago?: string;
+
+  /**
+   * La cuenta contable del banco (1041118), no el numero de cuenta.
+   *
+   * Se manda desde la pantalla porque no se puede deducir del numero: en
+   * MAE_BANCO_CUENTA hay dos cuentas corrientes distintas con la misma
+   * 1041118, asi que el par tiene que viajar entero.
+   */
+  codCuentaBco?: string;
   numOperacion?: string;
 
   codMoneda?: string;
