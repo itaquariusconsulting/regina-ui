@@ -7,6 +7,7 @@ import { NgbDatepickerConfig, NgbDatepickerModule, NgbDateStruct } from '@ng-boo
 import { ImageCropperComponent, ImageCroppedEvent } from 'ngx-image-cropper';
 import Tesseract from 'tesseract.js';
 import { OrdenPago } from '../../../models/orden-pago';
+import { CuentaDestino } from '../../../models/cuenta-destino';
 import { OcrService } from '../../../services/ocr.service';
 import { LoadingDancingSquaresComponent } from '../../../components/loading-dancing-squares/loading-dancing-squares.component';
 import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
@@ -465,14 +466,20 @@ export class EditRendirCuentaComponent implements OnInit {
       this.saldoSoles = this._saldoBaseSoles;
       this.saldoDolares = this._saldoBaseDolares;
 
-      // La cuenta a la que se devuelve es una sola y esta en config.ini, no
-      // clavada en el codigo: si manana cambia, se cambia el archivo.
+      // La cuenta a la que se devuelve sale de config.ini, no clavada en el
+      // codigo: si manana cambia, se cambia el archivo.
       this.abonoAuxiliarBco = this.configService.get('ABONO_COD_AUXILIAR_BCO');
       this.abonoBanco = this.configService.get('ABONO_DES_BANCO');
       this.abonoCuenta = this.configService.get('ABONO_NUM_CUENTA_BCO');
       this.abonoMoneda = this.configService.get('ABONO_COD_MONEDA') || '01';
       this.abonoCuentaContable = this.configService.get('ABONO_COD_CUENTA_CONTABLE');
       this.abonoFormaPago = this.configService.get('ABONO_FORMA_PAGO');
+
+      this.cuentasDestino = this.armarCuentasDestino();
+      // Con una sola cuenta el combo no es una eleccion, es una confirmacion:
+      // viene marcada. Si manana hay dos, arranca sin elegir para que nadie
+      // deposite en la equivocada por no haber mirado.
+      this.cuentaDestino = this.cuentasDestino.length === 1 ? this.cuentasDestino[0] : null;
     }
     this.isDesktop = this.deviceService.isDesktopDevice();
     const user = sessionStorage.getItem('user')
@@ -2406,19 +2413,30 @@ export class EditRendirCuentaComponent implements OnInit {
   pestana: 'comprobante' | 'devolucion' = 'comprobante';
 
   /**
-   * El interruptor de la devolucion. En false la pestana se ve apagada y no
-   * entra.
+   * El interruptor del piloto. En false la devolucion queda apagada para
+   * todos, admins incluidos, y la pestana se ve gris y no entra.
    *
-   * Se apaga a mano mientras la cuenta de destino no este definida del todo:
-   * estamos en caliente y un deposito grabado contra una cuenta a medias es
-   * plata que despues hay que ir a buscar al extracto. Para reactivar la
-   * funcion basta poner true aca; el backend, la tabla y la pantalla ya estan.
-   *
-   * Ojo: esto es una traba de interfaz, no una de seguridad. El endpoint
-   * POST /api/rendicion/abono sigue existiendo y respondiendo. Si hiciera
-   * falta cerrarlo de verdad, hay que hacerlo en el API.
+   * Se apaga a mano cuando haga falta cortar la funcion sin volver atras el
+   * despliegue: estamos en caliente y un deposito mal grabado es plata que
+   * despues hay que ir a buscar al extracto.
    */
-  readonly devolucionHabilitada: boolean = false;
+  private readonly DEVOLUCION_EN_PILOTO: boolean = true;
+
+  /**
+   * Si el que esta mirando puede usar la devolucion.
+   *
+   * Durante el piloto, solo admins. No es una decision de interfaz: los tres
+   * cerrojos —entrar a la pestana, abrir el formulario y grabar— cuelgan de
+   * aca, asi que un no-admin no graba un abono aunque llegue al metodo por
+   * otra via. El *ngIf de la plantilla solo evita que lo vea.
+   *
+   * Ojo: sigue siendo una traba de navegador, no de servidor. El endpoint
+   * POST /api/rendicion/abono existe y responde a cualquiera con sesion
+   * valida. Si hiciera falta cerrarlo de verdad, hay que hacerlo en el API.
+   */
+  get devolucionHabilitada(): boolean {
+    return this.DEVOLUCION_EN_PILOTO && this.esAdmin;
+  }
 
   /** Unica puerta de entrada a la pestana, y esta cerrada con llave. */
   irADevolucion(): void {
@@ -2440,6 +2458,71 @@ export class EditRendirCuentaComponent implements OnInit {
   abonoMoneda = '01';
   abonoCuentaContable = '';
   abonoFormaPago = '';
+
+  /**
+   * Las cuentas a las que se puede devolver, y la elegida.
+   *
+   * Es una lista de una sola cuenta, pero lista al fin: el combo no cambia
+   * cuando manana agreguen la de dolares.
+   */
+  cuentasDestino: CuentaDestino[] = [];
+  cuentaDestino: CuentaDestino | null = null;
+
+  /**
+   * Arma la lista con lo que haya en config.ini.
+   *
+   * Si falta el banco o el numero de cuenta devuelve vacio a proposito. Antes
+   * la pantalla mostraba "Depositar en , cuenta ()" con los huecos a la vista
+   * y el boton de guardar igual funcionaba: se podia grabar un deposito sin
+   * cuenta de destino. Ahora, sin cuenta completa, no hay nada que elegir y
+   * no se graba.
+   */
+  private armarCuentasDestino(): CuentaDestino[] {
+
+    const banco = (this.abonoBanco || '').trim();
+    const cuenta = (this.abonoCuenta || '').trim();
+
+    if (!banco || !cuenta) {
+      console.warn('[abonos] config.ini sin ABONO_DES_BANCO / ABONO_NUM_CUENTA_BCO;'
+                 + ' la devolucion queda sin cuenta de destino');
+      return [];
+    }
+
+    const moneda = (this.abonoMoneda || '01').trim();
+
+    return [{
+      codAuxiliarBco: (this.abonoAuxiliarBco || '').trim(),
+      desBanco: banco,
+      numCuenta: cuenta,
+      codMoneda: moneda,
+      codCuentaContable: (this.abonoCuentaContable || '').trim(),
+      formaPago: (this.abonoFormaPago || '').trim(),
+      etiqueta: `${banco} — ${cuenta} (${moneda === '01' ? 'S/' : 'US$'})`
+    }];
+  }
+
+  /** La moneda de la orden. Si no viniera, se asume soles, que es el 99%. */
+  get monedaOrden(): string {
+    return (this.orden?.codMoneda || '01').trim();
+  }
+
+  /**
+   * Una orden en dolares no se puede devolver todavia: la unica cuenta
+   * configurada es la corriente en soles, y depositar dolares ahi obliga a
+   * contabilidad a rearmar el tipo de cambio a mano.
+   */
+  get ordenEnOtraMoneda(): boolean {
+    return this.monedaOrden !== '01';
+  }
+
+  get hayCuentaDestino(): boolean {
+    return this.cuentasDestino.length > 0;
+  }
+
+  /** Las tres condiciones para poder cargar un deposito, juntas. */
+  get puedeRegistrarDeposito(): boolean {
+    return this.devolucionHabilitada && this.hayCuentaDestino && !this.ordenEnOtraMoneda;
+  }
 
   /**
    * Por ahora la seccion es solo para admins.
@@ -2480,8 +2563,13 @@ export class EditRendirCuentaComponent implements OnInit {
 
   abrirNuevoAbono(): void {
     // Segundo cerrojo: aunque alguien llegara a la pestana por otra via, el
-    // formulario no se abre mientras la devolucion este apagada.
-    if (!this.devolucionHabilitada) { return; }
+    // formulario no se abre mientras la devolucion este apagada, sin cuenta
+    // configurada o con una orden en otra moneda.
+    if (!this.puedeRegistrarDeposito) { return; }
+
+    // Con una sola cuenta ya viene marcada; esto cubre el dia que haya dos y
+    // el usuario abra el formulario sin haber elegido.
+    const cta = this.cuentaDestino || this.cuentasDestino[0];
 
     const hoy = new Date().toISOString().slice(0, 10);
     this.nuevoAbono = {
@@ -2490,11 +2578,11 @@ export class EditRendirCuentaComponent implements OnInit {
       numOrden: this.orden?.numOrden || '',
       fecDeposito: hoy,
       fecMovimiento: hoy,
-      codAuxiliarBco: this.abonoAuxiliarBco,
-      desBanco: this.abonoBanco,
-      numCuentaBco: this.abonoCuenta,
-      codFormaPago: this.abonoFormaPago,
-      codMoneda: this.abonoMoneda,
+      codAuxiliarBco: cta.codAuxiliarBco,
+      desBanco: cta.desBanco,
+      numCuentaBco: cta.numCuenta,
+      codFormaPago: cta.formaPago,
+      codMoneda: cta.codMoneda,
       // Se propone el saldo pendiente, que es lo que casi siempre se deposita.
       impSoles: this.saldoPorDevolver || undefined,
       numOperacion: '',
@@ -2506,11 +2594,35 @@ export class EditRendirCuentaComponent implements OnInit {
     this.nuevoAbono = null;
   }
 
+  /**
+   * Al cambiar de cuenta en el combo hay que reescribir los datos bancarios
+   * del abono en curso. Si no, se guarda el deposito con el banco de la
+   * cuenta que estaba elegida al abrir el formulario: el error mas silencioso
+   * posible, porque en pantalla se ve la cuenta correcta.
+   */
+  onCuentaDestinoCambia(): void {
+    if (!this.nuevoAbono || !this.cuentaDestino) { return; }
+    this.nuevoAbono.codAuxiliarBco = this.cuentaDestino.codAuxiliarBco;
+    this.nuevoAbono.desBanco = this.cuentaDestino.desBanco;
+    this.nuevoAbono.numCuentaBco = this.cuentaDestino.numCuenta;
+    this.nuevoAbono.codFormaPago = this.cuentaDestino.formaPago;
+    this.nuevoAbono.codMoneda = this.cuentaDestino.codMoneda;
+  }
+
   guardarAbono(): void {
     // Tercer cerrojo, el que de verdad interesa: no se graba nada mientras la
     // devolucion este apagada, sin importar como se haya llegado hasta aca.
     if (!this.devolucionHabilitada) { return; }
     if (!this.nuevoAbono) { return; }
+
+    if (!this.cuentaDestino) {
+      Swal.fire({ icon: 'warning', title: 'Falta la cuenta de destino',
+                  text: 'Elija la cuenta a la que se hizo el depósito.' });
+      return;
+    }
+    // Ultima sincronizacion antes de mandar: lo que se guarda es la cuenta
+    // que esta elegida ahora, no la que estaba al abrir el formulario.
+    this.onCuentaDestinoCambia();
 
     const importe = Number(this.nuevoAbono.impSoles);
     if (!Number.isFinite(importe) || importe <= 0) {

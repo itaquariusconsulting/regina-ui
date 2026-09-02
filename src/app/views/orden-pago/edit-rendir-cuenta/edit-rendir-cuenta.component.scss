@@ -146,7 +146,11 @@
 .dev-pendiente strong { color: #b0442d; }
 .dev-pendiente strong:empty { color: inherit; }
 
-.dev-cuenta {
+/* Reemplaza a .dev-cuenta: ya no se anuncia la cuenta —eso lo hace el combo
+   del formulario— sino el motivo por el que no se puede depositar. Sobrio a
+   proposito: el amarillo grande de antes era justamente lo que ensuciaba la
+   pantalla. */
+.dev-aviso {
   font-size: 0.82rem;
   color: #374151;
   background: #fff;
@@ -154,6 +158,16 @@
   border-radius: 4px;
   padding: 7px 10px;
   margin-bottom: 12px;
+
+  i { margin-right: 6px; opacity: .7; }
+}
+
+/* Falta configuracion: esto lo arregla sistemas, no el usuario, asi que se
+   distingue del aviso normal —que solo dice "hoy no se puede". */
+.dev-aviso-error {
+  color: #8c2f1c;
+  border-color: rgba(176, 68, 45, 0.45);
+  background: #fdf5f3;
 }
 
 .dev-form {

@@ -612,7 +612,8 @@
 
         <div class="dev-cabecera">
             <button type="button" class="general-button btn-primary btn-sm"
-                    *ngIf="!nuevoAbono" (click)="abrirNuevoAbono()">
+                    *ngIf="!nuevoAbono && puedeRegistrarDeposito"
+                    (click)="abrirNuevoAbono()">
                 <i class="fa-solid fa-plus"></i> Registrar depósito
             </button>
         </div>
@@ -632,14 +633,43 @@
             </div>
         </div>
 
-        <div class="dev-cuenta">
-            <i class="fa-solid fa-building-columns"></i>
-            Depositar en <strong>{{ abonoBanco }}</strong>,
-            cuenta <strong>{{ abonoCuenta }}</strong> ({{ abonoFormaPago }}).
+        <!-- La cuenta ya no se anuncia en una linea suelta: se elige en el
+             combo del formulario. Aca solo quedan los dos motivos por los que
+             NO se puede cargar un deposito, dichos con todas las letras. Antes
+             esta linea salia como "Depositar en , cuenta ()" cuando faltaba la
+             configuracion, y el boton de guardar seguia andando. -->
+        <div class="dev-aviso dev-aviso-error" *ngIf="!hayCuentaDestino">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            No hay una cuenta de destino configurada, así que no se pueden
+            registrar depósitos. Avise a sistemas.
+        </div>
+
+        <div class="dev-aviso" *ngIf="hayCuentaDestino && ordenEnOtraMoneda">
+            <i class="fa-solid fa-circle-info"></i>
+            Esta orden no es en soles y la única cuenta habilitada es la
+            corriente en soles. La devolución en otra moneda todavía no está
+            habilitada.
         </div>
 
         <!-- Formulario de carga -->
         <div class="dev-form" *ngIf="nuevoAbono">
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold mb-1 d-block">Depositar en</label>
+                    <select class="general-input form-control"
+                            [(ngModel)]="cuentaDestino"
+                            (ngModelChange)="onCuentaDestinoCambia()">
+                        <option *ngFor="let c of cuentasDestino" [ngValue]="c">
+                            {{ c.etiqueta }}
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <small class="text-muted">
+                        {{ cuentaDestino?.formaPago }}
+                    </small>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold mb-1 d-block">Fecha del depósito</label>
