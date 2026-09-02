@@ -25,12 +25,14 @@
         <th class="text-center">Tipo de Gasto</th>
         <th class="text-center">Moneda</th>
         <th class="text-center">Importe</th>
-        <!-- Dos columnas y no una: "Rendido" es lo que el trabajador lleva
-             subido a REGINA, "Publicado" es lo que contabilidad ya tiene en
-             el ERP. Antes habia una sola con lo publicado, asi que a quien
-             tenia la rendicion abierta le decia 0.00 con todo cargado. -->
-        <th class="text-center" title="Lo que lleva subido en REGINA">Rendido</th>
-        <th class="text-center col-publicado" title="Lo ya publicado al ERP">Publicado</th>
+        <!-- Dos columnas y no una. Los nombres siguen el vocabulario de
+             REGINA: una rendicion enviada queda en estado RENDIDA, asi que
+             "Rendido" es lo que ya se envio y contabilidad tiene; "Cargado"
+             es lo que el trabajador subio y todavia esta editando. Antes
+             habia una sola columna con lo enviado, asi que a quien tenia la
+             rendicion abierta le decia 0.00 con todo cargado. -->
+        <th class="text-center" title="Lo que lleva subido y aun no envia">Cargado</th>
+        <th class="text-center col-rendido" title="Lo ya enviado a contabilidad">Rendido</th>
         <th class="text-center">Estado</th>
         <th class="text-center">Acciones</th>
       </thead>
@@ -48,12 +50,15 @@
             <small class="d-block text-muted" *ngIf="reg.comprobantesCargados">
               {{ reg.comprobantesCargados }} comp.
             </small>
-            <!-- En pantallas angostas la columna Publicado se oculta para no
+            <!-- En pantallas angostas la columna Rendido se oculta para no
                  empujar la botonera fuera de vista, y su dato baja aca. Se
-                 esconde la COLUMNA, no la informacion. -->
-            <small class="d-block publicado-inline"
-                   [class.pendiente-publicar]="tienePendienteDePublicar(reg)">
-              publicado:
+                 esconde la COLUMNA, no la informacion.
+                 SIN d-block: esa clase de Bootstrap es display:block
+                 !important y pisaba el display:none, asi que la linea se
+                 mostraba tambien con la columna a la vista. -->
+            <small class="rendido-inline"
+                   [class.sin-enviar]="tienePendienteDeEnviar(reg)">
+              rendido:
               {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
                 | number: '1.2-2'}}
             </small>
@@ -61,7 +66,7 @@
 
           <!-- Se pinta distinto solo cuando hay algo subido que todavia no
                llego al ERP. Que se destaque siempre no diria nada. -->
-          <td class="text-end col-publicado" [class.pendiente-publicar]="tienePendienteDePublicar(reg)">
+          <td class="text-end col-rendido" [class.sin-enviar]="tienePendienteDeEnviar(reg)">
             {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
               | number: '1.2-2'}}
           </td>

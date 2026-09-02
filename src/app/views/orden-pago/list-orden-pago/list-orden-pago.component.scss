@@ -102,27 +102,31 @@
   border: 1px solid #bfe6d0;
 }
 
-/* Publicado en cero (o corto) mientras hay comprobantes subidos: no es un
+/* Rendido en cero (o corto) mientras hay comprobantes cargados: no es un
    error, es una rendicion sin enviar. Se marca en ambar y no en rojo —el
    trabajador todavia esta a tiempo— y solo cuando hay diferencia real. */
-.pendiente-publicar {
+.sin-enviar {
   color: #92400e;
   font-weight: 600;
 }
 
-/* La columna Publicado suma una columna a una tabla que ya tenia nueve. En
+/* La columna Rendido suma una columna a una tabla que ya tenia nueve. En
    pantallas anchas entra sin problema; por debajo de 1400px empujaria la
    botonera de acciones fuera del viewport y obligaria a scrollear
    horizontalmente para llegar a los botones, que es peor que no tener la
    columna. Asi que ahi se oculta la COLUMNA y el dato baja debajo del
-   Rendido, donde ocupa una linea y no roba ancho. */
-.publicado-inline {
+   Cargado, donde ocupa una linea y no roba ancho.
+
+   OJO: el <small> NO puede llevar la clase d-block de Bootstrap. Es
+   display:block !important y pisa este display:none, con lo que la linea
+   aparece tambien con la columna a la vista, diciendo dos veces lo mismo. */
+.rendido-inline {
   display: none;
   font-size: 0.68rem;
   color: #94a3b8;
 }
 
 @media (max-width: 1400px) {
-  .col-publicado { display: none; }
-  .publicado-inline { display: block; }
+  .col-rendido { display: none; }
+  .rendido-inline { display: block; }
 }

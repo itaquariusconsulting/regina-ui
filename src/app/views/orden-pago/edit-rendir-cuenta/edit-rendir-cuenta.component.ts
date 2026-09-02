@@ -2567,6 +2567,46 @@ export class EditRendirCuentaComponent implements OnInit {
    * El campo hermano estadoCp viene de UN digito en esta misma respuesta, asi
    * que comparar contra '00' a secas ya fallo una vez. Se normaliza.
    */
+  /**
+   * El estado que corresponde MOSTRAR, combinando la ficha y el comprobante.
+   *
+   * La ficha de e-consultaruc gana cuando dice ACTIVO: es el dato en vivo del
+   * padron de SUNAT. El comprobante solo se muestra si la ficha no dice nada
+   * o si tampoco lo da por activo. Misma asimetria que en handleRucResponse:
+   * una fuente puede probar que algo esta activo, no que esta de baja.
+   */
+  private estadoEfectivo(
+      delComprobante: { texto: string; color: string }): { texto: string; color: string } {
+
+    const deLaFicha = (this.padronRuc?.estado || '').trim();
+
+    if (this.esActivo(deLaFicha)) {
+      return { texto: 'ACTIVO', color: '#198754' };
+    }
+    if (this.esActivo(delComprobante.texto)) {
+      return { texto: 'ACTIVO', color: '#198754' };
+    }
+    // Ninguno lo da por activo: se muestra lo que diga la ficha, y si la
+    // ficha no dice nada, lo del comprobante.
+    return deLaFicha
+        ? this.leerEstadoRuc(deLaFicha)
+        : delComprobante;
+  }
+
+  /** Igual que estadoEfectivo, para la condicion de domicilio. */
+  private condicionEfectiva(
+      delComprobante: { texto: string; color: string }): { texto: string; color: string } {
+
+    const deLaFicha = (this.padronRuc?.condicion || '').trim();
+
+    if (this.esHabido(deLaFicha) || this.esHabido(delComprobante.texto)) {
+      return { texto: 'HABIDO', color: '#198754' };
+    }
+    return deLaFicha
+        ? this.leerCondicionDomicilio(deLaFicha)
+        : delComprobante;
+  }
+
   /** Un estado cuenta como ACTIVO si lo dice, venga como texto o como '00'. */
   private esActivo(v: string | undefined | null): boolean {
     const t = String(v ?? '').trim().toUpperCase();
@@ -3805,18 +3845,27 @@ export class EditRendirCuentaComponent implements OnInit {
         const condDomi = this.leerCondicionDomicilio(data.condDomiRuc);
         const condDomiTxt = condDomi.texto;
 
-        const colorEstado = estadoRuc.color;
-        const colorDomi   = condDomi.color;
+        // LO QUE SE MUESTRA es el estado EFECTIVO, no el crudo del
+        // comprobante.
+        //
+        // Es la misma regla asimetrica que se aplica a padronRuc: si la ficha
+        // de SUNAT dice ACTIVO, eso es lo que se muestra, aunque el servicio
+        // de comprobantes devuelva un codigo de baja. Ese servicio no conoce
+        // los RUC nuevos —al 20612227242, inscrito el 31/07/2026, le devolvia
+        // codigo 11 (BAJA DE OFICIO) mientras la ficha decia ACTIVO— y aca
+        // se estaba imprimiendo tal cual, en rojo, sobre un proveedor sano.
+        const efectivo = this.estadoEfectivo(estadoRuc);
+        const condEfectiva = this.condicionEfectiva(condDomi);
 
         const detalles: string[] = [];
-        if (estadoRucTxt) {
+        if (efectivo.texto) {
           detalles.push(
-            `<b>Estado del RUC:</b> <span style="color:${colorEstado}; font-weight:bold;">${estadoRucTxt}</span>`
+            `<b>Estado del RUC:</b> <span style="color:${efectivo.color}; font-weight:bold;">${efectivo.texto}</span>`
           );
         }
-        if (condDomiTxt) {
+        if (condEfectiva.texto) {
           detalles.push(
-            `<b>Condición de domicilio:</b> <span style="color:${colorDomi}; font-weight:bold;">${condDomiTxt}</span>`
+            `<b>Condición de domicilio:</b> <span style="color:${condEfectiva.color}; font-weight:bold;">${condEfectiva.texto}</span>`
           );
         }
         if (data.observaciones)   detalles.push(`<b>Observaciones:</b> ${data.observaciones}`);

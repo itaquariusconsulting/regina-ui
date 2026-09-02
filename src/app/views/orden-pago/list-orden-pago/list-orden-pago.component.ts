@@ -561,14 +561,14 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * true si hay comprobantes subidos que todavia no llegaron al ERP.
+   * true si hay comprobantes cargados que todavia no se enviaron.
    *
-   * Es la diferencia entre las dos columnas nuevas. Sirve para marcar la
-   * fila: un "Publicado" en cero al lado de un "Rendido" con importe no es
-   * un error, es una rendicion sin enviar, y conviene que se lea asi y no
-   * como un numero perdido.
+   * Es la diferencia entre las dos columnas. Sirve para marcar la fila: un
+   * "Rendido" en cero al lado de un "Cargado" con importe no es un error, es
+   * una rendicion sin enviar, y conviene que se lea asi y no como un numero
+   * perdido.
    */
-  tienePendienteDePublicar(orden: OrdenPago): boolean {
+  tienePendienteDeEnviar(orden: OrdenPago): boolean {
     const cargado   = orden?.codMoneda === '01'
       ? (orden?.impCargadoSoles  ?? 0) : (orden?.impCargadoDolares  ?? 0);
     const publicado = orden?.codMoneda === '01'
