@@ -67,6 +67,25 @@
                     [options]="{ prefix: '', thousands: ',', decimal: '.', precision: 2, nullable: true }" />
             </div>
 
+            <!-- Informativo, al lado del saldo y sin tocarlo.
+                 "Subido" es lo que lleva cargado en REGINA; "En contabilidad"
+                 es lo que ya se publico al ERP. El saldo sigue calculandose
+                 igual que siempre: esto solo explica por que puede haber
+                 comprobantes cargados y el saldo entero. -->
+            <div class="rc-avance" *ngIf="comprobantesSubidos">
+                <div class="rc-avance-dato">
+                    <span class="rc-avance-rot">Subido</span>
+                    <strong>{{ simboloMoneda }} {{ subidoEnRegina | number:'1.2-2' }}</strong>
+                    <small>{{ comprobantesSubidos }} comprobante(s)</small>
+                </div>
+                <div class="rc-avance-dato" [class.sin-publicar]="faltaPublicar">
+                    <span class="rc-avance-rot">En contabilidad</span>
+                    <strong>{{ simboloMoneda }} {{ publicadoEnErp | number:'1.2-2' }}</strong>
+                    <small *ngIf="faltaPublicar">sin enviar</small>
+                    <small *ngIf="!faltaPublicar">al día</small>
+                </div>
+            </div>
+
         </div>
 
         <!-- Toolbar de acciones del comprobante.

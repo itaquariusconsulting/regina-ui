@@ -560,6 +560,24 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     return this.stateActions[state]?.[action] || false;
   }
 
+  /**
+   * true si hay comprobantes subidos que todavia no llegaron al ERP.
+   *
+   * Es la diferencia entre las dos columnas nuevas. Sirve para marcar la
+   * fila: un "Publicado" en cero al lado de un "Rendido" con importe no es
+   * un error, es una rendicion sin enviar, y conviene que se lea asi y no
+   * como un numero perdido.
+   */
+  tienePendienteDePublicar(orden: OrdenPago): boolean {
+    const cargado   = orden?.codMoneda === '01'
+      ? (orden?.impCargadoSoles  ?? 0) : (orden?.impCargadoDolares  ?? 0);
+    const publicado = orden?.codMoneda === '01'
+      ? (orden?.impRendidoSoles  ?? 0) : (orden?.impRendidoDolares  ?? 0);
+
+    // Un centavo de diferencia es redondeo, no algo sin publicar.
+    return cargado - publicado > 0.01;
+  }
+
   /** true si la orden ya se rindio desde REGINA. */
   estaRendida(orden: OrdenPago): boolean {
     return orden?.estadoRendicion === 'RENDIDA';

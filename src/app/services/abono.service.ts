@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -21,13 +21,26 @@ export class AbonoService {
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Con esta cabecera el interceptor no levanta su modal generico.
+   *
+   * La devolucion es una seccion SECUNDARIA de la pantalla de rendicion: se
+   * consulta sola al entrar, y el usuario vino a cargar su comprobante. Si el
+   * endpoint no responde, tiene que poder seguir con lo suyo; un modal
+   * "Recurso no encontrado" en medio de la carga no le dice nada y le tapa la
+   * pantalla. El fallo queda en la consola.
+   */
+  private get sinModal(): HttpHeaders {
+    return new HttpHeaders({ 'X-Skip-Error-Handler': 'true' });
+  }
+
   listar(codEmpresa: string, codSucursal: string, numOrden: string): Observable<AbonosDeOrden> {
     const params = new HttpParams()
       .set('codEmpresa', codEmpresa)
       .set('codSucursal', codSucursal)
       .set('numOrden', numOrden);
 
-    return this.http.get<Response>(this.base, { params }).pipe(
+    return this.http.get<Response>(this.base, { params, headers: this.sinModal }).pipe(
       // El backend responde el envoltorio Response; acá abajo solo interesa
       // el resultado, y si viene vacío se devuelve una lista y cero en vez de
       // undefined, para que la pantalla no tenga que defenderse.

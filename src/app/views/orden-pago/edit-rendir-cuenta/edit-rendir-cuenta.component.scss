@@ -778,3 +778,41 @@ app-pdf-viewer.pdf-viewer-embedded {
     max-height: 60vh;
   }
 }
+
+/* El avance de la rendicion, al lado del saldo. Deliberadamente discreto:
+   es contexto, no un dato que haya que atender. Solo "sin enviar" se
+   destaca, y en ambar —el trabajador todavia esta a tiempo—. */
+.rc-avance {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+  padding-bottom: 4px;
+  margin-left: 6px;
+}
+
+.rc-avance-dato {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+
+  strong { font-size: 0.95rem; color: #0f172a; }
+  small  { font-size: 0.68rem; color: #94a3b8; }
+
+  &.sin-publicar {
+    strong { color: #92400e; }
+    small  { color: #b45309; font-weight: 600; }
+  }
+}
+
+.rc-avance-rot {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+/* En pantallas chicas baja debajo de los saldos en vez de apretarlos. */
+@media (max-width: 720px) {
+  .rc-avance { width: 100%; margin-left: 0; margin-top: 8px; }
+}

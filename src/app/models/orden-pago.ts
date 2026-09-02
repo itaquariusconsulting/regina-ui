@@ -45,6 +45,20 @@ export class OrdenPago {
   cdesMoneda?: string;
   cdesAuxiliar?: string;
   cdesTipoGasto?: string;
+  /** Lo PUBLICADO al ERP (CXP_ORDEN_PAGO_DET). Cero hasta que se envia. */
   impRendidoSoles?: number;
   impRendidoDolares?: number;
+
+  /**
+   * Lo SUBIDO en REGINA (REG_REND_DET), este publicado o no.
+   *
+   * Va al lado del anterior, no lo reemplaza: uno es el avance del
+   * trabajador y el otro es lo que contabilidad ya tiene. Cuando difieren,
+   * hay algo cargado y sin enviar.
+   */
+  impCargadoSoles?: number;
+  impCargadoDolares?: number;
+
+  /** Cuantos comprobantes lleva subidos, publicados o no. */
+  comprobantesCargados?: number;
 }

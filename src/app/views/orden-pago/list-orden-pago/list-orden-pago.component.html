@@ -25,7 +25,12 @@
         <th class="text-center">Tipo de Gasto</th>
         <th class="text-center">Moneda</th>
         <th class="text-center">Importe</th>
-        <th class="text-center">Rendido</th>
+        <!-- Dos columnas y no una: "Rendido" es lo que el trabajador lleva
+             subido a REGINA, "Publicado" es lo que contabilidad ya tiene en
+             el ERP. Antes habia una sola con lo publicado, asi que a quien
+             tenia la rendicion abierta le decia 0.00 con todo cargado. -->
+        <th class="text-center" title="Lo que lleva subido en REGINA">Rendido</th>
+        <th class="text-center col-publicado" title="Lo ya publicado al ERP">Publicado</th>
         <th class="text-center">Estado</th>
         <th class="text-center">Acciones</th>
       </thead>
@@ -37,8 +42,29 @@
           <td class="text-start">{{reg.cdesTipoGasto}}</td>
           <td class="text-center">{{reg.cdesMoneda}}</td>
           <td class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
-          <td class="text-end">{{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0)) |
-            number: '1.2-2'}}</td>
+          <td class="text-end">
+            {{(reg.codMoneda=='01' ? (reg.impCargadoSoles ?? 0) : (reg.impCargadoDolares ?? 0))
+              | number: '1.2-2'}}
+            <small class="d-block text-muted" *ngIf="reg.comprobantesCargados">
+              {{ reg.comprobantesCargados }} comp.
+            </small>
+            <!-- En pantallas angostas la columna Publicado se oculta para no
+                 empujar la botonera fuera de vista, y su dato baja aca. Se
+                 esconde la COLUMNA, no la informacion. -->
+            <small class="d-block publicado-inline"
+                   [class.pendiente-publicar]="tienePendienteDePublicar(reg)">
+              publicado:
+              {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
+                | number: '1.2-2'}}
+            </small>
+          </td>
+
+          <!-- Se pinta distinto solo cuando hay algo subido que todavia no
+               llego al ERP. Que se destaque siempre no diria nada. -->
+          <td class="text-end col-publicado" [class.pendiente-publicar]="tienePendienteDePublicar(reg)">
+            {{(reg.codMoneda=='01' ? (reg.impRendidoSoles ?? 0) : (reg.impRendidoDolares ?? 0))
+              | number: '1.2-2'}}
+          </td>
 
           <td class="text-center">
             <span class="status-circle" [attr.title]="getStatusTitle(reg.tipEstado ?? '')" [ngClass]="{

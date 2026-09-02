@@ -2506,6 +2506,40 @@ export class EditRendirCuentaComponent implements OnInit {
     }];
   }
 
+  // ---------------------------------------------------------------------
+  // El avance de la rendicion: lo subido y lo que ya tiene contabilidad.
+  //
+  // NO tocan el saldo. El saldo se sigue calculando como siempre, contra lo
+  // publicado al ERP; esto se muestra al lado para explicar por que puede
+  // haber comprobantes cargados y el saldo intacto.
+  // ---------------------------------------------------------------------
+
+  /** El simbolo que corresponde a la moneda de la orden. */
+  get simboloMoneda(): string {
+    return this.monedaOrden === '01' ? 'S/' : 'US$';
+  }
+
+  /** Lo que lleva subido en REGINA, este publicado o no. */
+  get subidoEnRegina(): number {
+    return (this.monedaOrden === '01'
+        ? this.orden?.impCargadoSoles : this.orden?.impCargadoDolares) ?? 0;
+  }
+
+  /** Lo que ya se publico al ERP. */
+  get publicadoEnErp(): number {
+    return (this.monedaOrden === '01'
+        ? this.orden?.impRendidoSoles : this.orden?.impRendidoDolares) ?? 0;
+  }
+
+  get comprobantesSubidos(): number {
+    return this.orden?.comprobantesCargados ?? 0;
+  }
+
+  /** Hay algo cargado que todavia no llego al ERP. Un centavo es redondeo. */
+  get faltaPublicar(): boolean {
+    return this.subidoEnRegina - this.publicadoEnErp > 0.01;
+  }
+
   /** La moneda de la orden. Si no viniera, se asume soles, que es el 99%. */
   get monedaOrden(): string {
     return (this.orden?.codMoneda || '01').trim();
