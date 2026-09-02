@@ -24,7 +24,15 @@ export interface CuentaDestino {
   /** La cuenta contable del banco en el PCGE, p.ej. 1041118. */
   codCuentaContable: string;
 
-  formaPago: string;
+  /**
+   * El CODIGO de la forma de pago, como lo pide el ERP: varchar(4) de
+   * TES_FORMA_PAGO. FCBK es ABONO EN CUENTA. Guardar aca la frase —que es lo
+   * que se hacia— deja un dato que no cruza con ninguna tabla del ERP.
+   */
+  codFormaPago: string;
+
+  /** La descripcion, solo para mostrar. */
+  desFormaPago: string;
 
   /** Lo que se lee en el combo, ya armado. */
   etiqueta: string;

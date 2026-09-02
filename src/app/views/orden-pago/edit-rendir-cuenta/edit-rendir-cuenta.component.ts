@@ -473,7 +473,10 @@ export class EditRendirCuentaComponent implements OnInit {
       this.abonoCuenta = this.configService.get('ABONO_NUM_CUENTA_BCO');
       this.abonoMoneda = this.configService.get('ABONO_COD_MONEDA') || '01';
       this.abonoCuentaContable = this.configService.get('ABONO_COD_CUENTA_CONTABLE');
-      this.abonoFormaPago = this.configService.get('ABONO_FORMA_PAGO');
+      // El ERP quiere el CODIGO (TES_FORMA_PAGO.COD_FORMA_PAGO, varchar(4)):
+      // FCBK. La frase es solo para que el usuario lea algo.
+      this.abonoCodFormaPago = this.configService.get('ABONO_COD_FORMA_PAGO');
+      this.abonoFormaPago = this.configService.get('ABONO_DES_FORMA_PAGO');
 
       this.cuentasDestino = this.armarCuentasDestino();
       // Con una sola cuenta el combo no es una eleccion, es una confirmacion:
@@ -2458,6 +2461,7 @@ export class EditRendirCuentaComponent implements OnInit {
   abonoMoneda = '01';
   abonoCuentaContable = '';
   abonoFormaPago = '';
+  abonoCodFormaPago = '';
 
   /**
    * Las cuentas a las que se puede devolver, y la elegida.
@@ -2496,7 +2500,8 @@ export class EditRendirCuentaComponent implements OnInit {
       numCuenta: cuenta,
       codMoneda: moneda,
       codCuentaContable: (this.abonoCuentaContable || '').trim(),
-      formaPago: (this.abonoFormaPago || '').trim(),
+      codFormaPago: (this.abonoCodFormaPago || '').trim(),
+      desFormaPago: (this.abonoFormaPago || '').trim(),
       etiqueta: `${banco} — ${cuenta} (${moneda === '01' ? 'S/' : 'US$'})`
     }];
   }
@@ -2581,7 +2586,7 @@ export class EditRendirCuentaComponent implements OnInit {
       codAuxiliarBco: cta.codAuxiliarBco,
       desBanco: cta.desBanco,
       numCuentaBco: cta.numCuenta,
-      codFormaPago: cta.formaPago,
+      codFormaPago: cta.codFormaPago,
       codMoneda: cta.codMoneda,
       // Se propone el saldo pendiente, que es lo que casi siempre se deposita.
       impSoles: this.saldoPorDevolver || undefined,
@@ -2605,7 +2610,7 @@ export class EditRendirCuentaComponent implements OnInit {
     this.nuevoAbono.codAuxiliarBco = this.cuentaDestino.codAuxiliarBco;
     this.nuevoAbono.desBanco = this.cuentaDestino.desBanco;
     this.nuevoAbono.numCuentaBco = this.cuentaDestino.numCuenta;
-    this.nuevoAbono.codFormaPago = this.cuentaDestino.formaPago;
+    this.nuevoAbono.codFormaPago = this.cuentaDestino.codFormaPago;
     this.nuevoAbono.codMoneda = this.cuentaDestino.codMoneda;
   }
 
