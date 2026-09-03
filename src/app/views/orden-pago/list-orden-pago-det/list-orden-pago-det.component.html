@@ -220,7 +220,6 @@
             <th class="text-center">Planilla</th>
             <th class="text-center">Fecha</th>
             <th class="text-center">Periodo</th>
-            <th class="text-center">C. Costos</th>
             <th class="text-center">Viajes</th>
             <th class="text-end">Total S/</th>
             <th>Glosa</th>
@@ -233,14 +232,16 @@
               <td class="text-center">{{ p.codPlanilla }}</td>
               <td class="text-center">{{ p.fechaPlanilla | date:'dd-MM-yyyy' }}</td>
               <td class="text-center">{{ p.anioPeriodo }}-{{ p.codPeriodo }}</td>
-              <td class="text-center">{{ p.cCentroCostos || '—' }}</td>
+              <!-- El centro de costos sale, es el de la OP y ya esta en la
+                   cabecera de la pantalla: repetirlo en cada fila gastaba una
+                   columna para decir ocho veces lo mismo. -->
               <td class="text-center">{{ p.maxNumViajes || 0 }}</td>
               <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
               <td>{{ p.glosa }}</td>
             </tr>
 
             <tr class="row-detail" *ngIf="planillaAbierta === p">
-              <td colspan="8" class="bg-light p-3">
+              <td colspan="7" class="bg-light p-3">
                 <div class="row">
                   <div class="col-md-2">
                     <label class="form-label"><strong>Recibido:</strong></label>
