@@ -58,31 +58,37 @@
 .pm-rot { font-size: 0.8rem; font-weight: 600; color: #334155; margin-top: 2px; }
 .pm-pie { font-size: 0.71rem; color: #94a3b8; margin-top: 2px; }
 
+/* Los filtros son pocos y cortos: dos fechas y un codigo. Con
+   margin-left:auto los botones se iban al borde derecho de una pantalla
+   ancha y quedaba un vacio de un metro entre el ultimo campo y Buscar, con
+   el ojo obligado a cruzar toda la barra. Ahora el bloque no se estira: los
+   campos y los botones viajan juntos. */
 .pm-filtros {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 12px;
+  padding: 12px 14px;
   margin-bottom: 12px;
 
-  .filtro { flex: 0 0 165px; }
-  .filtro--ancho { flex: 0 0 240px; }
+  .filtro { flex: 0 0 150px; }
+  .filtro--ancho { flex: 0 0 210px; }
 
   .form-label {
     font-size: 0.76rem;
     font-weight: 600;
     color: #475569;
     margin-bottom: 3px;
+    white-space: nowrap;
   }
 
+  /* Pegados a los campos, no en la otra punta. */
   .filtro-acciones {
     display: flex;
     gap: 8px;
-    margin-left: auto;
   }
 }
 
@@ -112,4 +118,21 @@
     .filtro, .filtro--ancho { flex: 1 1 100%; }
     .filtro-acciones { margin-left: 0; width: 100%; }
   }
+}
+
+/* La tabla con su propio scroll: el reporte puede traer decenas de
+   planillas, y sin esto la pagina entera se estira y las tarjetas y los
+   filtros quedan arriba, fuera de vista. Con alto maximo, la cabecera de la
+   tabla se mantiene a la vista mientras se recorre. */
+.table-container {
+  max-height: 58vh;
+  overflow-y: auto;
+}
+
+/* La cabecera queda fija mientras se scrollea: sin esto, a la fila 20 ya no
+   se sabe que columna es cual. */
+.table-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }

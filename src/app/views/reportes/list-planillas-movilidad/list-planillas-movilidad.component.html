@@ -58,8 +58,11 @@
     <!-- Solo para admins. A un usuario comun el backend le ignora este filtro,
          asi que mostrarselo seria ofrecerle algo que no hace nada. -->
     <div class="filtro filtro--ancho" *ngIf="admin">
-      <label class="form-label">Persona (código de auxiliar)</label>
-      <input type="text" class="form-control" placeholder="Ej. 521874"
+      <label class="form-label">Persona</label>
+      <!-- Una sola caja para nombre o codigo: nadie se acuerda de que el
+           521874 es Fulano, se acuerdan de Fulano. El backend busca por los
+           dos y no obliga a saber en cual cae lo que uno escribio. -->
+      <input type="text" class="form-control" placeholder="Nombre o código"
              [(ngModel)]="persona" (keyup.enter)="buscar()" />
     </div>
 

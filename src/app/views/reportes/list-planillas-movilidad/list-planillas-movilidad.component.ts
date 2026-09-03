@@ -47,7 +47,10 @@ export class ListPlanillasMovilidadComponent implements OnInit {
   // --- filtros
   desde = '';
   hasta = '';
-  /** Solo lo usa un admin; al resto el backend se lo ignora. */
+  /**
+   * Nombre o codigo de la persona. Solo lo usa un admin; al resto el backend
+   * se lo ignora y le devuelve lo suyo.
+   */
   persona = '';
 
   constructor(
