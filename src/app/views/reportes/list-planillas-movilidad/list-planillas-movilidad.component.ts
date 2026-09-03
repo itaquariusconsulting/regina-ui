@@ -82,7 +82,8 @@ export class ListPlanillasMovilidadComponent implements OnInit {
     this.huboError = false;
 
     this.servicio
-      .buscar(u.codEmpresa, u.codSucursal, this.desde, this.hasta, this.persona.trim())
+      .buscar(u.codEmpresa, u.codSucursal, this.desde, this.hasta,
+              this.persona.trim(), u.userId)
       .subscribe({
         next: r => {
           this.planillas = r.planillas || [];
@@ -168,10 +169,13 @@ export class ListPlanillasMovilidadComponent implements OnInit {
       const u = JSON.parse(sessionStorage.getItem('user') || '{}');
       return {
         codEmpresa: u.codEmpresa || '',
-        codSucursal: u.codSucursal || ''
+        codSucursal: u.codSucursal || '',
+        // Quien pregunta. El backend lo usa para LEER de la base si es admin,
+        // no para creerle: mandar otro id deja ver lo de esa persona, no mas.
+        userId: u.userId as number | undefined
       };
     } catch {
-      return { codEmpresa: '', codSucursal: '' };
+      return { codEmpresa: '', codSucursal: '', userId: undefined };
     }
   }
 }

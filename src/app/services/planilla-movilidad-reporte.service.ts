@@ -38,11 +38,16 @@ export class PlanillaMovilidadReporteService {
 
   buscar(codEmpresa: string, codSucursal: string,
          desde: string, hasta: string,
-         codAuxiliar?: string): Observable<PlanillasDeMovilidad> {
+         codAuxiliar?: string, userId?: number): Observable<PlanillasDeMovilidad> {
 
     let params = new HttpParams()
       .set('codEmpresa', codEmpresa)
       .set('codSucursal', codSucursal);
+
+    // El userId va porque el JWT de REGINA no trae subject: el backend no
+    // tiene otra forma de saber quien pregunta. Con el lee de la base si es
+    // admin y a que auxiliar corresponde; el permiso no viaja desde aca.
+    if (userId != null) { params = params.set('userId', String(userId)); }
 
     // Vacios no se mandan: el backend los trata como "sin filtro", y mandar
     // la cadena vacia lo obligaria a distinguir entre ausente y vacio.
