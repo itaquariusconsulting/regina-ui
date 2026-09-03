@@ -165,3 +165,36 @@ app-pdf-viewer.pdf-doc-viewer {
     border-color: #d8dce2;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Titulo de cada grilla.
+
+   Tres grillas seguidas sin rotulo se leen como una sola tabla partida.
+   El titulo es lo que dice "esto es otra cosa": rendiciones, movilidad y
+   depositos son tres registros distintos de la misma orden.
+   --------------------------------------------------------------------- */
+.grilla-titulo {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e3a5f;
+  letter-spacing: .01em;
+  margin-bottom: 8px;
+}
+
+/* El total de la grilla, al lado del titulo: es el numero que se busca al
+   mirarla, y ponerlo aca evita sumar las filas a ojo. */
+.grilla-total {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eef4ea;
+  color: #15803d;
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  /* Los depositos restan, asi que se distinguen del gasto. Azul y no rojo:
+     plata que volvio no es un problema. */
+  &.dev { background: #e0edff; color: #1d4ed8; }
+}

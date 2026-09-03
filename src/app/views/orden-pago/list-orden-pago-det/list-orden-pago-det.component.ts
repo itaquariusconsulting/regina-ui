@@ -18,6 +18,11 @@ import { DocumentoService } from '../../../services/documento.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { PdfViewerComponent } from '../../../components/pdf-viewer/pdf-viewer.component';
 import { RendicionService } from '../../../services/rendicion.service';
+import { AbonoService } from '../../../services/abono.service';
+import { AbonoRendicion } from '../../../models/abono-rendicion';
+import { OrdenPagoPlanillaMovilidadCabService } from '../../../services/orden-pago-planilla-movilidad-cab.service';
+import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
+import { WrapperRequestPlanillaMovilidadCab } from '../../../models/wrappers/wrapper-request-planilla-movilidad-cab';
 import {
   EliminarComprobanteRequest,
   EstadoRendicion,
@@ -49,6 +54,8 @@ export class ListOrdenPagoDetComponent implements OnInit {
     private maestrosService: MaestrosService,
     private documentoService: DocumentoService,
     private rendicionService: RendicionService,
+    private abonoService: AbonoService,
+    private planillaService: OrdenPagoPlanillaMovilidadCabService,
     private sanitizer: DomSanitizer
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -65,6 +72,28 @@ export class ListOrdenPagoDetComponent implements OnInit {
   currentPage = 0;
   totalItems = 0;
   totalPages = 0;
+  /**
+   * Los depositos con los que se devolvio saldo de esta orden.
+   *
+   * Van en el desglose porque forman parte de como se cerro la orden: los
+   * comprobantes explican en que se gasto, los depositos explican que volvio.
+   * Verlos por separado obliga a abrir dos pantallas para entender una sola
+   * cosa.
+   */
+  abonos: AbonoRendicion[] = [];
+  devuelto = 0;
+
+  /**
+   * Las planillas de movilidad de esta orden.
+   *
+   * Van en la misma tabla que los comprobantes por la misma razon: una
+   * planilla es gasto rendido igual que una factura, solo que agrupa muchos
+   * pasajes chicos en vez de un documento. Que vivan en otra pantalla obliga
+   * a sumar dos listas a mano para saber cuanto se rindio.
+   */
+  planillas: OrdenPagoCabPlanilla[] = [];
+  planillaAbierta: OrdenPagoCabPlanilla | null = null;
+
   detalles: RendicionDetDTO[] = [];
   ordenesGeneral: RendicionDetDTO[] = [];
   pagedDetalles: RendicionDetDTO[] = [];
@@ -107,6 +136,88 @@ export class ListOrdenPagoDetComponent implements OnInit {
       this.orden = state.data;
     }
     this.getListaAuxiliaresPR();
+    this.cargarAbonos();
+    this.cargarPlanillas();
+  }
+
+  /**
+   * Trae las planillas de movilidad de la orden.
+   *
+   * Como los abonos: si falla, la pantalla sigue. El usuario vino a ver sus
+   * comprobantes y un error de las planillas no puede taparle la vista.
+   */
+  private cargarPlanillas(): void {
+    if (!this.orden?.numOrden) { return; }
+
+    const w = new WrapperRequestPlanillaMovilidadCab();
+    w.codEmpresa = this.codEmpresa;
+    w.codSucursal = this.orden.codSucursal || '';
+    w.anioPeriodo = this.orden.anoPeriodo || '';
+    w.codPeriodo = this.orden.codPeriodo || '';
+    w.numOrden = this.orden.numOrden;
+
+    this.planillaService.getPlanillaMovilidad(w).subscribe({
+      next: (r: Response) => {
+        this.planillas = (r?.resultado as OrdenPagoCabPlanilla[]) || [];
+      },
+      error: e => console.warn('[planillas] no se pudieron leer en el desglose:', e)
+    });
+  }
+
+  togglePlanilla(p: OrdenPagoCabPlanilla): void {
+    this.planillaAbierta = this.planillaAbierta === p ? null : p;
+  }
+
+  get tienePlanillas(): boolean {
+    return this.planillas.length > 0;
+  }
+
+  /** Lo gastado en movilidad, para la fila de total. */
+  get totalMovilidad(): number {
+    return this.planillas.reduce((a, p) => a + (p.total ?? 0), 0);
+  }
+
+  /**
+   * Trae los depositos de la orden.
+   *
+   * Sin modal si falla: es informacion complementaria y el usuario vino a ver
+   * sus comprobantes. Un error del listado de abonos no puede tapar la
+   * pantalla entera.
+   */
+  private cargarAbonos(): void {
+    if (!this.orden?.numOrden) { return; }
+
+    this.abonoService
+      .listar(this.codEmpresa, this.orden.codSucursal || '', this.orden.numOrden)
+      .subscribe({
+        next: r => {
+          this.abonos = (r.abonos || []).filter(a => a.indAnulado !== 'S');
+          this.devuelto = r.devuelto || 0;
+        },
+        error: e => console.warn('[abonos] no se pudieron leer en el desglose:', e)
+      });
+  }
+
+  /**
+   * El deposito abierto en el desglose, o null.
+   *
+   * Aparte de expandedRow y no compartido: si fueran la misma variable, abrir
+   * un deposito cerraria el comprobante que se estaba mirando y al reves.
+   * Son dos cosas distintas y se pueden querer ver a la vez.
+   */
+  abonoAbierto: AbonoRendicion | null = null;
+
+  toggleAbono(a: AbonoRendicion): void {
+    this.abonoAbierto = this.abonoAbierto === a ? null : a;
+  }
+
+  /** Los depositos que cuentan: los anulados no se listan. */
+  get abonosVigentes(): AbonoRendicion[] {
+    return this.abonos;
+  }
+
+  get tieneAbonos(): boolean {
+    return this.abonos.length > 0;
   }
 
   onBack(): void {
@@ -511,6 +622,28 @@ export class ListOrdenPagoDetComponent implements OnInit {
       return delDocumento;
     }
     return (this.onDevuelveAuxiliar(reg.codAuxiliar || '').desAuxiliar ?? '').trim();
+  }
+
+  /**
+   * Abre el voucher de un deposito.
+   *
+   * Reusa el mismo visor que los comprobantes: el archivo se guarda con la
+   * misma convencion, {tipo}/{anio}/{mes}, y ARCHIVO_RUTA trae esas tres
+   * partes tal como se subieron. No se rearma la ruta como respaldo —a
+   * diferencia de los comprobantes viejos, todos los abonos nacieron con
+   * ARCHIVO_RUTA, asi que si falta es que no hay archivo.
+   */
+  verVoucher(a: AbonoRendicion): void {
+    const partes = (a.archivoRuta ?? '').split('/').filter(p => p.trim());
+
+    if (partes.length !== 3 || !a.archivoNombre) {
+      Swal.fire({ icon: 'info', title: 'Sin voucher',
+                  text: 'Este depósito no tiene un archivo adjunto.' });
+      return;
+    }
+
+    this.limpiarDocumentoPreview();
+    this.viewDocumento(partes[0], partes[1], partes[2], a.archivoNombre);
   }
 
   abrirModalDoc(reg: RendicionDetDTO, event?: Event) {

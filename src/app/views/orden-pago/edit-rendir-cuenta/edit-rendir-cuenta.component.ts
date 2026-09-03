@@ -2473,6 +2473,15 @@ export class EditRendirCuentaComponent implements OnInit {
     return this.abonos.filter(a => a.indAnulado !== 'S').length;
   }
   nuevoAbono: AbonoRendicion | null = null;
+
+  /**
+   * El voucher que el usuario eligio para el deposito que esta cargando.
+   *
+   * Se guarda aparte y no dentro de nuevoAbono porque no viaja al backend con
+   * el resto: el archivo se sube DESPUES de grabar, cuando ya existe el id
+   * que le da nombre.
+   */
+  voucher: File | null = null;
   guardandoAbono = false;
 
   /** La cuenta a la que se deposita: una sola y fija, sale de config.ini. */
@@ -2830,8 +2839,143 @@ export class EditRendirCuentaComponent implements OnInit {
     };
   }
 
+  /** Guarda el archivo elegido; todavia no se sube. */
+  elegirVoucher(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const f = input.files && input.files.length ? input.files[0] : null;
+
+    // 10 MB: una foto de celular pesa 2-4, un PDF escaneado menos. Mas que
+    // eso es casi siempre un video subido por error, y el limite se descubre
+    // mejor aca que con un error del servidor a mitad de la subida.
+    if (f && f.size > 10 * 1024 * 1024) {
+      Swal.fire({ icon: 'warning', title: 'Archivo muy grande',
+                  text: 'El voucher no puede pasar de 10 MB.' });
+      input.value = '';
+      this.voucher = null;
+      return;
+    }
+    this.voucher = f;
+  }
+
+  /**
+   * Sube el voucher de un abono YA GRABADO y lo engancha.
+   *
+   * Dos pasos porque son dos cosas distintas: el archivo va al disco por
+   * /documentos/upload, igual que los comprobantes, y recien despues se
+   * escribe la referencia en el abono. Si el segundo paso falla, el archivo
+   * queda subido y huerfano —molesto, pero no pierde el deposito, que es lo
+   * que importa—.
+   */
+  private subirVoucher(abono: AbonoRendicion, archivo: File): void {
+
+    if (!abono?.idRendAbono) { return; }
+
+    const punto = archivo.name.lastIndexOf('.');
+    const extension = punto >= 0 ? archivo.name.substring(punto + 1).toLowerCase() : 'jpg';
+
+    const wrapper = new WrapperUploadDocumento();
+    wrapper.file = archivo;
+    wrapper.codEmpresa = this.codEmpresa;
+    wrapper.codSucursal = this.orden?.codSucursal || '';
+    wrapper.anioPeriodo = this.orden?.anoPeriodo || '';
+    wrapper.mesPeriodo = this.orden?.codPeriodo || '';
+    // Carpeta propia: los vouchers no son comprobantes y mezclarlos haria que
+    // un listado por tipo de documento devolviera cosas que no lo son.
+    wrapper.tipoDocumento = 'ABONO';
+    wrapper.numOrden = this.orden?.numOrden || '';
+    // El id del abono hace de item: es lo que vuelve unico el nombre cuando
+    // una orden tiene varios depositos.
+    wrapper.numItem = String(abono.idRendAbono);
+    wrapper.extension = extension;
+
+    this.documentoService.uploadFile(wrapper).subscribe({
+      next: (r: any) => {
+        const nombre = r?.archivo || '';
+        const ruta = `${wrapper.tipoDocumento}/${wrapper.anioPeriodo}/${wrapper.mesPeriodo}`;
+
+        this.abonoService.adjuntar(abono.idRendAbono!, nombre, ruta).subscribe({
+          next: () => {
+            this.voucher = null;
+            this.cargarAbonos();
+          },
+          error: e => {
+            console.error('[abonos] el archivo subio pero no se engancho:', e);
+            Swal.fire({ icon: 'warning', title: 'Voucher sin enganchar',
+                        text: 'El archivo se subió pero no quedó asociado al depósito. '
+                            + 'Vuelva a adjuntarlo desde la lista.' });
+          }
+        });
+      },
+      error: e => {
+        console.error('[abonos] no se pudo subir el voucher:', e);
+        Swal.fire({ icon: 'warning', title: 'No se pudo subir el voucher',
+                    text: 'El depósito quedó grabado. Puede adjuntar el archivo '
+                        + 'después desde la lista.' });
+      }
+    });
+  }
+
+  /** Adjunta un voucher a un deposito ya cargado, desde la lista. */
+  adjuntarVoucherA(abono: AbonoRendicion, evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const f = input.files && input.files.length ? input.files[0] : null;
+    if (!f) { return; }
+
+    if (f.size > 10 * 1024 * 1024) {
+      Swal.fire({ icon: 'warning', title: 'Archivo muy grande',
+                  text: 'El voucher no puede pasar de 10 MB.' });
+      input.value = '';
+      return;
+    }
+
+    this.subirVoucher(abono, f);
+    // Se limpia para que elegir el MISMO archivo otra vez vuelva a disparar
+    // el change: sin esto, un reintento tras un fallo no hace nada.
+    input.value = '';
+  }
+
+  /** Abre el voucher en el visor de documentos. */
+  verVoucher(a: AbonoRendicion): void {
+    const partes = (a.archivoRuta ?? '').split('/').filter(p => p.trim());
+
+    if (partes.length !== 3 || !a.archivoNombre) {
+      Swal.fire({ icon: 'info', title: 'Sin voucher',
+                  text: 'Este depósito no tiene un archivo adjunto.' });
+      return;
+    }
+    this.documentoService.viewDocumento(partes[0], partes[1], partes[2], a.archivoNombre)
+      .subscribe({
+        next: (blob: Blob) => {
+          // Pestana nueva y no un modal: esta pantalla no tiene visor propio
+          // —solo sube archivos— y montar uno para esto seria mucho por un
+          // caso que se mira una vez. El navegador ya sabe abrir imagenes y
+          // PDFs.
+          const url = URL.createObjectURL(blob);
+          const ventana = window.open(url, '_blank');
+
+          if (!ventana) {
+            URL.revokeObjectURL(url);
+            Swal.fire({ icon: 'info', title: 'Ventana bloqueada',
+                        text: 'El navegador bloqueó la ventana del voucher. '
+                            + 'Permita las ventanas emergentes para este sitio.' });
+            return;
+          }
+          // Se libera despues de que la pestana cargo: revocarla al toque
+          // deja la ventana en blanco.
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+        error: e => {
+          console.error('[abonos] no se pudo abrir el voucher:', e);
+          Swal.fire({ icon: 'warning', title: 'No se pudo abrir el voucher',
+                      text: 'El archivo no está disponible en el servidor.' });
+        }
+      });
+  }
+
   cerrarNuevoAbono(): void {
     this.nuevoAbono = null;
+    // Si no, el archivo elegido y descartado se subiria en el proximo abono.
+    this.voucher = null;
   }
 
   /**
@@ -2877,6 +3021,17 @@ export class EditRendirCuentaComponent implements OnInit {
       return;
     }
 
+    // El voucher es OBLIGATORIO. Sin el, contabilidad tiene un numero de
+    // operacion que no puede contrastar con nada: para asentar el ingreso
+    // necesita ver el comprobante del banco. Un deposito sin respaldo obliga
+    // a perseguir al trabajador por telefono, que es justo lo que esto viene
+    // a evitar.
+    if (!this.voucher) {
+      Swal.fire({ icon: 'warning', title: 'Falta el voucher',
+                  text: 'Adjunte la imagen o el PDF del comprobante del banco.' });
+      return;
+    }
+
     this.guardandoAbono = true;
     const userId = this.usuarioId();
 
@@ -2884,7 +3039,22 @@ export class EditRendirCuentaComponent implements OnInit {
       next: r => {
         this.guardandoAbono = false;
         this.nuevoAbono = null;
-        this.cargarAbonos();
+
+        // El voucher se sube DESPUES de grabar: su nombre lleva el id que la
+        // base acaba de asignar. Si el usuario no eligio archivo, no pasa
+        // nada —es opcional— y puede adjuntarlo luego desde la lista.
+        // El voucher es obligatorio y ya se valido antes de llamar, asi que
+        // aca siempre hay archivo. El else queda por si el backend no
+        // devolviera el id: en ese caso el deposito esta grabado igual y se
+        // adjunta despues desde la lista.
+        const grabado = r?.resultado as AbonoRendicion | undefined;
+        if (this.voucher && grabado?.idRendAbono) {
+          this.subirVoucher(grabado, this.voucher);
+        } else {
+          console.warn('[abonos] se grabo sin id; el voucher se adjunta desde la lista');
+          this.voucher = null;
+          this.cargarAbonos();
+        }
         // El backend avisa si ese numero de operacion ya estaba cargado. Es un
         // aviso y no un rechazo: repartir un deposito entre dos ordenes repite
         // el numero de forma legitima.

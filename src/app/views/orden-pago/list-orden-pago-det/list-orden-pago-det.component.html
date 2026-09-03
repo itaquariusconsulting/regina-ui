@@ -37,6 +37,13 @@
       <i class="fas fa-arrow-left"></i>Regresar
     </button>
   </div>
+  <!-- Tres grillas separadas y no una tabla mezclada: son tres cosas
+       distintas, con columnas distintas. Los comprobantes tienen RUC y
+       proveedor, una planilla tiene viajes y centro de costos, un deposito
+       tiene banco y numero de operacion. Forzarlas a las mismas columnas
+       llenaba media tabla de guiones. -->
+  <div class="grilla-titulo">Rendiciones</div>
+
   <div class="table-container table-responsive">
     <table class="table global-table table-striped table-hover">
       <thead>
@@ -151,6 +158,7 @@
             </td>
           </tr>
         </ng-container>
+
       </tbody>
     </table>
 
@@ -183,6 +191,186 @@
       </nav>
     </div>
   </div>
+
+  <!-- =========================== MOVILIDAD ===========================
+       Una planilla es gasto rendido igual que una factura, pero agrupa
+       muchos pasajes chicos en vez de traer un documento. Grilla propia
+       porque sus columnas no son las de un comprobante.
+       ================================================================ -->
+  <ng-container *ngIf="tienePlanillas">
+
+    <div class="grilla-titulo mt-4">
+      Movilidad
+      <span class="grilla-total">S/ {{ totalMovilidad | number:'1.2-2' }}</span>
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="text-center">Planilla</th>
+            <th class="text-center">Fecha</th>
+            <th class="text-center">Periodo</th>
+            <th class="text-center">C. Costos</th>
+            <th class="text-center">Viajes</th>
+            <th class="text-end">Total S/</th>
+            <th>Glosa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let p of planillas">
+            <tr (click)="togglePlanilla(p)" style="cursor:pointer">
+              <td class="text-center">{{ planillaAbierta === p ? '▼' : '▶' }}</td>
+              <td class="text-center">{{ p.codPlanilla }}</td>
+              <td class="text-center">{{ p.fechaPlanilla | date:'dd-MM-yyyy' }}</td>
+              <td class="text-center">{{ p.anioPeriodo }}-{{ p.codPeriodo }}</td>
+              <td class="text-center">{{ p.cCentroCostos || '—' }}</td>
+              <td class="text-center">{{ p.maxNumViajes || 0 }}</td>
+              <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
+              <td>{{ p.glosa }}</td>
+            </tr>
+
+            <tr class="row-detail" *ngIf="planillaAbierta === p">
+              <td colspan="8" class="bg-light p-3">
+                <div class="row">
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Recibido:</strong></label>
+                    <div>{{ p.recibido | number:'1.2-2' }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Gastado:</strong></label>
+                    <div>{{ p.total | number:'1.2-2' }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Devolución:</strong></label>
+                    <div>{{ p.devolucion | number:'1.2-2' }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Estado:</strong></label>
+                    <div>{{ p.statusPlanilla || '—' }}</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label"><strong>Cierre:</strong></label>
+                    <div>{{ (p.fechaPlanillaClose | date:'dd/MM/yyyy') || 'Sin cerrar' }}</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- =========================== DEPOSITOS ===========================
+       Lo que el trabajador devolvio. El detalle de cada uno son los campos
+       que contabilidad transcribe a Tesoreria -> Registro de Cobranzas, en
+       el orden en que esa pantalla los pide.
+       ================================================================ -->
+  <ng-container *ngIf="tieneAbonos">
+
+    <div class="grilla-titulo mt-4">
+      Depósitos
+      <span class="grilla-total dev">S/ {{ devuelto | number:'1.2-2' }}</span>
+    </div>
+
+    <div class="table-container table-responsive">
+      <table class="table global-table table-striped table-hover">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="text-center">Fecha</th>
+            <th>Banco / cuenta</th>
+            <th class="text-center">N° operación</th>
+            <th class="text-end">Importe S/</th>
+            <th class="text-center">Voucher</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let a of abonosVigentes">
+            <tr (click)="toggleAbono(a)" style="cursor:pointer">
+              <td class="text-center">{{ abonoAbierto === a ? '▼' : '▶' }}</td>
+              <td class="text-center">{{ a.fecDeposito | date:'dd-MM-yyyy' }}</td>
+              <td>
+                {{ a.desBanco }}
+                <small class="d-block text-muted">{{ a.numCuentaBco }}</small>
+              </td>
+              <td class="text-center">{{ a.numOperacion }}</td>
+              <td class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
+              <td class="text-center">
+                <button type="button" class="general-button btn-success btn-sm"
+                        [disabled]="!a.archivoRuta"
+                        [title]="a.archivoRuta ? 'Ver voucher' : 'Este depósito no tiene voucher adjunto'"
+                        (click)="verVoucher(a); $event.stopPropagation()">
+                  <i class="fa-solid fa-file"></i>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Lo que contabilidad copia al ERP, en el orden de esa pantalla. -->
+            <tr class="row-detail" *ngIf="abonoAbierto === a">
+              <td colspan="6" class="bg-light p-3">
+                <div class="row">
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Auxiliar:</strong></label>
+                    <div>
+                      {{ a.codAuxiliar || '—' }}
+                      <small class="d-block text-muted">{{ a.desAuxiliar }}</small>
+                    </div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Documento ERP:</strong></label>
+                    <div>{{ a.numDocumentoErp || '—' }}</div>
+                  </div>
+                  <div class="col-md-1">
+                    <label class="form-label"><strong>Periodo:</strong></label>
+                    <div>{{ a.anoPeriodo }}-{{ a.codPeriodo }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Forma de Pago:</strong></label>
+                    <div>{{ a.codFormaPago }}</div>
+                  </div>
+                  <div class="col-md-1">
+                    <label class="form-label"><strong>T. Cambio:</strong></label>
+                    <div>{{ a.impTipCambio | number:'1.3-3' }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Cta. Banco:</strong></label>
+                    <div>{{ a.codCuentaBco || '—' }}</div>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label"><strong>Cta. por Cobrar:</strong></label>
+                    <div>{{ a.codCuenta || '—' }}</div>
+                  </div>
+                </div>
+
+                <!-- Auditoria y glosa: interesan cuando algo no cuadra, no
+                     al mirar la lista. La glosa ademas la genera REGINA sola
+                     y repite el numero de orden que ya esta en el titulo. -->
+                <div class="row mt-2">
+                  <div class="col-md-8">
+                    <label class="form-label"><strong>Glosa:</strong></label>
+                    <div>{{ a.glosa }}</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label"><strong>Cargado por:</strong></label>
+                    <div>
+                      {{ a.usuario }}
+                      <small class="d-block text-muted">
+                        {{ a.fecCrea | date:'dd/MM/yyyy HH:mm' }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
 </div>
 
 

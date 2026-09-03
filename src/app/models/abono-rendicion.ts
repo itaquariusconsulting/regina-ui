@@ -37,6 +37,28 @@ export interface AbonoRendicion {
    * 1041118, asi que el par tiene que viajar entero.
    */
   codCuentaBco?: string;
+
+  // ---------------------------------------------------------------------
+  // Lo que contabilidad transcribe al ERP. Lo llena el backend al grabar,
+  // leyendo la orden: no se recalcula al mostrar, porque el auxiliar o la
+  // cuenta de una orden pueden cambiar despues y lo que hay que reproducir
+  // es el asiento como correspondia el dia del deposito.
+  // ---------------------------------------------------------------------
+
+  /** El "Cliente" de Registro de Cobranzas: quien devuelve la plata. */
+  codAuxiliar?: string;
+  /** Su nombre, para poder verificar el codigo de un vistazo. */
+  desAuxiliar?: string;
+
+  /** La cuenta del detalle: 1413010, entregas a rendir del personal. */
+  codCuenta?: string;
+
+  /** Como lo escribe el ERP: OP/2026-000000000016652. */
+  numDocumentoErp?: string;
+
+  /** El periodo de la ORDEN, que no es el del deposito. */
+  anoPeriodo?: string;
+  codPeriodo?: string;
   numOperacion?: string;
 
   codMoneda?: string;
