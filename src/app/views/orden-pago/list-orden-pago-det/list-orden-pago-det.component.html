@@ -197,13 +197,21 @@
        muchos pasajes chicos en vez de traer un documento. Grilla propia
        porque sus columnas no son las de un comprobante.
        ================================================================ -->
+  <div class="grilla-titulo mt-4">
+    Movilidad
+    <span class="grilla-total" *ngIf="tienePlanillas">
+      S/ {{ totalMovilidad | number:'1.2-2' }}
+    </span>
+  </div>
+
+  <!-- El titulo va SIEMPRE, con o sin datos. Esconder la grilla vacia deja
+       al usuario sin saber si esta orden no tiene planillas o si la consulta
+       fallo, y son dos cosas muy distintas: una no se reporta nunca. -->
+  <div class="grilla-vacia" *ngIf="!tienePlanillas">
+    Esta orden no tiene planillas de movilidad.
+  </div>
+
   <ng-container *ngIf="tienePlanillas">
-
-    <div class="grilla-titulo mt-4">
-      Movilidad
-      <span class="grilla-total">S/ {{ totalMovilidad | number:'1.2-2' }}</span>
-    </div>
-
     <div class="table-container table-responsive">
       <table class="table global-table table-striped table-hover">
         <thead>
@@ -268,13 +276,18 @@
        que contabilidad transcribe a Tesoreria -> Registro de Cobranzas, en
        el orden en que esa pantalla los pide.
        ================================================================ -->
+  <div class="grilla-titulo mt-4">
+    Depósitos
+    <span class="grilla-total dev" *ngIf="tieneAbonos">
+      S/ {{ devuelto | number:'1.2-2' }}
+    </span>
+  </div>
+
+  <div class="grilla-vacia" *ngIf="!tieneAbonos">
+    Esta orden no tiene devoluciones registradas.
+  </div>
+
   <ng-container *ngIf="tieneAbonos">
-
-    <div class="grilla-titulo mt-4">
-      Depósitos
-      <span class="grilla-total dev">S/ {{ devuelto | number:'1.2-2' }}</span>
-    </div>
-
     <div class="table-container table-responsive">
       <table class="table global-table table-striped table-hover">
         <thead>

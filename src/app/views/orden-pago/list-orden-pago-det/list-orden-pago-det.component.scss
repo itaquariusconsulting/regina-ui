@@ -198,3 +198,13 @@ app-pdf-viewer.pdf-doc-viewer {
      plata que volvio no es un problema. */
   &.dev { background: #e0edff; color: #1d4ed8; }
 }
+
+/* Una grilla sin datos dice "no hay" en una linea, en vez de desaparecer.
+   Que se esconda entera obliga al usuario a adivinar si la orden no tiene
+   nada o si la consulta se cayo, y eso ultimo no lo reporta nadie. */
+.grilla-vacia {
+  color: #94a3b8;
+  font-size: 0.84rem;
+  font-style: italic;
+  padding: 6px 2px 14px;
+}
