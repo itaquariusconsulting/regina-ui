@@ -187,17 +187,16 @@
              orden. Separarlas en pestanas deja el formulario de carga sin
              agregados y le da a la devolucion un lugar propio en vez del
              final de una pantalla larga. -->
-        <div class="rc-tabs" *ngIf="esAdmin">
+        <div class="rc-tabs">
             <button type="button" class="rc-tab"
                     [class.activa]="pestana === 'comprobante'"
                     (click)="pestana = 'comprobante'">
                 <i class="fa-solid fa-receipt"></i> Comprobante
             </button>
-            <!-- INUTILIZADA A PROPOSITO. La cuenta de destino todavia no esta
-                 definida del todo, asi que la pestana se ve pero no entra: sin
-                 (click) no hay forma de cambiar de pestana, y disabled ademas la
-                 saca del tabulador y del Enter. Cuando la cuenta quede resuelta,
-                 se le devuelve el (click) y se le quita el disabled. -->
+            <!-- Habilitada para todos los usuarios. El disabled y el title
+                 siguen colgados de devolucionHabilitada: si se apaga
+                 DEVOLUCION_EN_PILOTO la pestana se ve gris, sale del tabulador
+                 y del Enter, y irADevolucion() tampoco deja entrar. -->
             <button type="button" class="rc-tab"
                     [disabled]="!devolucionHabilitada"
                     [title]="devolucionHabilitada ? '' : 'En preparación: la devolución todavía no está habilitada'"
@@ -623,11 +622,11 @@
     </div><!-- /pestana comprobante -->
 
     <!-- ================= DEVOLUCION DEL SALDO =========================
-         Solo para admins mientras el circuito no este cerrado del otro
-         lado: una seccion visible es una promesa, y si el trabajador
-         carga su voucher sin que nadie lo revise, es peor que no tenerla.
+         Abierta a todos: el trabajador registra su propio deposito y sube
+         el voucher. Cuelga de devolucionHabilitada y no de esAdmin, para
+         que el interruptor del piloto siga siendo el unico corte.
          ================================================================ -->
-    <div class="dev-bloque" *ngIf="esAdmin && pestana === 'devolucion'">
+    <div class="dev-bloque" *ngIf="devolucionHabilitada && pestana === 'devolucion'">
 
         <div class="dev-cabecera">
             <button type="button" class="general-button btn-primary btn-sm"

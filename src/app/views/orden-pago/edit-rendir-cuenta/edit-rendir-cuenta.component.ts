@@ -2449,17 +2449,19 @@ export class EditRendirCuentaComponent implements OnInit {
   /**
    * Si el que esta mirando puede usar la devolucion.
    *
-   * Durante el piloto, solo admins. No es una decision de interfaz: los tres
-   * cerrojos —entrar a la pestana, abrir el formulario y grabar— cuelgan de
-   * aca, asi que un no-admin no graba un abono aunque llegue al metodo por
-   * otra via. El *ngIf de la plantilla solo evita que lo vea.
+   * Abierta a todos los usuarios con sesion. Estuvo limitada a admins
+   * durante el piloto; se libero a pedido del area.
+   *
+   * De aca cuelgan los tres cerrojos —entrar a la pestana, abrir el
+   * formulario y grabar—, asi que apagar DEVOLUCION_EN_PILOTO alcanza para
+   * cortar la funcion entera sin volver atras el despliegue.
    *
    * Ojo: sigue siendo una traba de navegador, no de servidor. El endpoint
-   * POST /api/rendicion/abono existe y responde a cualquiera con sesion
-   * valida. Si hiciera falta cerrarlo de verdad, hay que hacerlo en el API.
+   * POST /api/rendicion/abono responde a cualquiera con sesion valida. Si
+   * hiciera falta cerrarlo de verdad, hay que hacerlo en el API.
    */
   get devolucionHabilitada(): boolean {
-    return this.DEVOLUCION_EN_PILOTO && this.esAdmin;
+    return this.DEVOLUCION_EN_PILOTO;
   }
 
   /** Unica puerta de entrada a la pestana, y esta cerrada con llave. */
@@ -2775,9 +2777,9 @@ export class EditRendirCuentaComponent implements OnInit {
   /**
    * Por ahora la seccion es solo para admins.
    *
-   * Estamos en caliente y el circuito todavia no esta cerrado del otro lado:
-   * si un trabajador ve el bloque, carga su voucher y da por hecho que alguien
-   * lo esta mirando. Cuando contabilidad este siguiendo los abonos, se abre.
+   * Ya no gobierna la devolucion —esa se libero para todos—, pero se deja
+   * porque es la unica lectura del flag de administrador que hay en esta
+   * pantalla y sirve para lo proximo que haya que limitar.
    */
   get esAdmin(): boolean {
     try {
