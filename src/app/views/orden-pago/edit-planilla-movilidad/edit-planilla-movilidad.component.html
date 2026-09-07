@@ -51,7 +51,22 @@
             <label class="form-label fw-semibold mb-2 d-block">Número Máximo de Viajes</label>
             <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.maxNumViajes" [readonly]="viewOnly"/>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
+            <!-- De quien es la planilla. Se propone el responsable de la orden
+                 porque suele ser el, pero puede ser cualquiera del personal:
+                 viaja gente que no tiene la OP asignada. -->
+            <label class="form-label fw-semibold mb-2 d-block">Persona</label>
+            <div class="datepicker-container">
+                <input readonly type="text" class="form-control" [value]="personaTexto"
+                       placeholder="Quien realizo los viajes"
+                       [title]="personaTexto"/>
+                <button class="calendar-btn" (click)="openAuxiliaresModal()" type="button"
+                        [disabled]="viewOnly" title="Buscar persona">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
             <label class="form-label fw-semibold mb-2 d-block">Glosa</label>
             <input type="text" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.glosa" [readonly]="viewOnly"/>
         </div>
@@ -363,16 +378,42 @@
     <div class="modal-dialog modal-dialog-centered modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Auxiliares</h5>
+                <h5 class="modal-title">Persona de la planilla</h5>
                 <button type="button" class="btn-close" (click)="closeAuxiliaresModal()"></button>
             </div>
             <div class="modal-body">
-                <table>
+                <!-- Buscador: son varios cientos de personas y paginar a ciegas
+                     no lo usa nadie. Mismo patron que el de ocupantes. -->
+                <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white">
+                        <i class="fa fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control general-input"
+                           placeholder="Buscar por nombre, codigo o documento..."
+                           [(ngModel)]="searchPersonas"
+                           (ngModelChange)="onSearchPersonasChange()" />
+                    <button *ngIf="searchPersonas"
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            title="Limpiar busqueda"
+                            (click)="searchPersonas = ''; onSearchPersonasChange()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <div *ngIf="pagedViajesAux.length === 0" class="ocupantes-empty">
+                    No se encontraron personas que coincidan con la busqueda.
+                </div>
+
+                <table *ngIf="pagedViajesAux.length > 0">
                     <tbody>
                         <tr *ngFor="let auxiliar of pagedViajesAux">
                             <td class="text-start">{{ auxiliar.desAuxiliar }}</td>
+                            <td class="text-start text-muted small">{{ auxiliar.numDocIdentidad }}</td>
                             <td class="text-start">
-                                <button class="btn btn-small" (click)="selectAuxiliar(auxiliar)">
+                                <button class="btn btn-small" (click)="selectAuxiliar(auxiliar)"
+                                        title="Elegir">
                                     <i class="fas fa-check"></i>
                                 </button>
                             </td>

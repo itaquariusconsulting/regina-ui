@@ -159,6 +159,11 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   auxiliaresPR: MaeAuxiliarDTO[] = [];
   auxiliarSeleccionado: MaeAuxiliarDTO | null = null;
   pagedViajesAux: MaeAuxiliarDTO[] = [];
+
+  /** La persona de la planilla, y el buscador de su modal. */
+  personaPlanilla: MaeAuxiliarDTO | null = null;
+  searchPersonas = '';
+  private filteredPersonas: MaeAuxiliarDTO[] = [];
   // Los ocupantes son PERSONAL (MAE_AUXILIAR, tipo 'PE'), la misma fuente
   // que usa el alta de usuarios. Antes salian de REG_SEC_USER, que son las
   // cuentas de acceso al sistema y no el personal de la empresa.
@@ -280,6 +285,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         this.buildPaginationUsuarios();
 
         this.loadPlanillaData();
+
+        // Para la planilla NUEVA, que no pasa por mapHeaderData: propone el
+        // responsable de la orden. En una planilla existente esta llamada no
+        // molesta —resolverPersonaPlanilla respeta lo guardado sobre lo
+        // propuesto— y mapHeaderData la vuelve a resolver cuando llegan los
+        // datos.
+        this.resolverPersonaPlanilla();
       },
       error: () => this.loadingService.hide()
     });
@@ -435,14 +447,44 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.pagedViajes = this.listaMovilidad.slice(start, end);
   }
 
+  /**
+   * El listado del modal de Persona.
+   *
+   * <p>Sale de {@code usuarios} —los auxiliares de tipo PE, el personal— y no
+   * de auxiliaresPR, que son proveedores. Quien rinde una planilla de
+   * movilidad es una persona, no una empresa de transporte; ese modal estuvo
+   * apuntando al maestro equivocado desde siempre, y como ademas ningun boton
+   * lo abria, nunca se noto.
+   *
+   * <p>Filtra por nombre, codigo o documento, igual que el de ocupantes: con
+   * varios cientos de personas, paginar sin buscar no lo usa nadie.
+   */
   private buildPaginationAuxiliares(): void {
-    this.totalItemsAux = this.auxiliaresPR.length;
-    this.totalPagesAux = Math.ceil(this.totalItemsAux / this.pageSizeAux);
+    const term = (this.searchPersonas || '').trim().toLowerCase();
+
+    this.filteredPersonas = !term
+      ? [...this.usuarios]
+      : this.usuarios.filter(u => {
+          const nombre = this.getUserDisplayName(u).toLowerCase();
+          const codigo = (u.codAuxiliar || '').toLowerCase();
+          const doc = (u.numDocIdentidad || '').toLowerCase();
+          return nombre.includes(term) || codigo.includes(term) || doc.includes(term);
+        });
+
+    this.totalItemsAux = this.filteredPersonas.length;
+    this.totalPagesAux = Math.max(1, Math.ceil(this.totalItemsAux / this.pageSizeAux));
+
+    if (this.currentPageAux >= this.totalPagesAux) {
+      this.currentPageAux = 0;
+    }
 
     const start = this.currentPageAux * this.pageSizeAux;
-    const end = start + this.pageSizeAux;
+    this.pagedViajesAux = this.filteredPersonas.slice(start, start + this.pageSizeAux);
+  }
 
-    this.pagedViajesAux = this.auxiliaresPR.slice(start, end);
+  onSearchPersonasChange(): void {
+    this.currentPageAux = 0;
+    this.buildPaginationAuxiliares();
   }
 
   private buildPaginationUsuarios(): void {
@@ -597,10 +639,22 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     cab.total = data.total;
     cab.glosa = data.glosa;
 
+    // De quien es la planilla. Faltaba en el mapeo: cuando la cabecera llega
+    // del backend —y no por el state de la navegacion— este campo se perdia,
+    // y la pantalla mostraba al responsable de la orden en vez de a la
+    // persona guardada.
+    cab.codAuxiliarPersonal = data.codAuxiliarPersonal ?? cab.codAuxiliarPersonal;
+
     const fecha = data.fechaPlanilla;
     if (fecha) {
       this.modelPlanillaIni = moment(fecha);
     }
+
+    // Aca y no en el forkJoin: loadPlanillaHeader() es asincrono, asi que
+    // resolverla antes dejaria el campo con lo propuesto en lugar de lo
+    // guardado. Este es el punto por el que pasan las dos formas de cargar
+    // una planilla existente.
+    this.resolverPersonaPlanilla();
   }
 
   openDetailModal(): void {
@@ -1156,10 +1210,55 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.modalAuxiliares?.hide();
   }
 
+  /**
+   * Fija de quien es la planilla.
+   *
+   * <p>Antes escribia codAuxiliarProveedor, el auxiliar de un viaje suelto.
+   * Ahora escribe la persona de la cabecera, que es la que sale como
+   * COD_AUXILIAR del asiento: en una misma orden puede haber varias planillas
+   * de personas distintas —la orden la rinde una, pero viajaron varias— y es
+   * este dato el que las separa.
+   */
   selectAuxiliar(auxiliar: MaeAuxiliarDTO): void {
     this.auxiliarSeleccionado = auxiliar;
-    this.nuevoDetalle.codAuxiliarProveedor = auxiliar.codAuxiliar ?? '';
+    this.personaPlanilla = auxiliar;
+    this.ordenPagoPlanillaMovilidadCab.codAuxiliarPersonal = auxiliar.codAuxiliar ?? '';
     this.closeAuxiliaresModal();
+  }
+
+  /** Lo que se lee en el campo Persona. */
+  get personaTexto(): string {
+    if (this.personaPlanilla) {
+      return this.getUserDisplayName(this.personaPlanilla);
+    }
+    const cod = (this.ordenPagoPlanillaMovilidadCab?.codAuxiliarPersonal || '').trim();
+    return cod ? this.nombreDeOcupante(cod) : '';
+  }
+
+  /**
+   * Deja elegida la persona de la planilla al abrir la pantalla.
+   *
+   * <p>Si la planilla ya tenia una, se respeta. Si no —planilla nueva, o una
+   * de las viejas que quedaron sin persona— se propone el responsable de la
+   * orden, que es quien rinde en la mayoria de los casos. Es una propuesta y
+   * no una imposicion: el usuario la cambia si viajo otro.
+   */
+  private resolverPersonaPlanilla(): void {
+    const guardado = (this.ordenPagoPlanillaMovilidadCab?.codAuxiliarPersonal || '').trim();
+    const propuesto = (this.orden?.codAuxiliar || '').trim();
+    const cod = guardado || propuesto;
+
+    if (!cod) {
+      this.personaPlanilla = null;
+      return;
+    }
+
+    this.personaPlanilla = this.usuarios.find(
+      u => (u.codAuxiliar || '').trim() === cod) ?? null;
+
+    // Aunque no este en la lista —dado de baja, o de otro tipo de auxiliar—
+    // el codigo se conserva: no se pierde lo que ya estaba grabado.
+    this.ordenPagoPlanillaMovilidadCab.codAuxiliarPersonal = cod;
   }
 
   openUsuariosModal(): void {
@@ -1194,17 +1293,88 @@ export class EditPlanillaMovilidadComponent implements OnInit {
     this.syncOcupantes();
   }
 
+  /**
+   * Cuantos caracteres entran en OCUPANTES.
+   *
+   * La columna es NVARCHAR(500) —sys.columns reporta max_length 1000, pero en
+   * nvarchar eso son bytes, a dos por caracter—. SQL Server trunca sin avisar,
+   * asi que el corte se decide aca y no alla.
+   */
+  private static readonly OCUPANTES_MAX = 500;
+
+  /** Un codigo de auxiliar: seis digitos. Lo que no lo sea, es un nombre. */
+  private static readonly ES_COD_AUXILIAR = /^\d{6}$/;
+
+  /**
+   * Deja en OCUPANTES los CODIGOS de quienes viajaron, no sus nombres.
+   *
+   * <p>Antes se guardaba ["LOPEZ APARICIO MANUEL JOAQUIN"], y eso traia tres
+   * problemas: no se puede emitir el asiento a nombre de alguien identificado
+   * por una cadena de texto, los homonimos son indistinguibles —hay dos
+   * auxiliares que solo se diferencian por un espacio de mas— y el nombre
+   * queda congelado aunque despues lo corrijan en el maestro.
+   *
+   * <p>Con codigos, ademas, entra mucha mas gente: nueve caracteres por
+   * ocupante contra los cuarenta y pico de un nombre. En 500 caracteres pasan
+   * de caber una docena a mas de cincuenta, y una movilidad de doce personas
+   * —que existe, esta en las glosas del ERP— ya no se trunca.
+   *
+   * <p>Si algun ocupante no tuviera codigo se guarda su nombre, que es como
+   * se guardaba todo hasta ahora: mejor un formato mezclado que perder a
+   * alguien de la lista.
+   */
   private syncOcupantes(): void {
-    const nombres = this.ocupantesSeleccionados
-      .map(x => this.getUserDisplayName(x))
-      .filter(nombre => !!nombre);
-    this.nuevoDetalle.ocupantes = nombres.length > 0 ? JSON.stringify(nombres) : '';
+    const tokens = this.ocupantesSeleccionados
+      .map(x => (x.codAuxiliar || '').trim() || this.getUserDisplayName(x))
+      .filter(token => !!token);
+
+    if (tokens.length === 0) {
+      this.nuevoDetalle.ocupantes = '';
+      return;
+    }
+
+    let texto = JSON.stringify(tokens);
+
+    // El aviso va aca, con el nombre del que se cae, y no en un error de base
+    // de datos que nadie va a leer.
+    while (texto.length > EditPlanillaMovilidadComponent.OCUPANTES_MAX && tokens.length > 1) {
+      const fuera = this.ocupantesSeleccionados.pop();
+      tokens.pop();
+      texto = JSON.stringify(tokens);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Demasiados ocupantes',
+        text: 'No entran mas ocupantes en este viaje; se quito a '
+            + (fuera ? this.getUserDisplayName(fuera) : 'el ultimo')
+            + '. Divida el viaje en dos si hace falta.'
+      });
+    }
+
+    this.nuevoDetalle.ocupantes = texto;
   }
 
+  /**
+   * Lee OCUPANTES venga como venga.
+   *
+   * Conviven cinco formatos y todos tienen que seguir leyendose, porque hay
+   * 267 viajes cargados con los anteriores:
+   *   ["505671","508588"]                  codigos (lo que se guarda hoy)
+   *   ["LOPEZ APARICIO MANUEL JOAQUIN"]    nombres en JSON
+   *   "JUAN PEREZ, MARIA ROJAS"            texto con comas
+   *   "3"                                  solo la cantidad
+   *   "" / null                            vacio
+   *
+   * Devuelve los tokens tal cual estan guardados —codigo o nombre—; quien
+   * quiera mostrarlos usa nombreDeOcupante().
+   */
   private parseOcupantes(value: string | undefined | null): string[] {
     if (!value) return [];
     const raw = value.trim();
     if (!raw) return [];
+
+    // Un numero suelto es la cantidad de un formato viejo, no un ocupante.
+    // Ojo: se compara contra el texto ENTERO, asi que un codigo dentro de un
+    // JSON no cae por aca.
     if (/^\d+$/.test(raw)) return [];
 
     try {
@@ -1217,6 +1387,37 @@ export class EditPlanillaMovilidadComponent implements OnInit {
         .map(x => x.trim())
         .filter(x => !!x);
     }
+  }
+
+  /**
+   * El nombre de un ocupante a partir de lo guardado.
+   *
+   * Si el token es un codigo se resuelve contra el maestro, de modo que un
+   * nombre corregido en MAE_AUXILIAR se ve corregido en pantalla y en el PDF
+   * sin tocar lo grabado. Si no se encuentra —un auxiliar dado de baja— se
+   * devuelve el codigo, que al menos permite rastrearlo.
+   */
+  nombreDeOcupante(token: string): string {
+    const t = (token || '').trim();
+    if (!t) return '';
+    if (!EditPlanillaMovilidadComponent.ES_COD_AUXILIAR.test(t)) return t;
+
+    const user = this.usuarios.find(u => (u.codAuxiliar || '').trim() === t);
+    return user ? this.getUserDisplayName(user) : t;
+  }
+
+  /** Nombre y documento, que es como lo pide el sustento ante SUNAT. */
+  nombreYDocDeOcupante(token: string): string {
+    const t = (token || '').trim();
+    if (!t) return '';
+    if (!EditPlanillaMovilidadComponent.ES_COD_AUXILIAR.test(t)) return t;
+
+    const user = this.usuarios.find(u => (u.codAuxiliar || '').trim() === t);
+    if (!user) return t;
+
+    const nombre = this.getUserDisplayName(user);
+    const doc = (user.numDocIdentidad || '').trim();
+    return doc ? nombre + ' (' + doc + ')' : nombre;
   }
 
   getOcupantesCount(value: string | undefined | null): number {
@@ -1285,8 +1486,9 @@ export class EditPlanillaMovilidadComponent implements OnInit {
   }
 
   openOcupantesModal(value: string | undefined | null): void {
-    const nombres = this.parseOcupantes(value);
+    const tokens = this.parseOcupantes(value);
     const raw = (value ?? '').trim();
+    const nombres = tokens.map(t => this.nombreYDocDeOcupante(t)).filter(n => !!n);
     this.ocupantesModalNombres = nombres.length > 0 ? nombres : (raw ? [raw] : []);
 
     const modalElement = document.getElementById('modalOcupantes');
@@ -1445,7 +1647,13 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       // cargadas hasta hoy no se pueden atribuir a nadie: la columna que dice
       // de quien es la planilla nunca se llenaba. Salen de la orden de pago,
       // que es de donde vienen la persona, su centro de costos y la plata.
-      codAuxiliarPersonal: this.orden?.codAuxiliar || '',
+      // De quien es ESTA planilla, que no es lo mismo que quien rinde la orden:
+      // la OP la rinde uno solo, pero cada planilla puede ser de alguien que
+      // viajo y no la tiene asignada. Este dato es el que sale como
+      // COD_AUXILIAR del item en contabilidad.
+      codAuxiliarPersonal: this.personaPlanilla?.codAuxiliar
+                        || this.ordenPagoPlanillaMovilidadCab.codAuxiliarPersonal
+                        || this.orden?.codAuxiliar || '',
       cCentroCostos: this.orden?.codCCostos || '',
       monto: this.orden?.impSoles ?? 0,
       recibido: this.orden?.impSoles ?? 0,

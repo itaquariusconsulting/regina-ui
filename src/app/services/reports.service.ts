@@ -7,6 +7,7 @@ import { OrdenPagoService } from './orden-pago.service';
 import { OrdenPagoDetService } from './orden-pago-det.service';
 import { OrdenPagoPlanillaMovilidadCabService } from './orden-pago-planilla-movilidad-cab.service';
 import { OrdenPagoPlanillaMovilidadDetService } from './orden-pago-planilla-movilidad-det.service';
+import { MaestrosService } from './maestros.service';
 
 import { OrdenPago } from '../models/orden-pago';
 import { OrdenPagoDetDTO } from '../models/orden-pago-det';
@@ -106,8 +107,71 @@ export class ReportsService {
     private opService: OrdenPagoService,
     private opDetService: OrdenPagoDetService,
     private planillaCabService: OrdenPagoPlanillaMovilidadCabService,
-    private planillaDetService: OrdenPagoPlanillaMovilidadDetService
+    private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
+    private maestrosService: MaestrosService
   ) {}
+
+  /**
+   * Personal por codigo de auxiliar, para resolver los ocupantes del PDF.
+   *
+   * <p>OCUPANTES guarda codigos y no nombres, justamente para que el nombre
+   * salga siempre del maestro y no de una copia congelada. Se carga una vez
+   * por reporte; si la carga falla, el PDF sale con los codigos crudos antes
+   * que no salir.
+   */
+  private personal = new Map<string, { nombre: string; doc: string }>();
+
+  private cargarPersonal(codEmpresa: string): Observable<boolean> {
+    if (this.personal.size > 0 || !codEmpresa) {
+      return of(true);
+    }
+    return this.maestrosService.getListaAuxiliaresPE(codEmpresa).pipe(
+      map((r: Response) => {
+        const lista = (r?.resultado as any[]) || [];
+        for (const u of lista) {
+          const cod = String(u?.codAuxiliar ?? '').trim();
+          if (!cod) { continue; }
+          this.personal.set(cod, {
+            nombre: String(u?.desAuxiliar ?? '').trim(),
+            doc: String(u?.numDocIdentidad ?? '').trim()
+          });
+        }
+        return true;
+      }),
+      catchError(() => of(true))
+    );
+  }
+
+  /**
+   * La columna Ocupantes del PDF, legible.
+   *
+   * <p>Antes se imprimia el contenido crudo de la columna, o sea el JSON con
+   * sus corchetes y comillas. Aca se resuelve a "NOMBRE (DOCUMENTO)", que es
+   * como se sustenta la planilla ante SUNAT, y se toleran los formatos
+   * anteriores: nombres en JSON, texto con comas y la cantidad suelta.
+   */
+  private ocupantesLegibles(raw: string | undefined | null): string {
+    if (!raw) { return ''; }
+    const texto = String(raw).trim();
+    if (!texto) { return ''; }
+    if (/^\d+$/.test(texto)) { return texto + ' persona(s)'; }
+
+    let tokens: string[];
+    try {
+      const parsed = JSON.parse(texto);
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      tokens = list.map(x => String(x).trim()).filter(x => !!x);
+    } catch {
+      tokens = texto.split(',').map(x => x.trim()).filter(x => !!x);
+    }
+
+    return tokens.map(t => {
+      if (!/^\d{6}$/.test(t)) { return t; }
+      const p = this.personal.get(t);
+      if (!p) { return t; }
+      return p.doc ? p.nombre + ' (' + p.doc + ')' : p.nombre;
+    }).join(', ');
+  }
 
   /* =====================================================
      CONTEXTO USUARIO
@@ -641,8 +705,13 @@ export class ReportsService {
           }
 
           forkJoin(detalleCalls).subscribe(planillas => {
-            this.construirPDFPlanillas(planillas);
-            subscriber.next(true); subscriber.complete();
+            // El maestro se carga aca y no antes: recien ahora se sabe de que
+            // empresa son las planillas.
+            const emp = planillas[0]?.op?.codEmpresa || '';
+            this.cargarPersonal(emp).subscribe(() => {
+              this.construirPDFPlanillas(planillas);
+              subscriber.next(true); subscriber.complete();
+            });
           });
         });
       });
@@ -713,7 +782,7 @@ export class ReportsService {
           this.formatDate(d.fecItemPlanilla),
           d.codOrigen || '',
           d.codDestino || '',
-          d.ocupantes || '',
+          this.ocupantesLegibles(d.ocupantes),
           d.glosa || '',
           this.fmt(d.importe)
         ]);

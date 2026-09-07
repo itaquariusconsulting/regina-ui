@@ -75,12 +75,16 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   /**
-   * True si la URL apunta a un servicio LEGACY (sai-web-utils / IA / OCR) que
-   * valida con el validador antiguo y NO confía en el token del CORE.
+   * True si la URL apunta a un servicio LEGACY (IA / OCR) que valida con el
+   * validador antiguo y NO confía en el token del CORE.
+   *
+   * Aca figuraba tambien apiUrlUtils, de sai-web-utils. Se saco junto con la
+   * clave del environment: ningun servicio del front lo llama desde que el
+   * padron RUC pasó al cache de REGINA.
    */
   private isLegacyHost(url: string): boolean {
     const env = environment as any;
-    return [env.apiUrlUtils, env.apiUrlIA, env.apiUrlOcr]
+    return [env.apiUrlIA, env.apiUrlOcr]
       .filter(Boolean)
       .some((base: string) => url.startsWith(base));
   }

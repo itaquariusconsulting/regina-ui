@@ -2775,7 +2775,7 @@ export class EditRendirCuentaComponent implements OnInit {
   }
 
   /**
-   * Por ahora la seccion es solo para admins.
+   * Si el usuario de la sesion tiene el flag de administrador.
    *
    * Ya no gobierna la devolucion —esa se libero para todos—, pero se deja
    * porque es la unica lectura del flag de administrador que hay en esta

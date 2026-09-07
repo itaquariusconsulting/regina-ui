@@ -9,22 +9,18 @@ export const environment = {
   //   http://localhost:1111/regina-process-dev/api/...
   //apiUrlProcess: 'http://localhost:1111/regina-process-dev/api/',
   //apiUrlMaestros: 'http://localhost:1111/regina-process-dev/api/',
-  //apiUrlUtils: "https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/",
-  apiUrlUtils:    'https://developer.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
-  
   apiUrlProcess: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlMaestros: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlIA: 'https://developer.aquariusconsultores.com:8443/reginaIA-1/ai',
-  apiUrlOcr: 'https://developer.aquariusconsultores.com:8443/regina-ia',
+  apiUrlOcr: 'https://developer.aquariusconsultores.com:8443/regina-ia'
 
-  // API del CORE de Seguridad (para verificar la sesión vía /auth/introspect y
-  // así cerrar regina cuando el CORE hace logout, aunque el CORE siga abierto).
-  coreApiUrl: 'http://127.0.0.1:14005/api/v1'
+  // apiUrlUtils (sai-web-utils) y coreApiUrl (aquarius-security) se quitaron:
+  // ningun servicio los llamaba. El padron RUC vive ahora en el cache de
+  // REGINA y el SSO se retiró.
 
   /*  Producción (marcaciongps:8443)
     apiUrlAuth: 'https://marcaciongps.aquariusconsultores.com:8443/regina-billing-dev',
     apiUrlProcess: 'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api/',
-    apiUrlUtils: "https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/",
     apiUrlMaestros: 'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api/',
     apiUrlIA: 'https://marcaciongps.aquariusconsultores.com:8443/reginaIA-1/ai',
     apiUrlOcr: 'https://marcaciongps.aquariusconsultores.com:8443/regina-ia'

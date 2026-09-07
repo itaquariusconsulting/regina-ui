@@ -19,11 +19,11 @@ export const environment = {
   apiUrlMaestros: 'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api/',
 
   // ── Servicios de apoyo ────────────────────────────────────────────────
-  apiUrlUtils:    'https://marcaciongps.aquariusconsultores.com:8443/sai-web-utils-dev/api/utils/',
   apiUrlIA:       'https://marcaciongps.aquariusconsultores.com:8443/reginaIA-1/ai',
-  apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-ia',
+  apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-ia'
 
-  // CORE de seguridad — segun el codigo ya no se usa (REGINA maneja su propio
-  // login); se conserva el campo por compatibilidad.
-  coreApiUrl:     'https://marcaciongps.aquariusconsultores.com:8443/aquarius-security/api/v1'
+  // Aca vivian apiUrlUtils (sai-web-utils) y coreApiUrl (aquarius-security).
+  // Se quitaron porque no los llamaba nadie: el padron RUC pasó al cache de
+  // REGINA y el SSO se retiró hace tiempo. Dejarlos hacia creer que REGINA
+  // dependia de dos servicios de los que ya no depende.
 };
