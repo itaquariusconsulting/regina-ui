@@ -550,6 +550,20 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
+  /**
+   * Si la planilla ya no se puede tocar.
+   *
+   * <p>Son dos estados y no uno: CE es cerrada, AP es cerrada Y publicada en
+   * contabilidad. Las comprobaciones miraban solo CE, asi que al aparecer AP
+   * una planilla con asientos ya emitidos volvia a quedar editable y
+   * borrable. Borrarla dejaria esos asientos huerfanos en el ERP, donde
+   * REGINA no puede ir a limpiarlos.
+   */
+  estaCerrada(planilla: OrdenPagoCabPlanilla): boolean {
+    const s = planilla?.statusPlanilla;
+    return s === 'CE' || s === 'AP';
+  }
+
   onClosePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
