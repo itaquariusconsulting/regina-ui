@@ -9,6 +9,9 @@ import Swal from 'sweetalert2';
 
 import { OpRendidaService } from '../../../services/op-rendida.service';
 import { ObservacionService } from '../../../services/observacion.service';
+import { MatDialog } from '@angular/material/dialog';
+import { ObservarComprobanteDialogComponent, ObservarDialogResult }
+  from '../../../components/dialogs/observar-comprobante-dialog.component';
 import { FiltroOpRendida, OpRendida } from '../../../models/op-rendida';
 import { RendicionDetDTO } from '../../../models/rendicion';
 import { Motivo } from '../../../models/reporte-rendicion';
@@ -82,7 +85,8 @@ export class ListOpRendidasComponent implements OnInit {
     private location: Location,
     private loadingService: LoadingService,
     private opRendidaService: OpRendidaService,
-    private observacionService: ObservacionService
+    private observacionService: ObservacionService,
+    private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -354,43 +358,20 @@ export class ListOpRendidasComponent implements OnInit {
   observar(c: RendicionDetDTO): void {
     if (!c.idRendDet || this.guardando) { return; }
 
-    const opciones: Record<string, string> = {};
-    for (const m of this.motivos) { opciones[m.codMotivo] = m.desMotivo; }
-
-    Swal.fire({
-      title: `Observar ${this.descripcion(c)}`,
-      html: `<div style="text-align:left;font-size:0.88rem;color:#555;">
-               El comprobante queda marcado como que no sustenta. El asiento
-               en contabilidad no se toca.
-             </div>`,
-      input: 'select',
-      inputOptions: opciones,
-      inputPlaceholder: 'Elegí el motivo',
-      showCancelButton: true,
-      confirmButtonText: 'Siguiente',
-      cancelButtonText: 'Cancelar',
-      inputValidator: (valor) => valor ? null : 'Hay que elegir un motivo.',
-    }).then((paso1) => {
-      if (!paso1.isConfirmed || !paso1.value) { return; }
-      const codMotivo = String(paso1.value);
-      const exigeDetalle = codMotivo === 'OTRO';
-
-      Swal.fire({
-        title: 'Detalle',
-        input: 'textarea',
-        inputPlaceholder: exigeDetalle
-          ? 'Explicá de qué se trata (obligatorio)'
-          : 'Opcional: lo que el usuario necesita saber para corregir',
-        showCancelButton: true,
-        confirmButtonText: 'Observar',
-        cancelButtonText: 'Cancelar',
-        inputValidator: (valor) => (exigeDetalle && (!valor || valor.trim().length < 5))
-          ? 'Con el motivo "Otro" hay que escribir de qué se trata.'
-          : null,
-      }).then((paso2) => {
-        if (!paso2.isConfirmed) { return; }
-        this.enviarObservacion(c, { codMotivo, motivo: (paso2.value ?? '').trim() });
-      });
+    // Un solo modal en vez de dos SweetAlert encadenados: antes habia que
+    // elegir el motivo sin ver todavia el campo del comentario, y volver
+    // atras significaba cancelar los dos pasos.
+    this.dialog.open(ObservarComprobanteDialogComponent, {
+      width: '32rem',
+      autoFocus: false,
+      data: {
+        descripcion: this.descripcion(c),
+        motivos: this.motivos,
+        minimoComentario: 5
+      }
+    }).afterClosed().subscribe((r: ObservarDialogResult | undefined) => {
+      if (!r) { return; }
+      this.enviarObservacion(c, { codMotivo: r.codMotivo, motivo: r.motivo });
     });
   }
 
