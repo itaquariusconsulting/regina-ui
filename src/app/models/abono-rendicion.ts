@@ -90,6 +90,16 @@ export interface AbonoRendicion {
 
   /** Aviso de que ese número de operación ya estaba cargado. */
   avisoDuplicado?: string;
+
+  /** Número de la orden de devolución que se generó en contabilidad. */
+  numOrdenDev?: string;
+
+  /**
+   * Sale con texto cuando el depósito quedó grabado pero contabilidad no lo
+   * recibió. No es un error de guardado: el voucher está a salvo y lo que
+   * falta es el asiento.
+   */
+  avisoPublicacion?: string;
 }
 
 /** Lo que devuelve el listado: los abonos de una orden y el total válido. */

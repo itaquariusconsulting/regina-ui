@@ -15,6 +15,13 @@ import { ObservarComprobanteDialogComponent, ObservarDialogResult }
 import { FiltroOpRendida, OpRendida } from '../../../models/op-rendida';
 import { RendicionDetDTO } from '../../../models/rendicion';
 import { Motivo } from '../../../models/reporte-rendicion';
+import { OrdenPagoCabPlanilla } from '../../../models/orden-pago-planilla-movilidad-cab';
+import { AbonoRendicion } from '../../../models/abono-rendicion';
+import { OrdenPagoPlanillaMovilidadCabService }
+  from '../../../services/orden-pago-planilla-movilidad-cab.service';
+import { AbonoService } from '../../../services/abono.service';
+import { VisorDocumentoDialogComponent, VisorDocumentoData }
+  from '../../../components/dialogs/visor-documento-dialog.component';
 
 /**
  * Órdenes de pago rendidas, para que contabilidad continúe con la
@@ -75,9 +82,20 @@ export class ListOpRendidasComponent implements OnInit {
     return Array.from({ length: 5 }, (_, i) => String(actual - i));
   })();
 
-  // --- panel de revisión de una rendición
+  // --- la fila desplegada, con todo lo que trae esa orden
+  //
+  // Una sola a la vez, y a proposito: con dos abiertas la tabla se vuelve
+  // ilegible, y contabilidad revisa una orden y pasa a la siguiente.
   opEnRevision?: OpRendida;
   comprobantes: RendicionDetDTO[] = [];
+  planillas: OrdenPagoCabPlanilla[] = [];
+  devoluciones: AbonoRendicion[] = [];
+
+  /** Spinner por seccion: cada una llega por su lado y no se esperan entre si. */
+  cargandoComprobantes = false;
+  cargandoPlanillas = false;
+  cargandoDevoluciones = false;
+
   motivos: Motivo[] = [];
   guardando = false;
 
@@ -86,6 +104,8 @@ export class ListOpRendidasComponent implements OnInit {
     private loadingService: LoadingService,
     private opRendidaService: OpRendidaService,
     private observacionService: ObservacionService,
+    private planillaService: OrdenPagoPlanillaMovilidadCabService,
+    private abonoService: AbonoService,
     private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -301,29 +321,42 @@ export class ListOpRendidasComponent implements OnInit {
    * rendiciones vienen con problemas ni por qué, que es lo que se pidió
    * medir.
    */
-  revisar(op: OpRendida): void {
+  /**
+   * Despliega debajo de la orden todo lo que esa OP trae en REGINA.
+   *
+   * <p>Tres cosas distintas que hasta ahora se miraban en tres sitios: los
+   * comprobantes, las planillas de movilidad y las devoluciones con su
+   * voucher. Contabilidad las tiene que ver juntas porque juntas son lo que
+   * sustenta la orden; separadas hay que sumar de cabeza para saber si cuadra.
+   *
+   * <p>Una sola fila abierta a la vez. Volver a tocar la misma la cierra.
+   */
+  alternarDetalle(op: OpRendida): void {
+    if (this.opEnRevision?.numOrden === op.numOrden) {
+      this.cerrarRevision();
+      return;
+    }
+    this.abrirDetalle(op);
+  }
+
+  estaDesplegada(op: OpRendida): boolean {
+    return this.opEnRevision?.numOrden === op.numOrden;
+  }
+
+  private abrirDetalle(op: OpRendida): void {
     this.opEnRevision = op;
     this.comprobantes = [];
-    this.loadingService.show();
+    this.planillas = [];
+    this.devoluciones = [];
 
-    this.observacionService.rendicion(this.codEmpresa, this.codSucursal, op.numOrden ?? '')
-      .subscribe({
-        next: (cab) => {
-          this.comprobantes = cab?.detalle ?? [];
-          this.loadingService.hide();
-        },
-        error: (err) => {
-          this.loadingService.hide();
-          console.error('[op-rendidas] no se pudo abrir la rendición:', err);
-          this.cerrarRevision();
-          Swal.fire({
-            icon: 'error',
-            title: 'No se pudo abrir la rendición',
-            text: 'Intentá de nuevo en unos minutos.',
-            confirmButtonText: 'Entendido',
-          });
-        }
-      });
+    const numOrden = op.numOrden ?? '';
+
+    // Las tres van en paralelo y cada una pinta cuando llega. No se usa el
+    // loading global: bloquear la pantalla entera para desplegar una fila
+    // deja a contabilidad esperando sin poder mirar el resto de la lista.
+    this.cargarComprobantes(numOrden);
+    this.cargarPlanillas(op);
+    this.cargarDevoluciones(numOrden);
 
     if (!this.motivos.length) {
       this.observacionService.motivos('COMPROBANTE').subscribe({
@@ -333,9 +366,171 @@ export class ListOpRendidasComponent implements OnInit {
     }
   }
 
+  private cargarComprobantes(numOrden: string): void {
+    this.cargandoComprobantes = true;
+
+    this.observacionService.rendicion(this.codEmpresa, this.codSucursal, numOrden)
+      .subscribe({
+        next: (cab) => {
+          this.comprobantes = cab?.detalle ?? [];
+          this.cargandoComprobantes = false;
+        },
+        error: (err) => {
+          this.cargandoComprobantes = false;
+          console.error('[op-rendidas] no se pudieron leer los comprobantes:', err);
+        }
+      });
+  }
+
+  /**
+   * Las planillas de movilidad de la orden.
+   *
+   * <p>Si falla no se cierra el despliegue ni se avisa con un modal: los
+   * comprobantes son lo principal y una orden sin planillas es lo normal.
+   * Un error acá deja la seccion vacia, que es lo mismo que ve quien no tiene
+   * planillas, y el detalle queda en consola.
+   */
+  private cargarPlanillas(op: OpRendida): void {
+    this.cargandoPlanillas = true;
+
+    this.planillaService.getPlanillaMovilidad({
+      codEmpresa: this.codEmpresa,
+      codSucursal: this.codSucursal,
+      anioPeriodo: op.anoPeriodo ?? '',
+      codPeriodo: op.codPeriodo ?? '',
+      numOrden: op.numOrden ?? ''
+    }).subscribe({
+      next: (r: any) => {
+        this.planillas = (r?.resultado ?? []) as OrdenPagoCabPlanilla[];
+        this.cargandoPlanillas = false;
+      },
+      error: (err) => {
+        this.cargandoPlanillas = false;
+        console.error('[op-rendidas] no se pudieron leer las planillas:', err);
+      }
+    });
+  }
+
+  private cargarDevoluciones(numOrden: string): void {
+    this.cargandoDevoluciones = true;
+
+    this.abonoService.listar(this.codEmpresa, this.codSucursal, numOrden).subscribe({
+      next: (r) => {
+        // Las anuladas no se muestran: siguen en la base como rastro, pero
+        // no sustentan nada y en una pantalla de revision solo confunden.
+        this.devoluciones = (r?.abonos ?? []).filter(a => a.indAnulado !== 'S');
+        this.cargandoDevoluciones = false;
+      },
+      error: (err) => {
+        this.cargandoDevoluciones = false;
+        console.error('[op-rendidas] no se pudieron leer las devoluciones:', err);
+      }
+    });
+  }
+
+  // ------------------------------------------------------------ documentos
+
+  /** Si el comprobante tiene un escaneo que se pueda abrir. */
+  tieneEscaneo(c: RendicionDetDTO): boolean {
+    return !!c.archivoNombre || !!c.numItemOp;
+  }
+
+  /**
+   * Abre el escaneo de un comprobante.
+   *
+   * <p>La ruta guardada manda. Solo se rearma desde el periodo de la orden
+   * para las rendiciones viejas, que se cargaron antes de que REGINA
+   * guardara ARCHIVO_RUTA: ahi es lo unico que hay.
+   */
+  verComprobante(c: RendicionDetDTO): void {
+    const op = this.opEnRevision;
+    if (!op) { return; }
+
+    const partes = (c.archivoRuta ?? '').split('/').filter(x => x.trim());
+
+    const tipo = partes.length === 3 ? partes[0] : (c.codDocumento ?? '');
+    const anio = partes.length === 3 ? partes[1] : (op.anoPeriodo ?? '');
+    const mes  = partes.length === 3 ? partes[2] : (op.codPeriodo ?? '');
+
+    this.abrirVisor({
+      tipo, anio, mes,
+      nombre: this.nombreSinExtension(c, op),
+      titulo: this.descripcion(c),
+      subtitulo: c.razonSocialEmisor || c.rucEmisor || undefined
+    });
+  }
+
+  /** Si la devolucion tiene voucher adjunto. */
+  tieneVoucher(a: AbonoRendicion): boolean {
+    return (a.archivoRuta ?? '').split('/').filter(x => x.trim()).length === 3
+        && !!a.archivoNombre;
+  }
+
+  /**
+   * Abre el voucher del deposito.
+   *
+   * <p>Es el documento que decide si la devolucion se aprueba: sin ver el
+   * numero de operacion y el importe contra lo que dice REGINA no hay nada
+   * que verificar.
+   */
+  verVoucher(a: AbonoRendicion): void {
+    const partes = (a.archivoRuta ?? '').split('/').filter(x => x.trim());
+
+    if (partes.length !== 3 || !a.archivoNombre) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Sin voucher',
+        text: 'Este depósito no tiene un archivo adjunto.',
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
+    this.abrirVisor({
+      tipo: partes[0], anio: partes[1], mes: partes[2],
+      nombre: this.sinExtension(a.archivoNombre),
+      titulo: 'Voucher · Op. ' + (a.numOperacion || 's/n'),
+      subtitulo: (a.desBanco || '') + ' · S/ ' + (a.impSoles ?? 0)
+    });
+  }
+
+  private abrirVisor(data: VisorDocumentoData): void {
+    this.dialog.open(VisorDocumentoDialogComponent, {
+      width: '78rem',
+      maxWidth: '95vw',
+      panelClass: 'visor-documento-panel',
+      autoFocus: false,
+      data
+    });
+  }
+
+  /**
+   * Con que nombre buscar el escaneo del comprobante.
+   *
+   * <p>Contabilidad los nombra por NUM_ITEM_OP, pero en la antesala ese
+   * numero todavia no existe y el archivo se llama por el id de REGINA.
+   * Cuando REGINA sabe el nombre real, ese manda.
+   */
+  private nombreSinExtension(c: RendicionDetDTO, op: OpRendida): string {
+    if (c.archivoNombre) {
+      return this.sinExtension(c.archivoNombre);
+    }
+    return (c.codEmpresa ?? '0000')
+      + (c.codSucursal ?? this.codSucursal)
+      + (op.numOrden ?? '')
+      + (c.numItemOp ?? '');
+  }
+
+  private sinExtension(nombre: string): string {
+    const punto = nombre.lastIndexOf('.');
+    return punto > 0 ? nombre.substring(0, punto) : nombre;
+  }
+
   cerrarRevision(): void {
     this.opEnRevision = undefined;
     this.comprobantes = [];
+    this.planillas = [];
+    this.devoluciones = [];
   }
 
   estaObservado(c: RendicionDetDTO): boolean {
@@ -431,6 +626,17 @@ export class ListOpRendidasComponent implements OnInit {
   /** Cuántos comprobantes de la rendición abierta están observados. */
   get observadosEnRevision(): number {
     return this.comprobantes.filter(c => c.indObservado === 'S').length;
+  }
+
+  /**
+   * Lo devuelto en la orden desplegada.
+   *
+   * Se suma acá y no se pide al backend porque la lista ya está en pantalla
+   * y son cuatro depósitos como mucho. Las anuladas ya quedaron fuera al
+   * cargar, así que este total es el que sustenta.
+   */
+  get totalDevuelto(): number {
+    return this.devoluciones.reduce((suma, d) => suma + (d.impSoles ?? 0), 0);
   }
 
   onBack(): void {

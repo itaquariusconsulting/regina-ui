@@ -3057,18 +3057,42 @@ export class EditRendirCuentaComponent implements OnInit {
           this.voucher = null;
           this.cargarAbonos();
         }
-        // El backend avisa si ese numero de operacion ya estaba cargado. Es un
-        // aviso y no un rechazo: repartir un deposito entre dos ordenes repite
-        // el numero de forma legitima.
-        const repetido = (r?.mensaje || '').startsWith('La operacion');
-        Swal.fire({
-          toast: true, position: 'top-end',
-          icon: repetido ? 'warning' : 'success',
-          title: repetido ? 'Revise el número de operación' : 'Devolución registrada',
-          text: repetido ? r.mensaje : '',
-          showConfirmButton: repetido,
-          timer: repetido ? undefined : 4000
-        });
+        // Tres finales, y se leen del cuerpo y no del texto del mensaje.
+        //
+        //   avisoPublicacion  el depósito está grabado pero contabilidad no lo
+        //                     recibió. Es lo único que exige avisar a alguien,
+        //                     así que se queda en pantalla hasta que acepten.
+        //   avisoDuplicado    ese número de operación ya estaba cargado. Aviso,
+        //                     no rechazo: repartir un depósito entre dos
+        //                     órdenes repite el número de forma legítima.
+        //   numOrdenDev       salió todo y además quedó la orden en el ERP.
+        if (grabado?.avisoPublicacion) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'La devolución se guardó, pero no llegó a contabilidad',
+            text: grabado.avisoPublicacion,
+            width: 600
+          });
+        } else if (grabado?.avisoDuplicado) {
+          Swal.fire({
+            toast: true, position: 'top-end',
+            icon: 'warning',
+            title: 'Revise el número de operación',
+            text: grabado.avisoDuplicado,
+            showConfirmButton: true
+          });
+        } else {
+          Swal.fire({
+            toast: true, position: 'top-end',
+            icon: 'success',
+            title: 'Devolución registrada',
+            text: grabado?.numOrdenDev
+              ? 'Orden ' + grabado.numOrdenDev + ' generada en contabilidad.'
+              : '',
+            showConfirmButton: false,
+            timer: 4000
+          });
+        }
       },
       error: e => {
         this.guardandoAbono = false;

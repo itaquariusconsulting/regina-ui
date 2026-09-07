@@ -75,7 +75,8 @@
         <th class="text-center">Revisión</th>
       </thead>
       <tbody>
-        <tr *ngFor="let op of pagina">
+        <ng-container *ngFor="let op of pagina">
+        <tr [class.fila-abierta]="estaDesplegada(op)">
           <td class="text-center">{{ op.numOrden }}</td>
           <td class="text-center">{{ mesEtiqueta(op.codPeriodo) }} {{ op.anoPeriodo }}</td>
           <td class="text-start">{{ op.desAuxiliar || op.codAuxiliar }}</td>
@@ -131,12 +132,183 @@
           </td>
 
           <td class="text-center">
-            <button class="general-button btn-secondary btn-sm" (click)="revisar(op)"
-                    title="Ver los comprobantes y marcar los que no cuadran con el físico">
-              <i class="fa fa-magnifying-glass"></i>
+            <button class="general-button btn-secondary btn-sm" (click)="alternarDetalle(op)"
+                    [class.activo]="estaDesplegada(op)"
+                    title="Ver los comprobantes, planillas y devoluciones de esta orden">
+              <i class="fa" [ngClass]="estaDesplegada(op) ? 'fa-chevron-up' : 'fa-magnifying-glass'"></i>
             </button>
           </td>
         </tr>
+
+        <!-- ============ LO QUE SUSTENTA ESTA ORDEN ============
+             Se despliega debajo de la fila y ocupa el ancho completo de la
+             tabla. Tres secciones porque son tres cosas distintas, con el
+             mismo gesto en todas: mirar el documento y, si no cuadra,
+             observarlo. -->
+        <tr class="fila-detalle" *ngIf="estaDesplegada(op)">
+          <td colspan="12">
+            <div class="det-caja">
+
+              <div class="det-cabecera">
+                <div>
+                  <strong>OP {{ op.numOrden }}</strong>
+                  <span class="separador">·</span>
+                  {{ op.desAuxiliar || op.codAuxiliar }}
+                </div>
+                <button class="general-button btn-secondary btn-sm"
+                        (click)="cerrarRevision()" title="Cerrar">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              </div>
+
+              <!-- ---------------------------- COMPROBANTES -->
+              <div class="det-seccion">
+                <div class="det-titulo">
+                  <i class="fa fa-receipt"></i> Comprobantes
+                  <span class="det-contador" *ngIf="!cargandoComprobantes">
+                    {{ comprobantes.length }}
+                    <em *ngIf="observadosEnRevision">· {{ observadosEnRevision }} observado(s)</em>
+                  </span>
+                </div>
+
+                <!-- Mientras el comprobante viaje al ERP al cerrar la rendicion,
+                     observarlo no lo saca de alla. Cuando exista la aprobacion
+                     previa este texto deja de ser cierto y hay que cambiarlo. -->
+                <div class="det-aviso" *ngIf="comprobantes.length">
+                  <i class="fa fa-circle-info"></i>
+                  Observar <strong>no deshace el asiento</strong>: contabilidad ya lo tiene y
+                  sacarlo por atrás rompe el cuadre del mes. Queda registrado que no
+                  sustenta, con el motivo, para el descuento al personal.
+                </div>
+
+                <div class="det-cargando" *ngIf="cargandoComprobantes">
+                  <i class="fa fa-spinner fa-spin"></i> Cargando...
+                </div>
+
+                <div class="det-vacio" *ngIf="!cargandoComprobantes && !comprobantes.length">
+                  Esta rendición no tiene comprobantes cargados en REGINA.
+                </div>
+
+                <div class="det-fila" *ngFor="let c of comprobantes"
+                     [class.observado]="estaObservado(c)">
+                  <div class="det-datos">
+                    <div class="det-nombre">
+                      {{ descripcion(c) }}
+                      <span class="det-marca" *ngIf="estaObservado(c)">Observado</span>
+                    </div>
+                    <div class="det-sub">
+                      {{ c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor' }}
+                      <span class="separador">·</span>
+                      S/ {{ c.impSoles | number:'1.2-2' }}
+                    </div>
+                    <div class="det-motivo" *ngIf="estaObservado(c) && c.motivoObs">
+                      {{ c.motivoObs }}
+                    </div>
+                  </div>
+
+                  <div class="det-acciones">
+                    <button class="general-button btn-info btn-sm" *ngIf="tieneEscaneo(c)"
+                            (click)="verComprobante(c)" title="Ver el comprobante escaneado">
+                      <i class="fa fa-eye"></i> Ver
+                    </button>
+                    <button class="general-button btn-danger btn-sm" *ngIf="!estaObservado(c)"
+                            [disabled]="guardando" (click)="observar(c)">
+                      <i class="fa fa-flag"></i> Observar
+                    </button>
+                    <button class="general-button btn-secondary btn-sm" *ngIf="estaObservado(c)"
+                            [disabled]="guardando" (click)="levantar(c)"
+                            title="Quitar la observación si se puso por error">
+                      <i class="fa fa-rotate-left"></i> Levantar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ---------------------------- PLANILLAS -->
+              <div class="det-seccion">
+                <div class="det-titulo">
+                  <i class="fa fa-car"></i> Planillas de movilidad
+                  <span class="det-contador" *ngIf="!cargandoPlanillas">
+                    {{ planillas.length }}
+                  </span>
+                </div>
+
+                <div class="det-cargando" *ngIf="cargandoPlanillas">
+                  <i class="fa fa-spinner fa-spin"></i> Cargando...
+                </div>
+
+                <div class="det-vacio" *ngIf="!cargandoPlanillas && !planillas.length">
+                  Sin planillas de movilidad en esta orden.
+                </div>
+
+                <div class="det-fila" *ngFor="let pl of planillas">
+                  <div class="det-datos">
+                    <div class="det-nombre">
+                      Planilla {{ pl.codPlanilla }}
+                      <span class="det-marca pub" *ngIf="pl.statusPlanilla === 'AP'">
+                        En contabilidad
+                      </span>
+                    </div>
+                    <div class="det-sub">
+                      {{ pl.fechaPlanilla | date:'dd-MM-yyyy' }}
+                      <span class="separador">·</span>
+                      S/ {{ (pl.total ?? pl.monto) | number:'1.2-2' }}
+                      <span class="separador" *ngIf="pl.glosa">·</span>
+                      {{ pl.glosa }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ---------------------------- DEVOLUCIONES -->
+              <div class="det-seccion">
+                <div class="det-titulo">
+                  <i class="fa fa-money-bill-transfer"></i> Devoluciones
+                  <span class="det-contador" *ngIf="!cargandoDevoluciones">
+                    {{ devoluciones.length }}
+                    <em *ngIf="devoluciones.length">· S/ {{ totalDevuelto | number:'1.2-2' }}</em>
+                  </span>
+                </div>
+
+                <div class="det-cargando" *ngIf="cargandoDevoluciones">
+                  <i class="fa fa-spinner fa-spin"></i> Cargando...
+                </div>
+
+                <div class="det-vacio" *ngIf="!cargandoDevoluciones && !devoluciones.length">
+                  No hay depósitos de devolución registrados.
+                </div>
+
+                <div class="det-fila" *ngFor="let d of devoluciones">
+                  <div class="det-datos">
+                    <div class="det-nombre">
+                      Op. {{ d.numOperacion || 's/n' }}
+                      <span class="det-marca pub" *ngIf="d.numOrdenDev">
+                        OP {{ d.numOrdenDev }}
+                      </span>
+                      <span class="det-marca sin" *ngIf="!tieneVoucher(d)">Sin voucher</span>
+                    </div>
+                    <div class="det-sub">
+                      {{ d.desBanco || 'Banco no indicado' }}
+                      <span class="separador">·</span>
+                      {{ d.fecDeposito | date:'dd-MM-yyyy' }}
+                      <span class="separador">·</span>
+                      S/ {{ d.impSoles | number:'1.2-2' }}
+                    </div>
+                  </div>
+
+                  <div class="det-acciones">
+                    <button class="general-button btn-info btn-sm" *ngIf="tieneVoucher(d)"
+                            (click)="verVoucher(d)" title="Ver el voucher del depósito">
+                      <i class="fa fa-eye"></i> Ver voucher
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </td>
+        </tr>
+        </ng-container>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
           <td colspan="12" class="text-center text-muted py-4">
@@ -166,69 +338,6 @@
           </li>
         </ul>
       </nav>
-    </div>
-  </div>
-</div>
-
-<!-- ================== REVISIÓN DE UNA RENDICIÓN ================== -->
-<div class="rev-fondo" *ngIf="opEnRevision" (click)="cerrarRevision()"></div>
-
-<div class="rev-panel" *ngIf="opEnRevision">
-  <div class="rev-cabecera">
-    <div>
-      <h6 class="mb-0">OP {{ opEnRevision.numOrden }}</h6>
-      <small>{{ opEnRevision.desAuxiliar || opEnRevision.codAuxiliar }}</small>
-    </div>
-    <button class="general-button btn-secondary btn-sm" (click)="cerrarRevision()">
-      <i class="fa fa-xmark"></i>
-    </button>
-  </div>
-
-  <div class="rev-aviso">
-    <i class="fa fa-circle-info"></i>
-    Observar un comprobante <strong>no deshace el asiento</strong>: contabilidad ya lo
-    tiene y sacarlo por atrás rompe el cuadre del mes. Queda registrado que no
-    sustenta, con el motivo, para el descuento al personal.
-  </div>
-
-  <div class="rev-resumen" *ngIf="comprobantes.length">
-    <strong>{{ comprobantes.length }}</strong> comprobante(s)
-    <span class="separador">·</span>
-    <strong>{{ observadosEnRevision }}</strong> observado(s)
-  </div>
-
-  <div class="rev-lista">
-    <div class="rev-item" *ngFor="let c of comprobantes" [class.observado]="estaObservado(c)">
-      <div class="rev-item-datos">
-        <div class="rev-item-titulo">
-          {{ descripcion(c) }}
-          <span class="rev-marca" *ngIf="estaObservado(c)">Observado</span>
-        </div>
-        <div class="rev-item-sub">
-          {{ c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor' }}
-          <span class="separador">·</span>
-          S/ {{ c.impSoles | number:'1.2-2' }}
-        </div>
-        <div class="rev-item-motivo" *ngIf="estaObservado(c) && c.motivoObs">
-          {{ c.motivoObs }}
-        </div>
-      </div>
-
-      <div class="rev-item-accion">
-        <button class="general-button btn-danger btn-sm" *ngIf="!estaObservado(c)"
-                [disabled]="guardando" (click)="observar(c)">
-          <i class="fa fa-flag"></i> Observar
-        </button>
-        <button class="general-button btn-secondary btn-sm" *ngIf="estaObservado(c)"
-                [disabled]="guardando" (click)="levantar(c)"
-                title="Quitar la observación si se puso por error">
-          <i class="fa fa-rotate-left"></i> Levantar
-        </button>
-      </div>
-    </div>
-
-    <div class="rev-vacio" *ngIf="!comprobantes.length">
-      Esta rendición no tiene comprobantes cargados en REGINA.
     </div>
   </div>
 </div>
