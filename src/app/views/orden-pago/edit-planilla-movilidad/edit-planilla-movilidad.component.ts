@@ -1596,13 +1596,47 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       });
   }
 
+  /**
+   * Cuantas personas distintas participaron en la planilla.
+   *
+   * <p>Recorre los ocupantes de todos los viajes y los cuenta sin repetir:
+   * si el mismo trabajador viaja cinco dias, sigue siendo una persona, porque
+   * el tope se multiplica aparte por los dias.
+   *
+   * <p>Devuelve 1 cuando no hay viajes cargados —la cabecera se guarda antes
+   * que el detalle— o cuando ninguno tiene ocupantes. Nunca menos de 1: un
+   * cero dejaria el tope en cero y bloquearia cualquier importe.
+   */
+  private personasDeLaPlanilla(): number {
+    const vistos = new Set<string>();
+
+    for (const viaje of (this.listaMovilidad || [])) {
+      for (const token of this.parseOcupantes(viaje?.ocupantes)) {
+        const t = (token || '').trim();
+        if (t) { vistos.add(t.toUpperCase()); }
+      }
+    }
+
+    return Math.max(1, vistos.size);
+  }
+
   savePlanilla(): void {
     if (this.guardandoCabecera || !this.modelPlanillaIni) return;
 
     // ====== VALIDACIÓN: importe máximo por día (regla configurable) ======
+    //
+    // El tope de la LIR es por TRABAJADOR y por dia, no por planilla. Este
+    // calculo miraba solo los dias y daba por hecho que viajaba una persona,
+    // asi que una movilidad compartida —cuatro en un taxi de 120— se
+    // rechazaba siendo valida: a 30 por cabeza esta dentro del limite.
+    //
+    // Ahora el limite escala con la gente que realmente participo, contada
+    // sin repetir a nadie entre viajes. Con una sola persona —el 100% de lo
+    // cargado hasta hoy— el resultado es identico al de antes.
     const maxNum   = Number(this.ordenPagoPlanillaMovilidadCab.maxNumViajes ?? 0);
     const total    = Number(this.ordenPagoPlanillaMovilidadCab.total ?? 0);
-    const maxPlan  = maxNum > 0 ? maxNum * this.importeMaxDia : this.importeMaxDia;
+    const personas = this.personasDeLaPlanilla();
+    const maxPlan  = (maxNum > 0 ? maxNum : 1) * personas * this.importeMaxDia;
 
     if (total > maxPlan + 0.001) {
       // Usar el mensaje definido en la regla REG_REN_VALIDATE si existe;
@@ -1610,7 +1644,8 @@ export class EditPlanillaMovilidadComponent implements OnInit {
       const detalle = `Ingresado: <strong>S/ ${total.toFixed(2)}</strong> · ` +
                       `Permitido: <strong>S/ ${maxPlan.toFixed(2)}</strong> ` +
                       `(S/ ${this.importeMaxDia.toFixed(2)}/día` +
-                      `${maxNum > 0 ? ` × ${maxNum} día(s)` : ''})`;
+                      `${maxNum > 0 ? ` × ${maxNum} día(s)` : ''}` +
+                      `${personas > 1 ? ` × ${personas} persona(s)` : ''})`;
 
       const mensajeRegla = (this.importeMaxDiaErrorMsg || '').trim();
       const htmlBody = mensajeRegla
