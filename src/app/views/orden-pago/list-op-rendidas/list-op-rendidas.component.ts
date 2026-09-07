@@ -20,7 +20,12 @@ import { AbonoRendicion } from '../../../models/abono-rendicion';
 import { OrdenPagoPlanillaMovilidadCabService }
   from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { AbonoService } from '../../../services/abono.service';
+import { RendicionService } from '../../../services/rendicion.service';
 import { PublicacionPlanillaService } from '../../../services/publicacion-planilla.service';
+import { OrdenPagoPlanillaMovilidadDetService }
+  from '../../../services/orden-pago-planilla-movilidad-det.service';
+import { OrdenPagoPlanillaMovilidadDet }
+  from '../../../models/orden-pago-planilla-movilidad-det';
 import { VisorDocumentoDialogComponent, VisorDocumentoData }
   from '../../../components/dialogs/visor-documento-dialog.component';
 
@@ -108,6 +113,8 @@ export class ListOpRendidasComponent implements OnInit {
     private planillaService: OrdenPagoPlanillaMovilidadCabService,
     private abonoService: AbonoService,
     private publicacionService: PublicacionPlanillaService,
+    private rendicionService: RendicionService,
+    private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
     private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -361,6 +368,7 @@ export class ListOpRendidasComponent implements OnInit {
     this.comprobantes = [];
     this.planillas = [];
     this.devoluciones = [];
+    this.revisionesPlanilla = {};
 
     const numOrden = op.numOrden ?? '';
 
@@ -377,7 +385,21 @@ export class ListOpRendidasComponent implements OnInit {
         error: (err) => console.error('[op-rendidas] no se pudieron cargar los motivos:', err)
       });
     }
+    if (!this.motivosPlanilla.length) {
+      this.observacionService.motivos('PLANILLA').subscribe({
+        next: (m) => this.motivosPlanilla = m ?? [],
+        error: (err) => console.error('[op-rendidas] no se cargaron los motivos de planilla:', err)
+      });
+    }
+    if (!this.motivosAbono.length) {
+      this.observacionService.motivos('ABONO').subscribe({
+        next: (m) => this.motivosAbono = m ?? [],
+        error: (err) => console.error('[op-rendidas] no se cargaron los motivos de abono:', err)
+      });
+    }
   }
+
+  motivosPlanilla: Motivo[] = [];
 
   private cargarComprobantes(numOrden: string): void {
     this.cargandoComprobantes = true;
@@ -416,11 +438,30 @@ export class ListOpRendidasComponent implements OnInit {
       next: (r: any) => {
         this.planillas = (r?.resultado ?? []) as OrdenPagoCabPlanilla[];
         this.cargandoPlanillas = false;
+        if (this.planillas.length) {
+          this.cargarRevisionesPlanilla(op);
+        }
       },
       error: (err) => {
         this.cargandoPlanillas = false;
         console.error('[op-rendidas] no se pudieron leer las planillas:', err);
       }
+    });
+  }
+
+  /**
+   * El estado de revision de las planillas, en una sola consulta.
+   *
+   * Si falla, las planillas se muestran igual sin marcas: la revision es
+   * informacion adicional y perderla no justifica romper el despliegue.
+   */
+  private cargarRevisionesPlanilla(op: OpRendida): void {
+    this.publicacionService.revisiones(
+      this.codEmpresa, this.codSucursal, op.numOrden ?? ''
+    ).subscribe({
+      next: (r: any) => { this.revisionesPlanilla = r?.resultado ?? {}; },
+      error: (err: any) =>
+        console.error('[op-rendidas] no se pudieron leer las revisiones:', err)
     });
   }
 
@@ -645,9 +686,170 @@ export class ListOpRendidasComponent implements OnInit {
   envioHabilitado = false;
   private tipoGastoSugerido = '';
 
-  /** Una planilla cerrada que todavia no tiene su asiento en contabilidad. */
+  /**
+   * Los viajes de cada planilla, por codigo de planilla.
+   *
+   * <p>Se piden cuando alguien abre la planilla y no al desplegar la orden:
+   * una OP puede traer varias planillas y cargar todos los viajes de todas
+   * seria pedir decenas de filas que casi nunca se miran.
+   *
+   * <p>Una vez traidos se quedan. Cerrar y volver a abrir la misma planilla
+   * no vuelve al servidor.
+   */
+  viajesPorPlanilla: { [codPlanilla: string]: OrdenPagoPlanillaMovilidadDet[] } = {};
+  planillaAbierta = '';
+  cargandoViajes = false;
+
+  /**
+   * Muestra u oculta los viajes de una planilla.
+   *
+   * <p>Sin esto no hay nada que aprobar: la glosa dice a donde fue, pero el
+   * importe sale de los viajes y aprobar un total sin ver de que se compone
+   * es firmar un numero.
+   */
+  alternarViajes(pl: OrdenPagoCabPlanilla): void {
+    const cod = pl.codPlanilla ?? '';
+    if (this.planillaAbierta === cod) {
+      this.planillaAbierta = '';
+      return;
+    }
+
+    this.planillaAbierta = cod;
+    if (this.viajesPorPlanilla[cod]) { return; }
+
+    this.cargandoViajes = true;
+    this.planillaDetService.listarDetalle(
+      pl.codEmpresa ?? this.codEmpresa,
+      pl.codSucursal ?? this.codSucursal,
+      pl.anioPeriodo ?? '',
+      pl.codPeriodo ?? '',
+      pl.numOrden ?? '',
+      cod
+    ).subscribe({
+      next: (r: any) => {
+        this.viajesPorPlanilla[cod] = (r?.resultado ?? []) as OrdenPagoPlanillaMovilidadDet[];
+        this.cargandoViajes = false;
+      },
+      error: (err: any) => {
+        this.cargandoViajes = false;
+        // Lista vacia y no un modal: la planilla sigue en pantalla con su
+        // total, y el detalle es lo unico que falto.
+        this.viajesPorPlanilla[cod] = [];
+        console.error('[op-rendidas] no se pudieron leer los viajes:', err);
+      }
+    });
+  }
+
+  viajesAbiertos(pl: OrdenPagoCabPlanilla): boolean {
+    return this.planillaAbierta === (pl.codPlanilla ?? '');
+  }
+
+  viajesDe(pl: OrdenPagoCabPlanilla): OrdenPagoPlanillaMovilidadDet[] {
+    return this.viajesPorPlanilla[pl.codPlanilla ?? ''] ?? [];
+  }
+
+  /** El trayecto en una linea, con las direcciones si las hay. */
+  trayecto(v: OrdenPagoPlanillaMovilidadDet): string {
+    const desde = (v.dirOrigen || v.codOrigen || '').trim();
+    const hasta = (v.dirDestino || v.codDestino || '').trim();
+    if (desde && hasta) { return desde + '  →  ' + hasta; }
+    return desde || hasta || 'Trayecto no indicado';
+  }
+
+  /**
+   * La revision de cada planilla, por codigo.
+   *
+   * Vive en REGINA porque la cabecera de la planilla es de contabilidad y ahi
+   * no se agregan columnas. Llega en una sola consulta por orden.
+   */
+  revisionesPlanilla: { [codPlanilla: string]: any } = {};
+
+  revisionDe(pl: OrdenPagoCabPlanilla): any {
+    return this.revisionesPlanilla[(pl.codPlanilla ?? '').trim()];
+  }
+
+  planillaObservada(pl: OrdenPagoCabPlanilla): boolean {
+    return this.revisionDe(pl)?.indObservado === 'S';
+  }
+
+  motivoPlanilla(pl: OrdenPagoCabPlanilla): string {
+    return this.revisionDe(pl)?.motivoObs ?? '';
+  }
+
+  /**
+   * Una planilla cerrada, sin observar, que todavia no tiene su asiento.
+   *
+   * Observada quiere decir que alguien ya dijo que algo no cuadra; ofrecer
+   * Aprobar ahi seria invitar a pasarle por encima.
+   */
   esperaAprobacion(pl: OrdenPagoCabPlanilla): boolean {
-    return pl.statusPlanilla === 'CE';
+    return pl.statusPlanilla === 'CE' && !this.planillaObservada(pl);
+  }
+
+  /**
+   * Observa la planilla o levanta la observacion.
+   *
+   * Reusa el mismo modal que los comprobantes: es la misma decision sobre otro
+   * documento, y dos dialogos distintos para lo mismo se desincronizan en la
+   * primera correccion que alguien haga de un lado solo.
+   */
+  observarPlanilla(pl: OrdenPagoCabPlanilla): void {
+    if (this.guardando) { return; }
+
+    if (this.planillaObservada(pl)) {
+      this.enviarObsPlanilla(pl, { levantar: true });
+      return;
+    }
+
+    this.dialog.open(ObservarComprobanteDialogComponent, {
+      width: '32rem',
+      autoFocus: false,
+      data: {
+        descripcion: 'Planilla ' + pl.codPlanilla,
+        motivos: this.motivosPlanilla,
+        minimoComentario: 5
+      }
+    }).afterClosed().subscribe((r: ObservarDialogResult | undefined) => {
+      if (!r) { return; }
+      this.enviarObsPlanilla(pl, { codMotivo: r.codMotivo, motivo: r.motivo });
+    });
+  }
+
+  private enviarObsPlanilla(pl: OrdenPagoCabPlanilla, cuerpo: {
+    codMotivo?: string; motivo?: string; levantar?: boolean;
+  }): void {
+    this.guardando = true;
+    const cod = (pl.codPlanilla ?? '').trim();
+
+    this.publicacionService.observar(pl, { ...cuerpo, userId: this.usuarioActual() }).subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        // Se refleja en la fila que ya esta en pantalla: contabilidad revisa
+        // varias seguidas y volver al servidor por cada una la haria esperar.
+        this.revisionesPlanilla[cod] = {
+          ...(this.revisionesPlanilla[cod] ?? {}),
+          indObservado: cuerpo.levantar ? 'N' : 'S',
+          codMotivoObs: cuerpo.levantar ? null : cuerpo.codMotivo,
+          motivoObs: cuerpo.levantar ? null : cuerpo.motivo
+        };
+
+        Swal.fire({
+          toast: true, position: 'top-end', icon: 'success',
+          title: r?.mensaje ?? (cuerpo.levantar ? 'Observación levantada' : 'Planilla observada'),
+          showConfirmButton: false, timer: 2500, timerProgressBar: true,
+        });
+      },
+      error: (err: any) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo observar la planilla:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se registró',
+          text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+        });
+      }
+    });
   }
 
   yaTieneAsiento(pl: OrdenPagoCabPlanilla): boolean {
@@ -691,7 +893,7 @@ export class ListOpRendidasComponent implements OnInit {
   private emitirAsiento(pl: OrdenPagoCabPlanilla): void {
     this.guardando = true;
 
-    this.publicacionService.publicar(pl, this.tipoGastoSugerido).subscribe({
+    this.publicacionService.publicar(pl, this.tipoGastoSugerido, this.usuarioActual()).subscribe({
       next: (r: any) => {
         this.guardando = false;
         // Se marca en la fila que ya esta en pantalla en vez de recargar
@@ -714,6 +916,231 @@ export class ListOpRendidasComponent implements OnInit {
           text: err?.error?.mensaje
              ?? 'La planilla quedó como estaba. Intentá de nuevo en unos minutos.',
           confirmButtonText: 'Entendido',
+        });
+      }
+    });
+  }
+
+  /**
+   * Si el comprobante todavia no viajo al ERP.
+   *
+   * NUM_ITEM_OP lo asigna contabilidad al recibirlo, asi que vacio significa
+   * que sigue esperando. Un observado no se puede aprobar y el servidor lo
+   * rechaza, asi que el boton tampoco se ofrece.
+   */
+  esperaAprobacionComp(c: RendicionDetDTO): boolean {
+    return !c.numItemOp && c.indObservado !== 'S';
+  }
+
+  /**
+   * Aprueba el comprobante y lo manda a contabilidad.
+   *
+   * <p>Se pregunta antes porque escribe un asiento que REGINA no puede
+   * deshacer. La confirmacion muestra proveedor e importe, que es lo que se
+   * esta avalando.
+   */
+  aprobarComprobante(c: RendicionDetDTO): void {
+    if (!c.idRendDet || !this.esperaAprobacionComp(c) || this.guardando) { return; }
+
+    Swal.fire({
+      icon: 'question',
+      title: '¿Aprobar este comprobante?',
+      html: `<div style="text-align:left;font-size:0.88rem;color:#555;">
+               <b>${this.descripcion(c)}</b><br>
+               ${c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor'} ·
+               <b>S/ ${(c.impSoles ?? 0).toFixed(2)}</b><br>
+               Se envía a contabilidad. No se puede deshacer desde REGINA.
+             </div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Aprobar y enviar',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) { return; }
+      this.enviarComprobante(c);
+    });
+  }
+
+  private enviarComprobante(c: RendicionDetDTO): void {
+    this.guardando = true;
+
+    this.rendicionService.aprobarComprobante(c.idRendDet!, this.usuarioActual()).subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        // El item lo asigna el ERP; se toma de la respuesta y no se inventa.
+        c.numItemOp = (r?.itemsOp && r.itemsOp.length) ? r.itemsOp[0] : c.numItemOp;
+
+        const avisos: string[] = r?.advertencias ?? [];
+        Swal.fire({
+          toast: !avisos.length,
+          position: 'top-end',
+          icon: avisos.length ? 'warning' : 'success',
+          title: avisos.length ? 'Enviado, con avisos' : 'Comprobante aprobado',
+          html: avisos.length ? avisos.join('<br>') : (r?.mensaje ?? ''),
+          text: avisos.length ? undefined : (r?.mensaje ?? ''),
+          showConfirmButton: !!avisos.length,
+          timer: avisos.length ? undefined : 4000,
+          width: avisos.length ? 560 : undefined,
+        });
+      },
+      error: (err: any) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo aprobar el comprobante:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se aprobó',
+          text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+          width: 560,
+        });
+      }
+    });
+  }
+
+  /** Cuántos comprobantes de la orden abierta ya están en contabilidad. */
+  get aprobadosEnRevision(): number {
+    return this.comprobantes.filter(c => !!c.numItemOp).length;
+  }
+
+  /**
+   * Si el deposito todavia no genero su orden en contabilidad.
+   *
+   * Se mira NUM_ORDEN_DEV y no un indicador de aprobado: esa columna ya viaja
+   * en el listado y dice lo unico que importa aca, que es si el documento
+   * existe alla. Un deposito observado no se puede aprobar y el servidor lo
+   * rechaza, asi que el boton tampoco se ofrece.
+   */
+  esperaAprobacionDev(a: AbonoRendicion): boolean {
+    return !a.numOrdenDev && a.indObservado !== 'S';
+  }
+
+  /**
+   * Observa el deposito o levanta la observacion.
+   *
+   * Mismo modal que comprobantes y planillas: es la misma decision sobre otro
+   * documento.
+   */
+  observarDevolucion(a: AbonoRendicion): void {
+    if (!a.idRendAbono || this.guardando) { return; }
+
+    if (a.indObservado === 'S') {
+      this.enviarObsDevolucion(a, { levantar: true });
+      return;
+    }
+
+    this.dialog.open(ObservarComprobanteDialogComponent, {
+      width: '32rem',
+      autoFocus: false,
+      data: {
+        descripcion: 'Depósito Op. ' + (a.numOperacion || 's/n'),
+        motivos: this.motivosAbono,
+        minimoComentario: 5
+      }
+    }).afterClosed().subscribe((r: ObservarDialogResult | undefined) => {
+      if (!r) { return; }
+      this.enviarObsDevolucion(a, { codMotivo: r.codMotivo, motivo: r.motivo });
+    });
+  }
+
+  private enviarObsDevolucion(a: AbonoRendicion, cuerpo: {
+    codMotivo?: string; motivo?: string; levantar?: boolean;
+  }): void {
+    this.guardando = true;
+
+    this.abonoService.observar(a.idRendAbono!, {
+      ...cuerpo, userId: this.usuarioActual()
+    }).subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        a.indObservado = cuerpo.levantar ? 'N' : 'S';
+        a.codMotivoObs = cuerpo.levantar ? undefined : cuerpo.codMotivo;
+        a.motivoObs = cuerpo.levantar ? undefined : cuerpo.motivo;
+
+        // Si la orden ya estaba emitida el backend lo dice en el mensaje, y
+        // eso no es un aviso al pasar: hay que leerlo.
+        const yaEmitida = !!a.numOrdenDev;
+        Swal.fire({
+          toast: !yaEmitida, position: 'top-end',
+          icon: yaEmitida ? 'warning' : 'success',
+          title: cuerpo.levantar ? 'Observación levantada' : 'Depósito observado',
+          text: r?.mensaje,
+          showConfirmButton: yaEmitida,
+          timer: yaEmitida ? undefined : 3000,
+          width: yaEmitida ? 560 : undefined,
+        });
+      },
+      error: (err: any) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo observar la devolución:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se registró',
+          text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+        });
+      }
+    });
+  }
+
+  motivosAbono: Motivo[] = [];
+
+  /**
+   * Aprueba el deposito y emite su orden de devolucion.
+   *
+   * <p>Se pregunta antes porque crea un documento contable con su propio
+   * numero, y eso no se deshace desde REGINA. La confirmacion muestra el
+   * importe y la operacion, que son los dos datos que se estan avalando.
+   */
+  aprobarDevolucion(a: AbonoRendicion): void {
+    if (!a.idRendAbono || !this.esperaAprobacionDev(a) || this.guardando) { return; }
+
+    Swal.fire({
+      icon: 'question',
+      title: '¿Aprobar esta devolución?',
+      html: `<div style="text-align:left;font-size:0.88rem;color:#555;">
+               Operación <b>${a.numOperacion || 's/n'}</b> por
+               <b>S/ ${(a.impSoles ?? 0).toFixed(2)}</b>.<br>
+               Se genera la orden de devolución en contabilidad.
+               No se puede deshacer desde REGINA.
+             </div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Aprobar y emitir',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) { return; }
+      this.emitirDevolucion(a);
+    });
+  }
+
+  private emitirDevolucion(a: AbonoRendicion): void {
+    this.guardando = true;
+
+    this.abonoService.aprobar(a.idRendAbono!, this.usuarioActual()).subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        // El numero de orden viene del servidor y no se inventa aca: si la
+        // emision quedo apagada, vuelve vacio y la fila sigue mostrando el
+        // boton, que es lo correcto porque no se emitio nada.
+        a.numOrdenDev = r?.resultado?.numOrdenDev;
+
+        Swal.fire({
+          toast: !r?.resultado?.avisoPublicacion,
+          position: 'top-end',
+          icon: r?.resultado?.avisoPublicacion ? 'warning' : 'success',
+          title: r?.resultado?.avisoPublicacion ? 'Aprobada, pero sin orden' : 'Devolución aprobada',
+          text: r?.mensaje,
+          showConfirmButton: !!r?.resultado?.avisoPublicacion,
+          timer: r?.resultado?.avisoPublicacion ? undefined : 4000,
+        });
+      },
+      error: (err: any) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo aprobar la devolución:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se aprobó',
+          text: err?.error?.mensaje ?? 'Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+          width: 560,
         });
       }
     });

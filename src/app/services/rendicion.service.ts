@@ -105,6 +105,21 @@ export class RendicionService {
    * Si algo falla al publicar, la rendicion queda abierta tal cual estaba y
    * en contabilidad no se escribio nada — no existe el "medio publicada".
    */
+  /**
+   * Contabilidad aprueba un comprobante y con eso viaja al ERP.
+   *
+   * Es la contraparte del preCerrar: ese cierra la rendicion, este publica de
+   * a uno. Tampoco es de vuelta: lo que entra al ERP no se saca desde REGINA.
+   */
+  aprobarComprobante(idRendDet: number, userId?: number): Observable<PublicacionResultadoDTO> {
+    return this.http.post<PublicacionResultadoDTO>(
+      `${this.apiUrlProcess}rendicion/comprobante/${idRendDet}/aprobar`
+        + this.queryUsuario(userId),
+      null,
+      { headers: this.headers(), responseType: 'json' }
+    );
+  }
+
   preCerrar(req: PreCerrarRequest): Observable<PublicacionResultadoDTO> {
     return this.http.post<PublicacionResultadoDTO>(
       `${this.apiUrlProcess}rendicion/pre-cerrar`,

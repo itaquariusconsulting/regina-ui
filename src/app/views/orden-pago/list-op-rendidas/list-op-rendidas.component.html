@@ -166,19 +166,19 @@
                 <div class="det-titulo">
                   <i class="fa fa-receipt"></i> Comprobantes
                   <span class="det-contador" *ngIf="!cargandoComprobantes">
-                    {{ comprobantes.length }}
+                    {{ aprobadosEnRevision }} de {{ comprobantes.length }} en contabilidad
                     <em *ngIf="observadosEnRevision">· {{ observadosEnRevision }} observado(s)</em>
                   </span>
                 </div>
 
-                <!-- Mientras el comprobante viaje al ERP al cerrar la rendicion,
-                     observarlo no lo saca de alla. Cuando exista la aprobacion
-                     previa este texto deja de ser cierto y hay que cambiarlo. -->
+                <!-- El texto depende de si el comprobante ya viajo. Antes uno
+                     solo servia para todos porque todos viajaban al cerrar. -->
                 <div class="det-aviso" *ngIf="comprobantes.length">
                   <i class="fa fa-circle-info"></i>
-                  Observar <strong>no deshace el asiento</strong>: contabilidad ya lo tiene y
-                  sacarlo por atrás rompe el cuadre del mes. Queda registrado que no
-                  sustenta, con el motivo, para el descuento al personal.
+                  Nada llega a contabilidad hasta que lo apruebes acá.
+                  <strong>Observar detiene el envío</strong> de lo que todavía no viajó.
+                  Lo que ya tiene item no se puede sacar: ahí la observación solo deja
+                  registrado que no sustenta, para el descuento al personal.
                 </div>
 
                 <div class="det-cargando" *ngIf="cargandoComprobantes">
@@ -190,11 +190,18 @@
                 </div>
 
                 <div class="det-fila" *ngFor="let c of comprobantes"
-                     [class.observado]="estaObservado(c)">
+                     [class.observado]="estaObservado(c)"
+                     [class.pendiente]="esperaAprobacionComp(c)">
                   <div class="det-datos">
                     <div class="det-nombre">
                       {{ descripcion(c) }}
+                      <span class="det-marca pub" *ngIf="c.numItemOp">
+                        Item {{ c.numItemOp }}
+                      </span>
                       <span class="det-marca" *ngIf="estaObservado(c)">Observado</span>
+                      <span class="det-marca" *ngIf="esperaAprobacionComp(c)">
+                        Espera aprobación
+                      </span>
                     </div>
                     <div class="det-sub">
                       {{ c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor' }}
@@ -210,6 +217,12 @@
                     <button class="general-button btn-info btn-sm" *ngIf="tieneEscaneo(c)"
                             (click)="verComprobante(c)" title="Ver el comprobante escaneado">
                       <i class="fa fa-eye"></i> Ver
+                    </button>
+                    <button class="general-button btn-primary btn-sm"
+                            *ngIf="esperaAprobacionComp(c)"
+                            [disabled]="guardando" (click)="aprobarComprobante(c)"
+                            title="Enviar este comprobante a contabilidad">
+                      <i class="fa fa-check"></i> Aprobar
                     </button>
                     <button class="general-button btn-danger btn-sm" *ngIf="!estaObservado(c)"
                             [disabled]="guardando" (click)="observar(c)">
@@ -241,34 +254,97 @@
                   Sin planillas de movilidad en esta orden.
                 </div>
 
-                <div class="det-fila" *ngFor="let pl of planillas"
-                     [class.pendiente]="esperaAprobacion(pl)">
-                  <div class="det-datos">
-                    <div class="det-nombre">
-                      Planilla {{ pl.codPlanilla }}
-                      <span class="det-marca pub" *ngIf="yaTieneAsiento(pl)">
-                        Asiento emitido
-                      </span>
-                      <span class="det-marca" *ngIf="esperaAprobacion(pl)">
-                        Espera aprobación
-                      </span>
+                <div class="det-bloque" *ngFor="let pl of planillas">
+                  <div class="det-fila" [class.pendiente]="esperaAprobacion(pl)"
+                       [class.observado]="planillaObservada(pl)">
+                    <div class="det-datos">
+                      <div class="det-nombre">
+                        Planilla {{ pl.codPlanilla }}
+                        <span class="det-marca pub" *ngIf="yaTieneAsiento(pl)">
+                          Asiento emitido
+                        </span>
+                        <span class="det-marca" *ngIf="planillaObservada(pl)">Observada</span>
+                        <span class="det-marca" *ngIf="esperaAprobacion(pl)">
+                          Espera aprobación
+                        </span>
+                        <!-- Abierta quiere decir que el usuario todavia la puede
+                             editar. No hay nada que aprobar hasta que la cierre. -->
+                        <span class="det-marca sin"
+                              *ngIf="pl.statusPlanilla !== 'CE' && !yaTieneAsiento(pl)">
+                          Sin cerrar
+                        </span>
+                      </div>
+                      <div class="det-sub">
+                        {{ pl.fechaPlanilla | date:'dd-MM-yyyy' }}
+                        <span class="separador">·</span>
+                        S/ {{ (pl.total ?? pl.monto) | number:'1.2-2' }}
+                        <span class="separador" *ngIf="pl.glosa">·</span>
+                        {{ pl.glosa }}
+                      </div>
+                      <div class="det-motivo" *ngIf="planillaObservada(pl) && motivoPlanilla(pl)">
+                        {{ motivoPlanilla(pl) }}
+                      </div>
                     </div>
-                    <div class="det-sub">
-                      {{ pl.fechaPlanilla | date:'dd-MM-yyyy' }}
-                      <span class="separador">·</span>
-                      S/ {{ (pl.total ?? pl.monto) | number:'1.2-2' }}
-                      <span class="separador" *ngIf="pl.glosa">·</span>
-                      {{ pl.glosa }}
+
+                    <div class="det-acciones">
+                      <button class="general-button btn-info btn-sm"
+                              (click)="alternarViajes(pl)"
+                              title="Ver los viajes que componen el importe">
+                        <i class="fa" [ngClass]="viajesAbiertos(pl) ? 'fa-chevron-up' : 'fa-list'"></i>
+                        Viajes
+                      </button>
+                      <button class="general-button btn-danger btn-sm"
+                              *ngIf="pl.statusPlanilla === 'CE' && !yaTieneAsiento(pl)
+                                     && !planillaObservada(pl)"
+                              [disabled]="guardando" (click)="observarPlanilla(pl)"
+                              title="Marcar que algo no cuadra e impedir que se emita">
+                        <i class="fa fa-flag"></i> Observar
+                      </button>
+                      <button class="general-button btn-secondary btn-sm"
+                              *ngIf="planillaObservada(pl)"
+                              [disabled]="guardando" (click)="observarPlanilla(pl)"
+                              title="Quitar la observación si se puso por error">
+                        <i class="fa fa-rotate-left"></i> Levantar
+                      </button>
+                      <button class="general-button btn-primary btn-sm"
+                              *ngIf="esperaAprobacion(pl) && envioHabilitado"
+                              [disabled]="guardando" (click)="aprobarPlanilla(pl)"
+                              title="Emitir el asiento de esta planilla en contabilidad">
+                        <i class="fa fa-check"></i> Aprobar
+                      </button>
                     </div>
                   </div>
 
-                  <div class="det-acciones">
-                    <button class="general-button btn-primary btn-sm"
-                            *ngIf="esperaAprobacion(pl) && envioHabilitado"
-                            [disabled]="guardando" (click)="aprobarPlanilla(pl)"
-                            title="Emitir el asiento de esta planilla en contabilidad">
-                      <i class="fa fa-check"></i> Aprobar
-                    </button>
+                  <!-- Los viajes: de donde sale el importe que se aprueba. -->
+                  <div class="det-viajes" *ngIf="viajesAbiertos(pl)">
+                    <div class="det-cargando" *ngIf="cargandoViajes">
+                      <i class="fa fa-spinner fa-spin"></i> Cargando viajes...
+                    </div>
+
+                    <div class="det-vacio" *ngIf="!cargandoViajes && !viajesDe(pl).length">
+                      Esta planilla no tiene viajes registrados.
+                    </div>
+
+                    <table class="tabla-viajes" *ngIf="!cargandoViajes && viajesDe(pl).length">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Trayecto</th>
+                          <th>Motivo</th>
+                          <th>Ocupantes</th>
+                          <th class="text-end">Importe</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let v of viajesDe(pl)">
+                          <td>{{ v.fecItemPlanilla | date:'dd-MM-yyyy' }}</td>
+                          <td>{{ trayecto(v) }}</td>
+                          <td>{{ v.glosa }}</td>
+                          <td>{{ v.ocupantes || '—' }}</td>
+                          <td class="text-end">S/ {{ v.importe | number:'1.2-2' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -291,13 +367,19 @@
                   No hay depósitos de devolución registrados.
                 </div>
 
-                <div class="det-fila" *ngFor="let d of devoluciones">
+                <div class="det-fila" *ngFor="let d of devoluciones"
+                     [class.pendiente]="esperaAprobacionDev(d)"
+                     [class.observado]="d.indObservado === 'S'">
                   <div class="det-datos">
                     <div class="det-nombre">
                       Op. {{ d.numOperacion || 's/n' }}
                       <span class="det-marca pub" *ngIf="d.numOrdenDev">
-                        OP {{ d.numOrdenDev }}
+                        Orden {{ d.numOrdenDev }}
                       </span>
+                      <span class="det-marca" *ngIf="esperaAprobacionDev(d)">
+                        Espera aprobación
+                      </span>
+                      <span class="det-marca" *ngIf="d.indObservado === 'S'">Observado</span>
                       <span class="det-marca sin" *ngIf="!tieneVoucher(d)">Sin voucher</span>
                     </div>
                     <div class="det-sub">
@@ -307,12 +389,33 @@
                       <span class="separador">·</span>
                       S/ {{ d.impSoles | number:'1.2-2' }}
                     </div>
+                    <div class="det-motivo" *ngIf="d.indObservado === 'S' && d.motivoObs">
+                      {{ d.motivoObs }}
+                    </div>
                   </div>
 
                   <div class="det-acciones">
                     <button class="general-button btn-info btn-sm" *ngIf="tieneVoucher(d)"
                             (click)="verVoucher(d)" title="Ver el voucher del depósito">
                       <i class="fa fa-eye"></i> Ver voucher
+                    </button>
+                    <button class="general-button btn-danger btn-sm"
+                            *ngIf="!d.numOrdenDev && d.indObservado !== 'S'"
+                            [disabled]="guardando" (click)="observarDevolucion(d)"
+                            title="Marcar que algo no cuadra e impedir que se emita">
+                      <i class="fa fa-flag"></i> Observar
+                    </button>
+                    <button class="general-button btn-secondary btn-sm"
+                            *ngIf="d.indObservado === 'S'"
+                            [disabled]="guardando" (click)="observarDevolucion(d)"
+                            title="Quitar la observación si se puso por error">
+                      <i class="fa fa-rotate-left"></i> Levantar
+                    </button>
+                    <button class="general-button btn-primary btn-sm"
+                            *ngIf="esperaAprobacionDev(d)"
+                            [disabled]="guardando" (click)="aprobarDevolucion(d)"
+                            title="Emitir la orden de devolución en contabilidad">
+                      <i class="fa fa-check"></i> Aprobar
                     </button>
                   </div>
                 </div>

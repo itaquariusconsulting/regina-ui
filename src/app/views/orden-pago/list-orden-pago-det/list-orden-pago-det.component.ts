@@ -434,9 +434,10 @@ export class ListOrdenPagoDetComponent implements OnInit {
 
     const confirmacion = await Swal.fire({
       icon: 'warning',
-      title: '¿Enviar la rendición a contabilidad?',
+      title: '¿Enviar la rendición a revisión?',
       html: `<div style="text-align:left;font-size:0.9rem;">
-               <p>Se van a enviar <strong>${cuantos} comprobante(s)</strong>.</p>
+               <p>Se envían <strong>${cuantos} comprobante(s)</strong> a contabilidad
+                  para su revisión. Los van a aprobar uno por uno.</p>
                <p><strong>Después de esto no se puede modificar ni reabrir.</strong>
                   Si algo queda mal, lo tiene que corregir contabilidad.</p>
                <p class="text-muted" style="font-size:0.8rem;">
@@ -445,7 +446,7 @@ export class ListOrdenPagoDetComponent implements OnInit {
       input: 'text',
       inputPlaceholder: 'CERRAR',
       showCancelButton: true,
-      confirmButtonText: 'Enviar a contabilidad',
+      confirmButtonText: 'Enviar a revisión',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#dc3545',
       inputValidator: (valor) =>

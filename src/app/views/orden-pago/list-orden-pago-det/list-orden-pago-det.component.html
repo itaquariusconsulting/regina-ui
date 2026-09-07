@@ -23,14 +23,14 @@
     </span>
 
     <!--
-      Enviar a contabilidad. Es irreversible, asi que solo aparece mientras la
+      Enviar a revision. Es irreversible, asi que solo aparece mientras la
       rendicion esta en preparacion y tiene algo que enviar; la confirmacion
       fuerte esta en preCerrar().
     -->
     <button *ngIf="puedePreCerrar" (click)="preCerrar()"
             class="general-button btn-danger"
             title="Envía la rendición a contabilidad. Después de esto no se puede modificar ni reabrir.">
-      <i class="fas fa-paper-plane"></i>Enviar a contabilidad
+      <i class="fas fa-paper-plane"></i>Enviar a revisión
     </button>
 
     <button (click)="onBack()" class="general-button btn-secondary">

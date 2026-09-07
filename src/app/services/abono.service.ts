@@ -62,6 +62,36 @@ export class AbonoService {
     return this.http.post<Response>(`${this.base}/${idRendAbono}/archivo`, null, { params });
   }
 
+  /**
+   * Contabilidad aprueba el deposito y con eso se emite la orden en el ERP.
+   *
+   * No es idempotente: la primera llamada que prospera crea el documento
+   * contable. El servidor marca la aprobacion con candado antes de publicar,
+   * asi que un segundo intento vuelve 409 en vez de emitir otra orden.
+   */
+  aprobar(idRendAbono: number, userId?: number): Observable<Response> {
+    let params = new HttpParams();
+    if (userId != null) { params = params.set('userId', String(userId)); }
+    return this.http.post<Response>(`${this.base}/${idRendAbono}/aprobar`, null, { params });
+  }
+
+  /**
+   * Observa el depósito, o levanta la observación.
+   *
+   * Mientras esté observado, aprobar lo rechaza. Si la orden ya salió, la
+   * observación queda como constancia pero no deshace el asiento.
+   */
+  observar(idRendAbono: number, datos: {
+    codMotivo?: string; motivo?: string; levantar?: boolean; userId?: number;
+  }): Observable<Response> {
+    return this.http.post<Response>(`${this.base}/${idRendAbono}/observar`, {
+      codMotivo: datos.codMotivo ?? null,
+      motivo:    datos.motivo ?? null,
+      levantar:  !!datos.levantar,
+      userId:    datos.userId ?? null
+    });
+  }
+
   anular(idRendAbono: number, userId?: number): Observable<Response> {
     let params = new HttpParams();
     if (userId != null) { params = params.set('userId', String(userId)); }

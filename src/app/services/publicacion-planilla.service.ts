@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -36,7 +36,7 @@ export class PublicacionPlanillaService {
    * intento se rechaza con 409 en vez de duplicarla — pero no conviene
    * apoyarse en eso: el boton se bloquea mientras la llamada esta en curso.
    */
-  publicar(p: OrdenPagoCabPlanilla, tipoGasto?: string): Observable<Response> {
+  publicar(p: OrdenPagoCabPlanilla, tipoGasto?: string, userId?: number): Observable<Response> {
     return this.http.post<Response>(`${this.base}/publicar`, {
       codEmpresa:  p.codEmpresa,
       codSucursal: p.codSucursal,
@@ -44,7 +44,40 @@ export class PublicacionPlanillaService {
       codPeriodo:  p.codPeriodo,
       numOrden:    p.numOrden,
       codPlanilla: p.codPlanilla,
-      tipoGasto:   tipoGasto || ''
+      tipoGasto:   tipoGasto || '',
+      userId:      userId ?? null
     }, { headers: this.headers });
+  }
+
+  /**
+   * Observa la planilla, o levanta la observación.
+   *
+   * La observación vive en REGINA y no en la cabecera de la planilla, que es
+   * de contabilidad. Mientras esté observada, publicar la rechaza.
+   */
+  observar(p: OrdenPagoCabPlanilla, datos: {
+    codMotivo?: string; motivo?: string; levantar?: boolean; userId?: number;
+  }): Observable<Response> {
+    return this.http.post<Response>(`${this.base}/observar`, {
+      codEmpresa:  p.codEmpresa,
+      codSucursal: p.codSucursal,
+      anioPeriodo: p.anioPeriodo,
+      codPeriodo:  p.codPeriodo,
+      numOrden:    p.numOrden,
+      codPlanilla: p.codPlanilla,
+      codMotivo:   datos.codMotivo ?? null,
+      motivo:      datos.motivo ?? null,
+      levantar:    !!datos.levantar,
+      userId:      datos.userId ?? null
+    }, { headers: this.headers });
+  }
+
+  /** El estado de revisión de todas las planillas de una orden, por código. */
+  revisiones(codEmpresa: string, codSucursal: string, numOrden: string): Observable<Response> {
+    const params = new HttpParams()
+      .set('codEmpresa', codEmpresa)
+      .set('codSucursal', codSucursal)
+      .set('numOrden', numOrden);
+    return this.http.get<Response>(`${this.base}/revisiones`, { params, headers: this.headers });
   }
 }
