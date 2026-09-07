@@ -25,6 +25,7 @@ import { RegRenValidateService } from '../../../services/reg-ren-validate.servic
 import { RegRenValidate } from '../../../models/reg-ren-validate';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
+import { PublicacionPlanillaService } from '../../../services/publicacion-planilla.service';
 import { HttpStatusCode } from '@angular/common/http';
 
 /** field_code de la regla en REG_REN_VALIDATE para el importe máximo por día */
@@ -49,7 +50,8 @@ export class PlanillaMovilidadComponent implements OnInit {
     private dialog: MatDialog,
     private maestrosService: MaestrosService,
     private configService: ConfigService,
-    private regRenValidateService: RegRenValidateService
+    private regRenValidateService: RegRenValidateService,
+    private publicacionService: PublicacionPlanillaService
   ) {
     this.isLoading$ = this.loadingService.loading$;
   }
@@ -99,6 +101,7 @@ export class PlanillaMovilidadComponent implements OnInit {
       this.orden = state.data.orden;
     }
     this.isDesktop = this.deviceService.isDesktopDevice();
+    this.consultarEstadoEnvio();
     const user = sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')!) : null;
     this.codEmpresa = user?.codEmpresa || '';
     this.codAuxiliar = user?.codAuxiliar || '';
@@ -486,11 +489,78 @@ export class PlanillaMovilidadComponent implements OnInit {
     });
   }
 
+  /** Si el servidor tiene habilitado el envio a contabilidad. */
+  envioHabilitado = false;
+  private tipoGastoSugerido = '';
+  enviandoPlanilla = false;
+
+  private consultarEstadoEnvio(): void {
+    this.publicacionService.estado().subscribe({
+      next: (r: any) => {
+        this.envioHabilitado = !!r?.resultado?.activa;
+        this.tipoGastoSugerido = r?.resultado?.tipoGasto || '';
+      },
+      // Si no se puede saber, se asume apagado: no ofrecer algo que escribe
+      // asientos es siempre el error barato.
+      error: () => { this.envioHabilitado = false; }
+    });
+  }
+
+  /**
+   * Manda la planilla al ERP en cuanto queda cerrada, sin preguntar de nuevo.
+   *
+   * <p>Cerrar YA es la decision: el aviso del cierre dice que la planilla va a
+   * contabilidad, asi que un segundo "¿esta seguro?" solo agregaria un clic a
+   * algo que el usuario acaba de confirmar.
+   *
+   * <p>Va despues del cierre y no dentro: la planilla queda cerrada aunque el
+   * envio falle. Atarlas dejaria planillas abiertas por un problema del ERP
+   * que no tiene nada que ver con quien las cargo.
+   */
+  private enviarAContabilidad(planilla: OrdenPagoCabPlanilla): void {
+    if (!this.envioHabilitado || this.enviandoPlanilla) { return; }
+
+    this.enviandoPlanilla = true;
+
+    this.publicacionService.publicar(planilla, this.tipoGastoSugerido).subscribe({
+      next: (r: Response) => {
+        this.enviandoPlanilla = false;
+        this.getPlanillaMovilidad();
+        // Aviso breve y que se va solo: salio bien, no hay nada que decidir.
+        Swal.fire({
+          toast: true, position: 'top-end', icon: 'success',
+          title: r?.mensaje || 'Enviada a contabilidad',
+          showConfirmButton: false, timer: 5000
+        });
+      },
+      error: (err: any) => {
+        this.enviandoPlanilla = false;
+        // Este si para: la planilla quedo cerrada pero NO llego al ERP, y
+        // alguien tiene que enterarse. El backend manda el motivo —apagado,
+        // ya publicada, concepto inexistente— y ese texto sirve mas que un
+        // "error al enviar" generico.
+        this.dialog.open(ConfirmDialogComponent, {
+          width: '380px',
+          data: { title: 'Cerrada, pero no enviada', type: 'alert',
+                  message: (err?.error?.mensaje
+                        || 'No se pudo enviar la planilla a contabilidad.')
+                        + ' La planilla quedó cerrada y no se publicó nada en el ERP.' }
+        });
+      }
+    });
+  }
+
   onClosePlanillaMovilidad(planilla: OrdenPagoCabPlanilla): void {
     this.dialog.open(ConfirmDialogComponent, {
       width: '280px',
       data: { title: 'Cerrar Planilla',
-              message: `¿Estás seguro de cerrar la planilla ${planilla.codPlanilla}? Una vez cerrada no podrá editarse.`,
+              // El texto cambia segun el servidor tenga el envio encendido o
+              // no: prometer que va a contabilidad cuando esta apagado seria
+              // peor que no decirlo.
+              message: this.envioHabilitado
+                ? `¿Cerrar la planilla ${planilla.codPlanilla}? Se enviará a contabilidad `
+                  + `y no podrá editarse. Esta acción no se puede deshacer desde REGINA.`
+                : `¿Estás seguro de cerrar la planilla ${planilla.codPlanilla}? Una vez cerrada no podrá editarse.`,
               type: 'confirm' }
     }).afterClosed().subscribe(confirm => {
       if (!confirm) return;
@@ -513,7 +583,14 @@ export class PlanillaMovilidadComponent implements OnInit {
           }
           planilla.statusPlanilla = 'CE';
           this.planillaService.updatePlanillaMovilidad(planilla).subscribe({
-            next: () => this.getPlanillaMovilidad(),
+            next: () => {
+              this.getPlanillaMovilidad();
+              // Cerrar y publicar son dos pasos, no uno: la planilla queda
+              // cerrada aunque el envio se cancele o falle. Al reves —cerrar
+              // solo si el ERP acepta— dejaria planillas abiertas por un
+              // problema de contabilidad que no tiene nada que ver con ellas.
+              this.enviarAContabilidad(planilla);
+            },
             error: () => { planilla.statusPlanilla = 'PE'; }
           });
         },
