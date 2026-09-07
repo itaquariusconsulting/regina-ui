@@ -468,7 +468,7 @@ export class PlanillaMovilidadComponent implements OnInit {
     }).afterClosed().subscribe(confirm => {
       if (!confirm) return;
       this.loadingService.show();
-      this.planillaService.deletePlanillaMovilidad(planilla.codPlanilla!).subscribe({
+      this.planillaService.deletePlanillaMovilidad(planilla).subscribe({
         next: () => {
           this.planillas = this.planillas.filter(p => p.codPlanilla !== planilla.codPlanilla);
           this.loadingService.hide();

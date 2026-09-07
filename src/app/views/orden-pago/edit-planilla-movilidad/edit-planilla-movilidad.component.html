@@ -52,19 +52,15 @@
             <input type="number" class="form-control" [(ngModel)]="ordenPagoPlanillaMovilidadCab.maxNumViajes" [readonly]="viewOnly"/>
         </div>
         <div class="col-md-3">
-            <!-- De quien es la planilla. Se propone el responsable de la orden
-                 porque suele ser el, pero puede ser cualquiera del personal:
-                 viaja gente que no tiene la OP asignada. -->
-            <label class="form-label fw-semibold mb-2 d-block">Persona</label>
-            <div class="datepicker-container">
-                <input readonly type="text" class="form-control" [value]="personaTexto"
-                       placeholder="Quien realizo los viajes"
-                       [title]="personaTexto"/>
-                <button class="calendar-btn" (click)="openAuxiliaresModal()" type="button"
-                        [disabled]="viewOnly" title="Buscar persona">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
+            <!-- Informativo, no editable a proposito.
+                 Una planilla pertenece a una orden y hereda su responsable: no
+                 hay nada que elegir aca. A nombre de quien sale cada asiento lo
+                 deciden los OCUPANTES de cada viaje, que es otra cosa. Dejarlo
+                 editable haria creer que este campo manda sobre el asiento. -->
+            <label class="form-label fw-semibold mb-2 d-block">Responsable de la OP</label>
+            <input readonly disabled type="text" class="form-control"
+                   [value]="personaTexto"
+                   [title]="personaTexto"/>
         </div>
         <div class="col-md-3">
             <label class="form-label fw-semibold mb-2 d-block">Glosa</label>
