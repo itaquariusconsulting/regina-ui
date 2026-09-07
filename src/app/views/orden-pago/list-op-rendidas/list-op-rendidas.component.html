@@ -241,12 +241,16 @@
                   Sin planillas de movilidad en esta orden.
                 </div>
 
-                <div class="det-fila" *ngFor="let pl of planillas">
+                <div class="det-fila" *ngFor="let pl of planillas"
+                     [class.pendiente]="esperaAprobacion(pl)">
                   <div class="det-datos">
                     <div class="det-nombre">
                       Planilla {{ pl.codPlanilla }}
-                      <span class="det-marca pub" *ngIf="pl.statusPlanilla === 'AP'">
-                        En contabilidad
+                      <span class="det-marca pub" *ngIf="yaTieneAsiento(pl)">
+                        Asiento emitido
+                      </span>
+                      <span class="det-marca" *ngIf="esperaAprobacion(pl)">
+                        Espera aprobación
                       </span>
                     </div>
                     <div class="det-sub">
@@ -256,6 +260,15 @@
                       <span class="separador" *ngIf="pl.glosa">·</span>
                       {{ pl.glosa }}
                     </div>
+                  </div>
+
+                  <div class="det-acciones">
+                    <button class="general-button btn-primary btn-sm"
+                            *ngIf="esperaAprobacion(pl) && envioHabilitado"
+                            [disabled]="guardando" (click)="aprobarPlanilla(pl)"
+                            title="Emitir el asiento de esta planilla en contabilidad">
+                      <i class="fa fa-check"></i> Aprobar
+                    </button>
                   </div>
                 </div>
               </div>

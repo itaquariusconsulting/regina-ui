@@ -20,6 +20,7 @@ import { AbonoRendicion } from '../../../models/abono-rendicion';
 import { OrdenPagoPlanillaMovilidadCabService }
   from '../../../services/orden-pago-planilla-movilidad-cab.service';
 import { AbonoService } from '../../../services/abono.service';
+import { PublicacionPlanillaService } from '../../../services/publicacion-planilla.service';
 import { VisorDocumentoDialogComponent, VisorDocumentoData }
   from '../../../components/dialogs/visor-documento-dialog.component';
 
@@ -106,6 +107,7 @@ export class ListOpRendidasComponent implements OnInit {
     private observacionService: ObservacionService,
     private planillaService: OrdenPagoPlanillaMovilidadCabService,
     private abonoService: AbonoService,
+    private publicacionService: PublicacionPlanillaService,
     private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -120,6 +122,17 @@ export class ListOpRendidasComponent implements OnInit {
     this.observacionService.catalogoEstados().subscribe({
       next: (c) => this.estadosCatalogo = c ?? [],
       error: (e) => console.error('[op-rendidas] no se pudo cargar el catálogo de estados:', e)
+    });
+
+    // Si el servidor tiene apagada la emision de asientos, el boton de
+    // aprobar no se ofrece. Prometer algo que el backend va a rechazar es
+    // peor que no mostrarlo.
+    this.publicacionService.estado().subscribe({
+      next: (r: any) => {
+        this.envioHabilitado = !!r?.resultado?.activa;
+        this.tipoGastoSugerido = r?.resultado?.tipoGasto || '';
+      },
+      error: () => { this.envioHabilitado = false; }
     });
 
     this.buscar();
@@ -626,6 +639,84 @@ export class ListOpRendidasComponent implements OnInit {
   /** Cuántos comprobantes de la rendición abierta están observados. */
   get observadosEnRevision(): number {
     return this.comprobantes.filter(c => c.indObservado === 'S').length;
+  }
+
+  // --- emision del asiento de una planilla
+  envioHabilitado = false;
+  private tipoGastoSugerido = '';
+
+  /** Una planilla cerrada que todavia no tiene su asiento en contabilidad. */
+  esperaAprobacion(pl: OrdenPagoCabPlanilla): boolean {
+    return pl.statusPlanilla === 'CE';
+  }
+
+  yaTieneAsiento(pl: OrdenPagoCabPlanilla): boolean {
+    return pl.statusPlanilla === 'AP';
+  }
+
+  /**
+   * Aprueba la planilla y emite su asiento.
+   *
+   * <p>La planilla ya vive en la base de contabilidad desde que se grabo:
+   * lo que estaba esperando era el ASIENTO, no la planilla. Por eso este
+   * boton no manda nada nuevo alla, sino que autoriza el item que descarga
+   * la entrega a rendir.
+   *
+   * <p>No es reversible desde REGINA y por eso se pregunta. El servidor toma
+   * la planilla con un candado antes de escribir, asi que un segundo intento
+   * se rechaza en vez de duplicar el asiento; pero el boton igual se bloquea
+   * mientras la llamada esta en curso, porque apoyarse solo en el candado
+   * significa depender de que el error llegue bien.
+   */
+  aprobarPlanilla(pl: OrdenPagoCabPlanilla): void {
+    if (!this.esperaAprobacion(pl) || this.guardando) { return; }
+
+    Swal.fire({
+      icon: 'question',
+      title: `¿Aprobar la planilla ${pl.codPlanilla}?`,
+      html: `<div style="text-align:left;font-size:0.88rem;color:#555;">
+               Se emite el asiento en contabilidad por
+               <b>S/ ${(pl.total ?? pl.monto ?? 0).toFixed(2)}</b>.
+               No se puede deshacer desde REGINA.
+             </div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Aprobar y emitir',
+      cancelButtonText: 'Cancelar',
+    }).then((r) => {
+      if (!r.isConfirmed) { return; }
+      this.emitirAsiento(pl);
+    });
+  }
+
+  private emitirAsiento(pl: OrdenPagoCabPlanilla): void {
+    this.guardando = true;
+
+    this.publicacionService.publicar(pl, this.tipoGastoSugerido).subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        // Se marca en la fila que ya esta en pantalla en vez de recargar
+        // todo: contabilidad aprueba varias seguidas y volver al servidor
+        // por cada una la haria esperar sin motivo.
+        pl.statusPlanilla = 'AP';
+
+        Swal.fire({
+          toast: true, position: 'top-end', icon: 'success',
+          title: r?.mensaje || 'Asiento emitido',
+          showConfirmButton: false, timer: 4000, timerProgressBar: true,
+        });
+      },
+      error: (err: any) => {
+        this.guardando = false;
+        console.error('[op-rendidas] no se pudo emitir el asiento:', err);
+        Swal.fire({
+          icon: err?.status === 409 ? 'warning' : 'error',
+          title: 'No se emitió el asiento',
+          text: err?.error?.mensaje
+             ?? 'La planilla quedó como estaba. Intentá de nuevo en unos minutos.',
+          confirmButtonText: 'Entendido',
+        });
+      }
+    });
   }
 
   /**

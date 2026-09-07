@@ -180,6 +180,13 @@ tr.fila-detalle > td {
     border-color: #ffdca8;
     background: #fffaf2;
   }
+
+  /* Lo que todavia espera una decision se distingue de lo ya resuelto: si
+     todo se ve igual, hay que leer cada marca para saber que falta. */
+  &.pendiente {
+    border-color: #cfe0f7;
+    background: #f6faff;
+  }
 }
 
 .det-datos { flex: 1; min-width: 0; }
