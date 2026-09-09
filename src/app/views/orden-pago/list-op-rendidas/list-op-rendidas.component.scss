@@ -340,3 +340,32 @@ tr.fila-detalle > td {
 }
 
 .recep-nada { color: #cbd5e1; }
+
+/* Aviso de planillas abiertas sin viajes. Va pegado al importe y no como
+   fila aparte: es un detalle del mismo numero, no otro dato. */
+.mov-vacias {
+  margin-left: .35rem;
+  color: #d39e00;
+}
+
+/* Estado que devolvio SUNAT para el comprobante. Va en la misma linea del
+   proveedor: es un dato de identidad del documento, no una accion. */
+.sunat-marca {
+  font-weight: 600;
+  &.sunat-ok   { color: #1e7e34; }
+  &.sunat-mal  { color: #c82333; }
+  &.sunat-nada { color: #6c757d; }
+}
+
+/* Bruto / neto / IGV / exonerado. Una linea aparte y en menor jerarquia que
+   el proveedor: se lee cuando hace falta cuadrar, no en cada pasada. */
+.det-fiscal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem 1rem;
+  margin-top: .15rem;
+  font-size: .78rem;
+  color: #4b5563;
+
+  em { font-style: normal; color: #6c757d; }
+}

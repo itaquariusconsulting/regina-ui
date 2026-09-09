@@ -73,6 +73,15 @@ export class RendicionDetDTO extends OrdenPagoDetDTO {
   /** 'S' | 'N' */
   indIngresoManual?: string;
 
+  /**
+   * Estado y condición del RUC del emisor, según la caché de SUNAT.
+   *
+   * Los llena el backend al listar; no se guardan con el comprobante. Vacío
+   * significa que ese RUC nunca se consultó, no que el proveedor esté mal.
+   */
+  estRucSunat?: string;
+  condRucSunat?: string;
+
   /** Observación de contabilidad. NULL = nadie lo revisó todavía. */
   indObservado?: string;
   codMotivoObs?: string;

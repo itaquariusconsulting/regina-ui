@@ -136,3 +136,27 @@
   top: 0;
   z-index: 2;
 }
+
+/* Aviso de que la impresion masiva no se lleva todo lo listado. */
+.pm-aviso {
+  margin: .6rem 0;
+  padding: .5rem .75rem;
+  border-left: 3px solid #ffc107;
+  background: #fff9e6;
+  border-radius: .25rem;
+  font-size: .82rem;
+  color: #6b5900;
+}
+
+/* Estado de la planilla. Tres estados y tres colores: abierta todavia se
+   edita, cerrada espera a contabilidad, y en contabilidad ya tiene asiento. */
+.pm-estado {
+  display: inline-block;
+  padding: .05rem .45rem;
+  border-radius: 1rem;
+  font-size: .72rem;
+  font-weight: 600;
+}
+.pm-est-abierta { background: #eceff1; color: #546e7a; }
+.pm-est-espera  { background: #fff3cd; color: #856404; }
+.pm-est-ok      { background: #d4edda; color: #155724; }

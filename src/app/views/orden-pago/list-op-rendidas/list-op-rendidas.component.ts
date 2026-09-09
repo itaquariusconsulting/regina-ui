@@ -1177,6 +1177,145 @@ export class ListOpRendidasComponent implements OnInit {
     this.paginar();
   }
 
+  // ------------------------------------------------- desglose del comprobante
+
+  /**
+   * Lo que SUNAT respondió sobre el comprobante, en palabras.
+   *
+   * EST_SUNAT guarda el estadoCp tal cual lo devolvió SUNAT: un dígito. El
+   * catálogo es el mismo que usa la pantalla de carga, repetido acá a
+   * propósito y no importado: son cinco valores que SUNAT no cambia, y
+   * compartirlos obligaría a arrastrar media pantalla de rendición.
+   */
+  estadoSunatTexto(c: RendicionDetDTO): string {
+    const catalogo: Record<string, string> = {
+      '0': 'No existe en SUNAT',
+      '1': 'Aceptado',
+      '2': 'Anulado',
+      '3': 'Autorizado',
+      '4': 'No autorizado',
+    };
+    const cod = (c.estSunat ?? '').toString().trim();
+    if (!cod) {
+      return c.indIngresoManual === 'S' ? 'Cargado a mano' : 'Sin validar';
+    }
+    return catalogo[cod] ?? `Estado ${cod}`;
+  }
+
+  /** Verde solo lo que sustenta; el resto en rojo, y gris lo no validado. */
+  claseSunat(c: RendicionDetDTO): string {
+    const cod = (c.estSunat ?? '').toString().trim();
+    if (!cod) {
+      return 'sunat-nada';
+    }
+    return cod === '1' || cod === '3' ? 'sunat-ok' : 'sunat-mal';
+  }
+
+  /**
+   * Bruto, neto, IGV y exonerado de un comprobante.
+   *
+   * <p>Contabilidad venía sacando estos cuatro números a mano de cada
+   * comprobante para armar el registro de compras. Salen de lo que ya está
+   * guardado; acá solo se ordenan.
+   *
+   * <p>La casuística es la de los datos reales, no la del caso feliz:
+   *
+   * <ul>
+   *   <li>La tasa se guardó unas veces como fracción (0.18) y otras como
+   *       porcentaje (18). Se acepta cualquiera de las dos.</li>
+   *   <li>Los comprobantes viejos no tienen base imponible: nadie la
+   *       calculaba. Se deriva del bruto y la tasa.</li>
+   *   <li>Una base imponible mayor que el bruto es un dato roto —pasa cuando
+   *       alguien editó el importe y no se recalculó— y se descarta en vez de
+   *       mostrar un IGV negativo.</li>
+   *   <li>Sin tasa, todo el gravado es neto y el IGV queda en cero: es el
+   *       caso del recibo por honorarios y del documento interno.</li>
+   * </ul>
+   */
+  desglose(c: RendicionDetDTO): { bruto: number; neto: number; igv: number;
+                                  exonerado: number; tasa: number } {
+
+    const bruto = this.aNumero(c.impSoles);
+    const exonerado = Math.min(Math.max(this.aNumero(c.impExonSoles), 0), bruto);
+    const gravado = Math.max(bruto - exonerado, 0);
+
+    let tasa = this.aNumero(c.igvTasa);
+    if (tasa > 1) {
+      tasa = tasa / 100;      // se guardó como 18 y no como 0.18
+    }
+    if (tasa < 0 || tasa > 1) {
+      tasa = 0;
+    }
+
+    const guardado = this.aNumero(c.impImponSoles);
+    const sirve = guardado > 0 && guardado <= gravado + 0.01;
+
+    const neto = sirve ? guardado
+                       : (tasa > 0 ? gravado / (1 + tasa) : gravado);
+
+    const igv = Math.max(gravado - neto, 0);
+
+    return {
+      bruto: this.redondear(bruto),
+      neto: this.redondear(neto),
+      igv: this.redondear(igv),
+      exonerado: this.redondear(exonerado),
+      tasa: this.redondear(tasa * 100),
+    };
+  }
+
+  /**
+   * Estado y condición del RUC del emisor, en una frase.
+   *
+   * <p>Devuelve null cuando ese RUC nunca se consultó: no es lo mismo que un
+   * proveedor con problemas, y pintar algo rojo por falta de dato haría que
+   * contabilidad observara comprobantes que están bien.
+   *
+   * <p>"NO HABIDO" contiene "HABIDO", así que el descarte va primero. Lo
+   * mismo con los estados de baja, que SUNAT devuelve con texto libre
+   * ("BAJA DE OFICIO", "SUSPENSION TEMPORAL"): cualquiera que no diga ACTIVO
+   * se muestra tal cual en vez de traducirse a una etiqueta inventada.
+   */
+  fichaRuc(c: RendicionDetDTO): { texto: string; clase: string } | null {
+    const estado = (c.estRucSunat ?? '').trim().toUpperCase();
+    const condicion = (c.condRucSunat ?? '').trim().toUpperCase();
+
+    if (!estado && !condicion) {
+      return null;
+    }
+
+    const activo = estado.includes('ACTIVO') && !estado.includes('NO ACTIVO');
+    const habido = condicion.includes('HABIDO') && !condicion.includes('NO HABIDO');
+
+    if (estado && condicion && activo && habido) {
+      return { texto: 'RUC activo y habido', clase: 'sunat-ok' };
+    }
+
+    const partes: string[] = [];
+    if (estado && !activo) { partes.push(`RUC ${estado.toLowerCase()}`); }
+    if (condicion && !habido) { partes.push(condicion.toLowerCase()); }
+
+    if (partes.length) {
+      return { texto: partes.join(' · '), clase: 'sunat-mal' };
+    }
+
+    // Se sabe una de las dos y está bien; la otra no se consultó.
+    return {
+      texto: activo ? 'RUC activo' : 'RUC habido',
+      clase: 'sunat-ok',
+    };
+  }
+
+  /** Number() que devuelve 0 ante vacío, null o texto, en vez de NaN. */
+  private aNumero(valor: any): number {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private redondear(v: number): number {
+    return Math.round((v + Number.EPSILON) * 100) / 100;
+  }
+
   // ------------------------------------------------------------ presentación
 
   /** Lo rendido, en la moneda de la orden. */
@@ -1192,6 +1331,26 @@ export class ListOpRendidasComponent implements OnInit {
    */
   diferencia(op: OpRendida): number {
     return (op.impOrdPago ?? 0) - this.importeRendido(op);
+  }
+
+  /**
+   * Qué hay detrás del monto de movilidad, para el tooltip de la grilla.
+   *
+   * Se dice cuántas planillas y cuántos viajes porque el importe solo no
+   * alcanza para saber si falta cargar algo: dos planillas con un viaje cada
+   * una y una planilla con dos viajes dan el mismo total.
+   */
+  tituloMovilidad(op: OpRendida): string {
+    const planillas = op.numPlanillas ?? 0;
+    const viajes = op.numViajes ?? 0;
+
+    let texto = `${planillas} planilla${planillas === 1 ? '' : 's'}`
+              + `, ${viajes} viaje${viajes === 1 ? '' : 's'}`;
+
+    if (op.planillasSinViajes) {
+      texto += ` — ${op.planillasSinViajes} sin viajes cargados`;
+    }
+    return texto;
   }
 
   estaLiquidada(op: OpRendida): boolean {

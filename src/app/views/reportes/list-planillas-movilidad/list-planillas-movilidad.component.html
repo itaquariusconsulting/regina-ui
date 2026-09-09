@@ -15,6 +15,14 @@
       </span>
     </div>
     <div class="d-flex gap-2">
+      <!-- El formato oficial, el mismo que se firma. Se arma acá y no en la
+           pantalla del que rinde porque contabilidad revisa por rango, no
+           por orden. -->
+      <button (click)="imprimirTodas()" class="general-button btn-primary"
+              [disabled]="!planillas.length || imprimiendo"
+              title="Formato oficial de todas las planillas del rango, una hoja por planilla">
+        <i class="fa fa-file-pdf"></i>Formato
+      </button>
       <button (click)="descargarCsv()" class="general-button btn-secondary"
               [disabled]="!planillas.length">
         <i class="fa fa-download"></i>CSV
@@ -98,7 +106,9 @@
           <th class="text-center">Planilla</th>
           <th *ngIf="admin">Persona</th>
           <th class="text-center">Viajes</th>
-          <th class="text-end">Total S/</th>
+          <th class="text-end">Gastado S/</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Formato</th>
         </tr>
       </thead>
       <tbody>
@@ -111,10 +121,34 @@
             <small class="d-block text-muted">{{ p.codAuxiliar }}</small>
           </td>
           <td class="text-center">{{ p.viajes }}</td>
-          <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
+          <!-- Lo gastado, no el tope declarado: son distintos y el que cuadra
+               con el asiento es este. El tope queda en el tooltip. -->
+          <td class="text-end"
+              [title]="'Tope declarado S/ ' + (p.total | number:'1.2-2')">
+            {{ gastadoDe(p) | number:'1.2-2' }}
+          </td>
+          <td class="text-center">
+            <span class="pm-estado" [ngClass]="estadoClase(p)">{{ estadoTexto(p) }}</span>
+          </td>
+          <td class="text-center">
+            <button class="general-button btn-secondary btn-sm"
+                    [disabled]="imprimiendo"
+                    (click)="imprimir(p)"
+                    title="Imprimir el formato oficial de esta planilla">
+              <i class="fa fa-print"></i>
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Que se sepa antes de imprimir, no después de mirar el PDF y contar. -->
+  <div class="pm-aviso" *ngIf="fueraDeImpresion">
+    <i class="fa fa-circle-info"></i>
+    El formato masivo imprime las primeras {{ MAX_IMPRESION }} planillas del
+    rango; quedan {{ fueraDeImpresion }} fuera. Acotá las fechas para
+    llevarlas todas.
   </div>
 
   <div class="pm-vacio" *ngIf="buscoAlgunaVez && !planillas.length && !huboError">

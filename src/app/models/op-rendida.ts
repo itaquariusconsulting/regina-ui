@@ -46,6 +46,16 @@ export class OpRendida {
   fecLiquida?: string;
   /** Comprobantes que contabilidad marcó como que no sustentan. */
   observados?: number;
+
+  /**
+   * Gasto de movilidad de la orden: la suma de los viajes de todas sus
+   * planillas, estén todavía en REGINA o ya publicadas en el ERP.
+   */
+  impMovilidad?: number;
+  numPlanillas?: number;
+  numViajes?: number;
+  /** Planillas abiertas sin un solo viaje cargado. */
+  planillasSinViajes?: number;
 }
 
 /** Los filtros de la pantalla. Vacío quiere decir "no filtrar por esto". */

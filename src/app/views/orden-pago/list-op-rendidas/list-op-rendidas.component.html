@@ -63,6 +63,7 @@
         <th class="text-center">Fecha OP</th>
         <th class="text-center">Rendida el</th>
         <th class="text-center">Compr.</th>
+        <th class="text-end">Movilidad</th>
         <th class="text-end">Entregado</th>
         <th class="text-end">Rendido</th>
         <th class="text-end">Diferencia</th>
@@ -83,6 +84,22 @@
           <td class="text-center">{{ op.fecOrden | date: 'dd-MM-yyyy' }}</td>
           <td class="text-center">{{ op.fecRendicion | date: 'dd-MM-yyyy' }}</td>
           <td class="text-center">{{ op.numComprobantes ?? '-' }}</td>
+
+          <!-- Contabilidad venía abriendo el detalle de cada orden solo para
+               ver este número. El aviso amarillo son planillas abiertas sin
+               un solo viaje: no suman nada y hay que limpiarlas. -->
+          <td class="text-end">
+            <ng-container *ngIf="op.numPlanillas">
+              <span [title]="tituloMovilidad(op)">
+                S/ {{ op.impMovilidad | number: '1.2-2' }}
+              </span>
+              <small class="mov-vacias" *ngIf="op.planillasSinViajes"
+                     [title]="(op.planillasSinViajes || 0) + ' planilla(s) sin viajes cargados'">
+                <i class="fa fa-triangle-exclamation"></i>
+              </small>
+            </ng-container>
+            <small class="text-muted" *ngIf="!op.numPlanillas">—</small>
+          </td>
           <td class="text-end">{{ op.desMoneda }} {{ op.impOrdPago | number: '1.2-2' }}</td>
           <td class="text-end">{{ op.desMoneda }} {{ importeRendido(op) | number: '1.2-2' }}</td>
 
@@ -146,7 +163,7 @@
              mismo gesto en todas: mirar el documento y, si no cuadra,
              observarlo. -->
         <tr class="fila-detalle" *ngIf="estaDesplegada(op)">
-          <td colspan="12">
+          <td colspan="13">
             <div class="det-caja">
 
               <div class="det-cabecera">
@@ -205,8 +222,32 @@
                     </div>
                     <div class="det-sub">
                       {{ c.razonSocialEmisor || c.rucEmisor || 'Sin proveedor' }}
+                      <ng-container *ngIf="c.razonSocialEmisor && c.rucEmisor">
+                        <span class="separador">·</span> RUC {{ c.rucEmisor }}
+                      </ng-container>
                       <span class="separador">·</span>
-                      S/ {{ c.impSoles | number:'1.2-2' }}
+                      <span class="sunat-marca" [ngClass]="claseSunat(c)">
+                        {{ estadoSunatTexto(c) }}
+                      </span>
+                      <ng-container *ngIf="fichaRuc(c) as ruc">
+                        <span class="separador">·</span>
+                        <span class="sunat-marca" [ngClass]="ruc.clase">{{ ruc.texto }}</span>
+                      </ng-container>
+                    </div>
+
+                    <!-- Los cuatro números del registro de compras. Contabilidad
+                         los venía sacando a mano de cada comprobante. Una sola
+                         llamada a desglose() por fila: el resto sale del alias. -->
+                    <div class="det-fiscal" *ngIf="desglose(c) as d">
+                      <span>Bruto <strong>S/ {{ d.bruto | number:'1.2-2' }}</strong></span>
+                      <span>Neto S/ {{ d.neto | number:'1.2-2' }}</span>
+                      <span>
+                        IGV S/ {{ d.igv | number:'1.2-2' }}
+                        <em *ngIf="d.tasa">({{ d.tasa }}%)</em>
+                      </span>
+                      <span *ngIf="d.exonerado">
+                        Exonerado S/ {{ d.exonerado | number:'1.2-2' }}
+                      </span>
                     </div>
                     <div class="det-motivo" *ngIf="estaObservado(c) && c.motivoObs">
                       {{ c.motivoObs }}
@@ -427,7 +468,7 @@
         </ng-container>
 
         <tr *ngIf="buscoAlgunaVez && !rendidas.length">
-          <td colspan="12" class="text-center text-muted py-4">
+          <td colspan="13" class="text-center text-muted py-4">
             No hay órdenes rendidas con esos filtros.
           </td>
         </tr>

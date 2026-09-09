@@ -586,6 +586,26 @@
                     (ngModelChange)="setIgvPercent($event)"
                     (blur)="onIgvPercentBlur()"
                     title="Porcentaje de IGV a aplicar (por defecto 18%)" />
+
+                <!-- Atajos para las dos tasas que se usan todos los dias. El
+                     input de arriba sigue aceptando cualquier valor. -->
+                <div class="igv-atajos">
+                    <button type="button" class="igv-chip"
+                            [class.activo]="tasaIgvEs(TASA_GENERAL)"
+                            (click)="aplicarTasaIgv(TASA_GENERAL)"
+                            title="Tasa general">18%</button>
+                    <button type="button" class="igv-chip"
+                            [class.activo]="tasaIgvEs(TASA_RESTAURANTES)"
+                            (click)="aplicarTasaIgv(TASA_RESTAURANTES)"
+                            title="Restaurantes y hoteles">10.5%</button>
+                </div>
+
+                <!-- Pista, no regla: SUNAT no da el giro en la ficha del RUC,
+                     asi que se mira el nombre del emisor y decide el usuario. -->
+                <small class="igv-pista" *ngIf="sugiereTasaReducida">
+                    <i class="fa fa-circle-info"></i>
+                    ¿Restaurante u hotel? Podría ir al 10.5%.
+                </small>
             </div>
             <div class="col-md-1">
                 <label class="form-label fw-semibold mb-2 d-block">

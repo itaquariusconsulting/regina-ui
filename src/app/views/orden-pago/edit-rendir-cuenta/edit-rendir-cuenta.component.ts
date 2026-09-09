@@ -3698,6 +3698,55 @@ export class EditRendirCuentaComponent implements OnInit {
     this.onIgvPercentChange();
   }
 
+  /** Las dos tasas que se usan en la practica. El input sigue libre. */
+  readonly TASA_GENERAL = 18;
+  readonly TASA_RESTAURANTES = 10.5;
+
+  /**
+   * Fija la tasa de un toque, sin tipear.
+   *
+   * <p>El input de % IGV sigue estando y sigue aceptando cualquier valor:
+   * esto es un atajo para los dos casos que se repiten todos los dias.
+   */
+  aplicarTasaIgv(valor: number): void {
+    this.igvPercent = valor;
+    this.onIgvPercentChange();
+  }
+
+  /** true si la tasa cargada es esa, con tolerancia por el redondeo. */
+  tasaIgvEs(valor: number): boolean {
+    return Math.abs((Number(this.igvPercent) || 0) - valor) < 0.005;
+  }
+
+  /**
+   * Avisa cuando el proveedor parece un restaurante o un hotel y la tasa
+   * cargada sigue siendo la general.
+   *
+   * <p>Es una PISTA y no una regla: se mira el nombre del emisor porque
+   * SUNAT no nos da el giro en la ficha del RUC —la actividad economica solo
+   * viene por establecimiento anexo— y adivinar el giro para despues cambiar
+   * el impuesto solo seria peor que no decir nada. El usuario decide.
+   */
+  get sugiereTasaReducida(): boolean {
+    if (!this.tasaIgvEs(this.TASA_GENERAL)) {
+      return false;
+    }
+
+    const nombre = `${this.padronRuc?.razonSocial ?? ''} `
+                 + `${this.padronRuc?.nombreComercial ?? ''}`;
+    const texto = nombre.trim().toUpperCase();
+
+    if (!texto) {
+      return false;
+    }
+
+    const pistas = ['RESTAURANT', 'RESTOBAR', 'CEVICHER', 'POLLER', 'CHIFA',
+                    'PIZZER', 'CAFETER', 'SANGUCHER', 'JUGUER', 'HOTEL',
+                    'HOSPEDAJE', 'HOSTAL', 'ALOJAMIENTO', 'CATERING'];
+
+    return pistas.some(p => texto.includes(p));
+  }
+
   /**
    * Al perder foco redondea a 2 decimales y recalcula. Esto fuerza que el
    * input muestre "18.00" aunque el usuario haya tecleado "18".
