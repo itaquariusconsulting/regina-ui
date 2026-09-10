@@ -53,13 +53,36 @@ pipeline {
                     // en Windows esos escriben las rutas de subcarpetas con barra
                     // invertida (assets\config.ini) y Tomcat no las encuentra.
                     // Sintoma: los bundles de la raiz cargan y assets/ y media/ dan 404.
+                    // El temporal de 'jar' va al workspace y no a %TEMP%.
+                    //
+                    // jar arma el archivo en el temp del sistema y al terminar
+                    // lo borra. En Windows Server ese borrado falla cada tanto
+                    // -"el proceso no tiene acceso al archivo"- porque el
+                    // antivirus todavia lo tiene abierto escaneandolo. Es
+                    // intermitente y tumba el build despues de compilar.
+                    //
+                    // Se reintenta tres veces porque el bloqueo dura segundos:
+                    // volver a lanzar el pipeline entero por esto cuesta cinco
+                    // minutos de compilacion que ya estaban hechos.
                     bat """
                         @echo off
                         if exist "%WORKSPACE%\\%WAR_NAME%.war" del /F /Q "%WORKSPACE%\\%WAR_NAME%.war"
+                        if not exist "%WORKSPACE%\\_tmp" mkdir "%WORKSPACE%\\_tmp"
+                        set "TMP=%WORKSPACE%\\_tmp"
+                        set "TEMP=%WORKSPACE%\\_tmp"
                         set "JARX=jar"
                         if exist "%JAVA_HOME%\\bin\\jar.exe" set "JARX=%JAVA_HOME%\\bin\\jar.exe"
                         cd /d "%WORKSPACE%\\${dir}"
-                        "%JARX%" -cf "%WORKSPACE%\\%WAR_NAME%.war" .
+                        for /L %%i in (1,1,3) do (
+                            "%JARX%" -cf "%WORKSPACE%\\%WAR_NAME%.war" .
+                            if exist "%WORKSPACE%\\%WAR_NAME%.war" goto :listo
+                            echo Intento %%i fallido al empaquetar. Reintento en 5 segundos.
+                            timeout /t 5 /nobreak >nul
+                        )
+                        echo No se pudo empaquetar el WAR despues de tres intentos.
+                        exit /b 1
+                        :listo
+                        echo WAR empaquetado.
                     """
                     bat """
                         @echo off
