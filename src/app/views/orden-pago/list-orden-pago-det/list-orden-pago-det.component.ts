@@ -608,6 +608,55 @@ export class ListOrdenPagoDetComponent implements OnInit {
    * El maestro queda de respaldo para las rendiciones viejas, que no tienen
    * ese dato.
    */
+  /**
+   * Lo que SUNAT respondió sobre el comprobante, en palabras.
+   *
+   * <p>Contabilidad lo pidió acá: al revisar una rendición necesita ver de un
+   * vistazo cuáles pasaron la validación, sin abrir uno por uno.
+   *
+   * <p>ACEPTADO y AUTORIZADO son los dos que sustentan —el segundo es el de
+   * los comprobantes de sistemas autorizados— y los dos se muestran como
+   * "Aceptado", que es como los nombra el contador. El matiz queda en el
+   * tooltip para quien lo necesite.
+   */
+  estadoSunatTexto(reg: RendicionDetDTO): string {
+    const cod = (reg.estSunat ?? '').toString().trim();
+
+    switch (cod) {
+      case '1':
+      case '3': return 'Aceptado';
+      case '0': return 'No existe';
+      case '2': return 'Anulado';
+      case '4': return 'No autorizado';
+      default:
+        return reg.indIngresoManual === 'S' ? 'Cargado a mano' : 'Sin validar';
+    }
+  }
+
+  /** Verde solo lo que sustenta; rojo lo rechazado; gris lo no validado. */
+  claseSunat(reg: RendicionDetDTO): string {
+    const cod = (reg.estSunat ?? '').toString().trim();
+    if (!cod) { return 'sunat-nada'; }
+    return (cod === '1' || cod === '3') ? 'sunat-ok' : 'sunat-mal';
+  }
+
+  /** El detalle fino, para el que quiera saber por qué dice lo que dice. */
+  tituloSunat(reg: RendicionDetDTO): string {
+    const cod = (reg.estSunat ?? '').toString().trim();
+
+    switch (cod) {
+      case '1': return 'SUNAT lo devolvió como ACEPTADO';
+      case '3': return 'SUNAT lo devolvió como AUTORIZADO';
+      case '0': return 'SUNAT no encuentra este comprobante';
+      case '2': return 'El comprobante fue anulado en SUNAT';
+      case '4': return 'SUNAT no lo tiene autorizado';
+      default:
+        return reg.indIngresoManual === 'S'
+            ? 'Se cargó a mano porque SUNAT no respondía; no está validado'
+            : 'Todavía no se validó contra SUNAT';
+    }
+  }
+
   rucDelComprobante(reg: RendicionDetDTO): string {
     const delDocumento = (reg.rucEmisor ?? '').trim();
     if (delDocumento) {

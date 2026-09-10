@@ -208,3 +208,18 @@ app-pdf-viewer.pdf-doc-viewer {
   font-style: italic;
   padding: 6px 2px 14px;
 }
+
+/* Estado del comprobante en SUNAT. Verde lo que sustenta, rojo lo rechazado,
+   gris lo que todavia nadie valido: son tres situaciones distintas y la del
+   medio es la unica que obliga a hacer algo. */
+.sunat-marca {
+  display: inline-block;
+  padding: .05rem .45rem;
+  border-radius: 1rem;
+  font-size: .72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sunat-ok   { background: #d4edda; color: #155724; }
+.sunat-mal  { background: #f8d7da; color: #721c24; }
+.sunat-nada { background: #eceff1; color: #546e7a; }

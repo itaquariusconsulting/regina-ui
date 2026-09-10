@@ -335,21 +335,33 @@
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
-            <input maxlength="11" (input)="ruccompleto()"
-                (ngModelChange)="onRucManualChange($event)"
-                class="form-control general-input" name="ruc" id="ruc"
-                [(ngModel)]="ruc" />
+            <div class="input-group">
+                <input maxlength="11" (input)="ruccompleto()"
+                    (ngModelChange)="onRucManualChange($event)"
+                    class="form-control general-input" name="ruc" id="ruc"
+                    [(ngModel)]="ruc" />
+                <!-- Para cuando el proveedor no es el que se esperaba, o el
+                     estado dice algo raro: la ficha completa acá adentro, sin
+                     tener que salir a la página de SUNAT. -->
+                <button type="button" class="btn btn-outline-secondary"
+                        [disabled]="consultandoFicha"
+                        title="Consultar la ficha del RUC en SUNAT"
+                        (click)="consultarFichaRuc()">
+                    <i class="fas" [ngClass]="consultandoFicha ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i>
+                </button>
+            </div>
         </div>
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">
-                Proveedor
-                <small *ngIf="mostrarBadgeComercial"
-                       class="text-muted ms-1"
-                       style="cursor: pointer; text-decoration: underline dotted;"
-                       [title]="tituloBadgeComercial"
-                       (click)="mostrarRazonSocial()">
-                    (nombre comercial)
+                Proveedor <small class="text-muted">(razón social)</small>
+                <!-- El nombre comercial es lo que la gente reconoce, así que
+                     se muestra al lado. Pero el campo lleva la razón social,
+                     que es la que sustenta el gasto. -->
+                <small *ngIf="nombreComercialAlLado" class="text-muted ms-1"
+                       style="font-style: italic;"
+                       [title]="'Nombre comercial: ' + nombreComercialAlLado">
+                    · {{ nombreComercialAlLado }}
                 </small>
             </label>
             <div class="input-group">

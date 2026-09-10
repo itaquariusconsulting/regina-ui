@@ -230,24 +230,44 @@ export class EditRendirCuentaComponent implements OnInit {
   ingresoManual: boolean = false;
   wrapper: WrapperComprobanteSunat = new WrapperComprobanteSunat();
   /**
-   * Nombre a mostrar en el campo "Proveedor".
-   * Prioriza el nombre comercial; si no viene, cae a la razón social.
-   * Si ninguno está disponible, devuelve cadena vacía.
+   * Nombre a mostrar en el campo "Proveedor": la RAZÓN SOCIAL.
+   *
+   * <p>Antes se priorizaba el nombre comercial porque es el que la gente
+   * reconoce —"POLLERÍA X" en vez de "INVERSIONES ABC S.A.C."—, pero
+   * contabilidad pidió lo contrario y tiene razón: lo que sustenta el gasto
+   * es la razón social, que es la que figura en el comprobante y la que va
+   * al registro de compras. El nombre comercial queda a la vista igual, como
+   * dato secundario al lado del campo.
+   *
+   * <p>Si no hay razón social se muestra el nombre comercial antes que dejar
+   * el campo vacío: eso pasa cuando SUNAT no respondió y lo único que hay es
+   * lo que leyó el OCR del papel.
    */
   get nombreProveedor(): string {
-    const nc = (this.padronRuc?.nombreComercial || '').trim();
-    if (nc) return nc;
+    const rs = (this.padronRuc?.razonSocial || '').trim();
+    if (rs) return rs;
+    return (this.padronRuc?.nombreComercial || '').trim();
+  }
+
+  /**
+   * Tooltip del campo "Proveedor" — la razón social completa, que es lo que
+   * el campo muestra y suele venir cortado por el ancho del input.
+   */
+  get tituloProveedor(): string {
     return (this.padronRuc?.razonSocial || '').trim();
   }
 
   /**
-   * Tooltip del campo "Proveedor" — muestra la razón social completa,
-   * útil cuando se está mostrando el nombre comercial en el input visible.
-   * Se expone como getter para evitar problemas de strict template type-check
-   * con `padronRuc?.razonSocial || ''` directamente en el HTML.
+   * El nombre comercial, para mostrarlo al lado del campo.
+   *
+   * <p>Solo si existe y es distinto de la razón social. Sirve para que el
+   * usuario reconozca al proveedor: nadie sabe de memoria que "INVERSIONES
+   * ABC S.A.C." es la pollería de la esquina.
    */
-  get tituloProveedor(): string {
-    return (this.padronRuc?.razonSocial || '').trim();
+  get nombreComercialAlLado(): string {
+    const nc = (this.padronRuc?.nombreComercial || '').trim();
+    const rs = (this.padronRuc?.razonSocial || '').trim();
+    return nc && nc !== rs ? nc : '';
   }
 
   /**
@@ -269,6 +289,119 @@ export class EditRendirCuentaComponent implements OnInit {
     const nc = (this.padronRuc?.nombreComercial || '').trim();
     const rs = (this.padronRuc?.razonSocial || '').trim();
     return !!nc && !!rs && nc !== rs;
+  }
+
+  /** Mientras se trae la ficha del RUC, para no disparar dos consultas. */
+  consultandoFicha = false;
+
+  /**
+   * Abre la ficha del RUC en una ventana, consultandola si hace falta.
+   *
+   * <p>Existe porque hay un momento en que el usuario necesita mirar el RUC
+   * completo y hoy tiene que salir del sistema a la pagina de SUNAT: cuando
+   * el proveedor no es el que esperaba, cuando el estado dice algo raro, o
+   * cuando quiere confirmar la direccion antes de aceptar el comprobante.
+   *
+   * <p>Siempre vuelve a preguntar en vez de mostrar lo que ya estaba en
+   * pantalla. Si alguien pide ver la ficha es justamente porque duda del
+   * dato que tiene delante, y mostrarle el mismo dato guardado no lo saca de
+   * la duda. Si la consulta falla, se muestra lo que hay y se avisa.
+   */
+  consultarFichaRuc(): void {
+    const ruc = (this.ruc || '').trim();
+
+    if (ruc.length !== 11) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Falta el RUC',
+        text: 'Escribi el RUC completo (11 digitos) y despues consultalo.',
+        confirmButtonText: 'Cerrar'
+      });
+      return;
+    }
+
+    if (this.consultandoFicha) {
+      return;
+    }
+    this.consultandoFicha = true;
+
+    this.sunatService.getDataRUC(ruc).subscribe({
+      next: (response: Response) => {
+        this.consultandoFicha = false;
+
+        if (response && response.error === 0 && response.resultado) {
+          this.mostrarFicha(response.resultado, ruc, null);
+        } else {
+          // SUNAT no contesto: se muestra lo que ya se sabia, avisando que
+          // es lo guardado y no una respuesta fresca.
+          this.mostrarFicha(this.padronRuc, ruc,
+              response?.mensaje || 'SUNAT no respondio. Esto es lo ultimo que se habia consultado.');
+        }
+      },
+      error: () => {
+        this.consultandoFicha = false;
+        this.mostrarFicha(this.padronRuc, ruc,
+            'No se pudo consultar SUNAT. Esto es lo ultimo que se habia consultado.');
+      }
+    });
+  }
+
+  /** Dibuja la ficha del RUC, con el estado y la condicion en colores. */
+  private mostrarFicha(ficha: any, ruc: string, aviso: string | null): void {
+
+    if (!ficha) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sin datos del RUC',
+        text: aviso || 'No hay informacion de este RUC todavia.',
+        confirmButtonText: 'Cerrar'
+      });
+      return;
+    }
+
+    const estado = (ficha.estado || '').toString().trim();
+    const condicion = (ficha.condicion || '').toString().trim();
+    const activo = this.esActivo(estado);
+    const habido = this.esHabido(condicion);
+
+    const fila = (rotulo: string, valor: string, color?: string) => {
+      const v = (valor || '').trim();
+      if (!v) { return ''; }
+      const estilo = color ? `color:${color}; font-weight:600;` : '';
+      return `
+        <tr>
+          <td style="padding:4px 10px 4px 0; color:#6c757d; white-space:nowrap;
+                     vertical-align:top;">${rotulo}</td>
+          <td style="padding:4px 0; user-select:text; word-break:break-word; ${estilo}">${v}</td>
+        </tr>`;
+    };
+
+    const ubigeo = [ficha.departamento, ficha.provincia, ficha.distrito]
+        .filter((x: string) => (x || '').trim()).join(' - ');
+
+    const html = `
+      ${aviso ? `<div style="margin-bottom:10px; padding:8px; border-left:3px solid #ffc107;
+                              background:#fff9e6; font-size:.85rem; text-align:left;
+                              color:#6b5900;">${aviso}</div>` : ''}
+      <table style="width:100%; text-align:left; font-size:.9rem;
+                    font-family: var(--app-font-family, Arial);">
+        ${fila('RUC', ruc)}
+        ${fila('Razon social', ficha.razonSocial)}
+        ${fila('Nombre comercial', ficha.nombreComercial)}
+        ${fila('Estado', estado, activo ? '#1e7e34' : '#c82333')}
+        ${fila('Condicion', condicion, habido ? '#1e7e34' : '#c82333')}
+        ${fila('Tipo', ficha.tipoContribuyente)}
+        ${fila('Direccion', ficha.direccion)}
+        ${fila('Ubicacion', ubigeo)}
+      </table>`;
+
+    Swal.fire({
+      title: 'Ficha RUC',
+      html,
+      width: 620,
+      icon: (activo && habido) ? 'success' : 'warning',
+      confirmButtonText: 'Cerrar'
+    });
   }
 
   /**
@@ -2313,7 +2446,12 @@ export class EditRendirCuentaComponent implements OnInit {
     comprobante.numItemOp = undefined;      // lo asigna el ERP al publicar
 
     comprobante.rucEmisor = (this.ruc || '').trim();
-    comprobante.razonSocialEmisor = this.nombreProveedor || undefined;
+    // Se guarda la RAZON SOCIAL, no el nombre comercial: es la que sustenta
+    // el gasto y la que va al registro de compras. Si no hay -SUNAT no
+    // respondio y solo esta lo que leyo el OCR- se guarda lo que haya antes
+    // que dejar el comprobante sin proveedor.
+    comprobante.razonSocialEmisor =
+        (this.padronRuc?.razonSocial || '').trim() || this.nombreProveedor || undefined;
     comprobante.igvTasa = (this.igvPercent ?? 0) / 100;
 
     comprobante.indValidadoSunat = this.validaComprobante ? 'S' : 'N';

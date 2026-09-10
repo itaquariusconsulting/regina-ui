@@ -56,6 +56,7 @@
         <th class="text-center">Documento</th>
         <th class="text-center">Moneda</th>
         <th class="text-center">Importe</th>
+        <th class="text-center">Estado</th>
         <th class="text-center" *ngIf="puedeEditar"></th>
       </thead>
       <tbody>
@@ -87,6 +88,15 @@
                 {{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number:'1.2-2'}}
               </td>
 
+              <!-- Lo que respondió SUNAT. Contabilidad revisa por acá y
+                   necesita ver cuáles pasaron sin abrir uno por uno. -->
+              <td data-col="sunat" class="text-center">
+                <span class="sunat-marca" [ngClass]="claseSunat(reg)"
+                      [title]="tituloSunat(reg)">
+                  {{ estadoSunatTexto(reg) }}
+                </span>
+              </td>
+
               <!--
                 Eliminar el comprobante que se subio por error. Solo mientras
                 la rendicion no haya salido a contabilidad; despues no hay
@@ -105,7 +115,7 @@
 
           <!-- fila expandida -->
           <tr class="row-detail p-3" *ngIf="expandedRow === reg && reg.codDocumento">
-            <td [attr.colspan]="puedeEditar ? 10 : 9" class="bg-light p-3">
+            <td [attr.colspan]="puedeEditar ? 11 : 10" class="bg-light p-3">
               <div class="row">
                 <div class="col-md-1">
                   <label class="form-label"><strong>Orden:</strong></label>
