@@ -10,6 +10,9 @@ import { DefaultFooterMobileComponent } from '../../layout/default-layout/defaul
 
 import { ChatResponse, ReginaIaService } from '../../../services/regina-ia.service';
 import { ChatFiltrosService } from '../../../services/chat-filtros.service';
+import { MatDialog } from '@angular/material/dialog';
+import { VisorDocumentoDialogComponent, VisorDocumentoData }
+  from '../../dialogs/visor-documento-dialog.component';
 import { finalize } from 'rxjs/operators';
 import { WrapperRequestIA } from '../../../models/wrappers/wrapper-request-ia';
 import { environment } from '../../../../environments/environment';
@@ -42,6 +45,7 @@ export class DefaultLayoutComponent implements OnInit {
     private reginaService: ReginaIaService,
     private deviceService: DeviceService,
     private chatFiltrosService: ChatFiltrosService,
+    private dialog: MatDialog,
   ) { }
 
   user = sessionStorage.getItem('user')
@@ -258,6 +262,29 @@ export class DefaultLayoutComponent implements OnInit {
               case 'usuario_true':
                 this.router.navigate(['/nuevo-usuario']);
                 break;
+
+              // Un escaneo no es una pantalla: se abre en el visor, encima
+              // de donde esté el usuario. Regina ya resolvió CUÁL archivo es
+              // —de qué orden, y cuál de los comprobantes— y manda su ruta.
+              case 'documento': {
+                const doc = (res as any).documento;
+                if (doc && doc.nombre) {
+                  this.dialog.open(VisorDocumentoDialogComponent, {
+                    width: '90vw',
+                    maxWidth: '1100px',
+                    panelClass: 'visor-doc-panel',
+                    data: {
+                      tipo: doc.tipo,
+                      anio: doc.anio,
+                      mes: doc.mes,
+                      nombre: doc.nombre,
+                      titulo: doc.titulo,
+                      subtitulo: doc.subtitulo,
+                    } as VisorDocumentoData,
+                  });
+                }
+                break;
+              }
 
               // Pantalla genérica: la ruta la decide el backend.
               //
