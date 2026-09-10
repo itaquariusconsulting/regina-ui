@@ -218,7 +218,6 @@ export class DefaultLayoutComponent implements OnInit {
       this.isThinking = true;
       this.messages.push({ from: 'bot', text: 'Pensando...' });
       this.wrapperRequestIA.mensaje = texto;
-      this.wrapperRequestIA.userUserName = 'mangulom';
       this.wrapperRequestIA.anoPeriodo = sessionStorage.getItem('periodo_year') || '';
       this.wrapperRequestIA.codPeriodo = sessionStorage.getItem('periodo_month') || '';
       this.wrapperRequestIA.codAuxiliar = this.user?.codAuxiliar || '';
@@ -259,6 +258,23 @@ export class DefaultLayoutComponent implements OnInit {
               case 'usuario_true':
                 this.router.navigate(['/nuevo-usuario']);
                 break;
+
+              // Pantalla genérica: la ruta la decide el backend.
+              //
+              // Los tres casos de arriba quedaron con nombre propio porque
+              // esta pantalla los entiende así desde antes. Todo lo que
+              // Regina aprenda de acá en adelante viaja como 'navegar' con
+              // su ruta adentro, y así no hay que tocar el front cada vez
+              // que aprende una pantalla nueva.
+              case 'navegar': {
+                const ruta = (res as any).ruta;
+                if (ruta) {
+                  this.router.navigate([ruta], {
+                    state: { filtros: (res as any).filtros || null },
+                  });
+                }
+                break;
+              }
             }
 
             const respuesta = res.respuesta || 'No entendí eso, ¿podrías repetirlo?';
