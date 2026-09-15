@@ -79,7 +79,15 @@
        KPI CARDS
   ============================================================ -->
   <section class="kpi-grid">
-    <div class="kpi-card" *ngFor="let kpi of kpis" [style.--c]="kpi.color">
+    <div class="kpi-card kpi-clickable"
+         *ngFor="let kpi of kpis"
+         [style.--c]="kpi.color"
+         (click)="abrirDetalle(kpi)"
+         (keyup.enter)="abrirDetalle(kpi)"
+         tabindex="0"
+         role="button"
+         [attr.aria-label]="'Ver el detalle de ' + kpi.title"
+         [title]="'Ver el detalle de ' + kpi.title">
       <div class="kpi-icon">
         <i [ngClass]="kpi.icon"></i>
       </div>
@@ -88,6 +96,7 @@
         <div class="kpi-value">{{ kpi.value }}</div>
         <div class="kpi-sub" *ngIf="kpi.sub">{{ kpi.sub }}</div>
       </div>
+      <i class="fas fa-up-right-from-square kpi-lupa"></i>
     </div>
   </section>
 
@@ -342,4 +351,105 @@
   <footer class="dash-foot">
     <p>Sistema Regina · Dashboard Ejecutivo · {{ filteredOrdenes.length }} órdenes en vista</p>
   </footer>
+</div>
+
+<!-- ============================================================
+     POPUP DE DETALLE DE LA TARJETA
+     ============================================================ -->
+<div class="det-overlay" *ngIf="detalleAbierto" (click)="cerrarDetalle()">
+
+  <div class="det-modal" (click)="$event.stopPropagation()" [style.--c]="detalleColor">
+
+    <header class="det-head">
+      <div class="det-head-txt">
+        <h3>{{ detalleTitulo }}</h3>
+        <p>{{ detalleSubtitulo }}</p>
+      </div>
+      <button type="button" class="det-cerrar" (click)="cerrarDetalle()" title="Cerrar">
+        <i class="fas fa-times"></i>
+      </button>
+    </header>
+
+    <div class="det-tools">
+      <div class="det-buscar">
+        <i class="fas fa-search"></i>
+        <input type="text"
+               [(ngModel)]="detalleBusqueda"
+               placeholder="Buscar por orden, persona o glosa">
+        <button type="button"
+                class="det-limpiar"
+                *ngIf="detalleBusqueda"
+                (click)="detalleBusqueda = ''"
+                title="Limpiar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <button type="button"
+              class="det-excel"
+              (click)="descargarDetalleExcel()"
+              [disabled]="detalleFilasVisibles.length === 0">
+        <i class="fas fa-file-excel"></i> Excel
+      </button>
+    </div>
+
+    <div class="det-body">
+      <table class="det-tabla" *ngIf="detalleFilasVisibles.length > 0; else sinDetalle">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Fecha</th>
+            <th>Persona</th>
+            <th>Glosa</th>
+            <th class="num">Importe</th>
+            <th class="num">Rendido</th>
+            <th class="num">Por rendir</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of detalleFilasVisibles">
+            <td class="mono">{{ f.numOrden }}</td>
+            <td>{{ f.fecOrden ? (f.fecOrden | date:'dd/MM/yyyy') : '—' }}</td>
+            <td>{{ f.persona || '—' }}</td>
+            <td class="det-glosa" [title]="f.glosa">{{ short(f.glosa, 60) || '—' }}</td>
+            <td class="num" [class.resalta]="detalleColumna === 'importe'">
+              {{ f.moneda }} {{ fmtFull(f.importe) }}
+            </td>
+            <td class="num" [class.resalta]="detalleColumna === 'rendido'">
+              {{ fmtFull(f.rendido) }}
+            </td>
+            <td class="num" [class.resalta]="detalleColumna === 'porRendir'">
+              {{ fmtFull(f.porRendir) }}
+            </td>
+            <td>
+              <span class="det-chip" [attr.data-estado]="f.estado">{{ f.estado }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #sinDetalle>
+        <div class="det-vacio">
+          <i class="fas fa-inbox"></i>
+          <p *ngIf="detalleFilas.length === 0">
+            Esta tarjeta no tiene órdenes con los filtros actuales.
+          </p>
+          <p *ngIf="detalleFilas.length > 0">
+            Ninguna orden coincide con «{{ detalleBusqueda }}».
+          </p>
+        </div>
+      </ng-template>
+    </div>
+
+    <footer class="det-foot">
+      <span class="det-foot-izq">
+        Mostrando {{ detalleFilasVisibles.length }} de {{ detalleFilas.length }}
+      </span>
+      <span class="det-foot-der">
+        {{ detalleTotalRotulo }}: <strong>{{ detalleTotal }}</strong>
+      </span>
+    </footer>
+
+  </div>
 </div>

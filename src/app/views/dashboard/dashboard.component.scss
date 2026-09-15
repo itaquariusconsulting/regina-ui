@@ -457,3 +457,275 @@
   .kpi-card .kpi-value { font-size: 1.2rem; }
   .canvas-h { height: 220px; &.tall { height: 280px; } }
 }
+
+/* ============================================================
+   TARJETA CLICKEABLE
+   ============================================================ */
+.kpi-clickable {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+
+  &:focus-visible {
+    outline: 2px solid var(--c);
+    outline-offset: 2px;
+  }
+
+  /* La flecha aparece al pasar por encima. Fija seria ruido en doce
+     tarjetas a la vez; ausente del todo, nadie descubriria que se puede
+     hacer clic. */
+  .kpi-lupa {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 0.7rem;
+    color: var(--c);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover .kpi-lupa,
+  &:focus-visible .kpi-lupa { opacity: 0.65; }
+}
+
+/* ============================================================
+   POPUP DE DETALLE
+   ============================================================ */
+.det-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: detFade 0.15s ease;
+}
+
+@keyframes detFade { from { opacity: 0; } to { opacity: 1; } }
+
+.det-modal {
+  --c: #1976d2;
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  animation: detUp 0.18s ease;
+}
+
+@keyframes detUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.det-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--c);
+  color: #fff;
+
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+}
+
+.det-cerrar {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &:hover { background: rgba(255, 255, 255, 0.3); }
+}
+
+.det-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-wrap: wrap;
+}
+
+.det-buscar {
+  position: relative;
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+
+  i.fa-search {
+    position: absolute;
+    left: 11px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    padding: 8px 32px 8px 32px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    outline: none;
+
+    &:focus { border-color: var(--c); }
+  }
+}
+
+.det-limpiar {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+
+  &:hover { color: #475569; }
+}
+
+.det-excel {
+  background: #107c41;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) { background: #0b5f31; }
+  &:disabled { background: #cbd5e1; cursor: not-allowed; }
+}
+
+.det-body {
+  flex: 1;
+  overflow: auto;
+  min-height: 120px;
+}
+
+.det-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+
+    &.num { text-align: right; }
+  }
+
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+
+    &.num { text-align: right; white-space: nowrap; }
+    &.mono { font-variant-numeric: tabular-nums; font-weight: 600; }
+  }
+
+  tbody tr:hover td { background: #f8fafc; }
+
+  /* La columna que suma el KPI de esta tarjeta. Sin esto, en un popup de
+     nueve columnas no se distingue cual es la que da el numero de arriba. */
+  td.resalta {
+    font-weight: 700;
+    color: var(--c);
+  }
+}
+
+.det-glosa {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.det-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+
+  &[data-estado="Emitida"]    { background: #fef3c7; color: #92400e; }
+  &[data-estado="Pendiente"]  { background: #dbeafe; color: #1e40af; }
+  &[data-estado="Liquidada"]  { background: #d1fae5; color: #065f46; }
+  &[data-estado="Procesada"]  { background: #e5e7eb; color: #374151; }
+}
+
+.det-vacio {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+
+  i { font-size: 2rem; margin-bottom: 10px; display: block; }
+  p { margin: 0; font-size: 0.88rem; }
+}
+
+.det-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.82rem;
+  color: #64748b;
+  flex-wrap: wrap;
+
+  .det-foot-der strong {
+    color: var(--c);
+    font-size: 0.95rem;
+    margin-left: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .det-overlay { padding: 10px; }
+  .det-modal { max-height: 94vh; }
+  .det-tabla { font-size: 0.76rem; }
+  .det-glosa { max-width: 150px; }
+  .det-head h3 { font-size: 0.95rem; }
+}

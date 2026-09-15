@@ -852,3 +852,108 @@ app-pdf-viewer.pdf-viewer-embedded {
   font-size: .7rem;
   color: #b8860b;
 }
+
+/* ============================================================
+   CONCEPTO: combo con busqueda por letras
+   ============================================================ */
+.concepto-box {
+  position: relative;
+
+  input {
+    padding-right: 28px;
+  }
+
+  .concepto-flecha {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+}
+
+.concepto-lista {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.concepto-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #334155;
+
+  &:hover,
+  &.resaltado {
+    background: #eff6ff;
+  }
+
+  /* El que ya estaba elegido, para no perderlo de vista al filtrar. */
+  &.actual {
+    font-weight: 600;
+    color: #1d4ed8;
+  }
+
+  .concepto-nombre {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* El codigo va atenuado: sirve para confirmar, no para leer. */
+  .concepto-cod {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+}
+
+.concepto-vacio {
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+/* ============================================================
+   DOCUMENTO EXONERADO: el % IGV queda bloqueado en cero
+   ============================================================ */
+.igv-bloqueado {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed;
+}
+
+.igv-atajos .igv-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.igv-exonerado {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: #64748b;
+
+  i { margin-right: 3px; }
+}

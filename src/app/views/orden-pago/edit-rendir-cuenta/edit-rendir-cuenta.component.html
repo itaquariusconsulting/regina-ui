@@ -335,33 +335,21 @@
 
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">R.U.C</label>
-            <div class="input-group">
-                <input maxlength="11" (input)="ruccompleto()"
-                    (ngModelChange)="onRucManualChange($event)"
-                    class="form-control general-input" name="ruc" id="ruc"
-                    [(ngModel)]="ruc" />
-                <!-- Para cuando el proveedor no es el que se esperaba, o el
-                     estado dice algo raro: la ficha completa acá adentro, sin
-                     tener que salir a la página de SUNAT. -->
-                <button type="button" class="btn btn-outline-secondary"
-                        [disabled]="consultandoFicha"
-                        title="Consultar la ficha del RUC en SUNAT"
-                        (click)="consultarFichaRuc()">
-                    <i class="fas" [ngClass]="consultandoFicha ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i>
-                </button>
-            </div>
+            <input maxlength="11" (input)="ruccompleto()"
+                (ngModelChange)="onRucManualChange($event)"
+                class="form-control general-input" name="ruc" id="ruc"
+                [(ngModel)]="ruc" />
         </div>
 
         <div class="col-md-6">
             <label class="form-label fw-semibold mb-2 d-block">
-                Proveedor <small class="text-muted">(razón social)</small>
-                <!-- El nombre comercial es lo que la gente reconoce, así que
-                     se muestra al lado. Pero el campo lleva la razón social,
-                     que es la que sustenta el gasto. -->
-                <small *ngIf="nombreComercialAlLado" class="text-muted ms-1"
-                       style="font-style: italic;"
-                       [title]="'Nombre comercial: ' + nombreComercialAlLado">
-                    · {{ nombreComercialAlLado }}
+                Proveedor
+                <small *ngIf="mostrarBadgeComercial"
+                       class="text-muted ms-1"
+                       style="cursor: pointer; text-decoration: underline dotted;"
+                       [title]="tituloBadgeComercial"
+                       (click)="mostrarRazonSocial()">
+                    (nombre comercial)
                 </small>
             </label>
             <div class="input-group">
@@ -470,14 +458,37 @@
         <div class="col-md-4">
             <label class="form-label fw-semibold mb-2 d-block">Concepto</label>
 
-            <select (change)="onChangeTipoGasto()" name="concepto" id="concepto" class="general-select form-select"
-                [(ngModel)]="ordenPagoDet.codTipoGasto">
+            <!-- Combo con busqueda: se teclea y la lista filtra. Reemplaza al
+                 select nativo, que solo saltaba con la primera letra y sobre
+                 la descripcion cruda, con el codigo pegado adelante. -->
+            <div class="concepto-box">
+                <input type="text"
+                       name="concepto" id="concepto"
+                       class="general-input form-control"
+                       autocomplete="off"
+                       [(ngModel)]="conceptoBusqueda"
+                       (focus)="abrirConcepto()"
+                       (blur)="cerrarConcepto()"
+                       (keydown)="teclaConcepto($event)"
+                       placeholder="Escriba para buscar el concepto" />
 
-                <option *ngFor="let tipoGasto of tiposGasto" [value]="tipoGasto.codTipoGasto">
-                    {{tipoGasto.desTipoGasto}}
-                </option>
+                <i class="fas fa-chevron-down concepto-flecha"></i>
 
-            </select>
+                <ul class="concepto-lista" *ngIf="conceptoAbierto">
+                    <li *ngFor="let tg of tiposGastoFiltrados; let i = index"
+                        class="concepto-item"
+                        [class.resaltado]="i === conceptoResaltado"
+                        [class.actual]="tg.codTipoGasto === ordenPagoDet.codTipoGasto"
+                        (mousedown)="elegirConcepto(tg)"
+                        [title]="tg.desTipoGasto">
+                        <span class="concepto-nombre">{{ nombreConcepto(tg) }}</span>
+                        <span class="concepto-cod">{{ tg.codTipoGasto }}</span>
+                    </li>
+                    <li class="concepto-vacio" *ngIf="tiposGastoFiltrados.length === 0">
+                        Ningún concepto coincide con «{{ conceptoBusqueda }}»
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Cta.Gasto</label>
@@ -594,27 +605,41 @@
                 <input type="text" inputmode="decimal" maxlength="6"
                     name="igvPercent" id="igvPercent"
                     class="general-input form-control text-end"
+                    [class.igv-bloqueado]="documentoSinIgv"
+                    [readonly]="documentoSinIgv"
                     [ngModel]="igvPercentFormatted"
                     (ngModelChange)="setIgvPercent($event)"
                     (blur)="onIgvPercentBlur()"
-                    title="Porcentaje de IGV a aplicar (por defecto 18%)" />
+                    [title]="documentoSinIgv
+                        ? 'El documento elegido no está gravado con IGV'
+                        : 'Porcentaje de IGV a aplicar (por defecto 18%)'" />
 
                 <!-- Atajos para las dos tasas que se usan todos los dias. El
-                     input de arriba sigue aceptando cualquier valor. -->
+                     input de arriba sigue aceptando cualquier valor, salvo
+                     que el documento sea exonerado. -->
                 <div class="igv-atajos">
                     <button type="button" class="igv-chip"
                             [class.activo]="tasaIgvEs(TASA_GENERAL)"
+                            [disabled]="documentoSinIgv"
                             (click)="aplicarTasaIgv(TASA_GENERAL)"
                             title="Tasa general">18%</button>
                     <button type="button" class="igv-chip"
                             [class.activo]="tasaIgvEs(TASA_RESTAURANTES)"
+                            [disabled]="documentoSinIgv"
                             (click)="aplicarTasaIgv(TASA_RESTAURANTES)"
                             title="Restaurantes y hoteles">10.5%</button>
                 </div>
 
+                <!-- El documento esta marcado como exonerado en el maestro
+                     (IND_EXON): la tasa queda en cero y el campo bloqueado. -->
+                <small class="igv-exonerado" *ngIf="documentoSinIgv">
+                    <i class="fa fa-lock"></i>
+                    Documento sin IGV
+                </small>
+
                 <!-- Pista, no regla: SUNAT no da el giro en la ficha del RUC,
                      asi que se mira el nombre del emisor y decide el usuario. -->
-                <small class="igv-pista" *ngIf="sugiereTasaReducida">
+                <small class="igv-pista" *ngIf="sugiereTasaReducida && !documentoSinIgv">
                     <i class="fa fa-circle-info"></i>
                     ¿Restaurante u hotel? Podría ir al 10.5%.
                 </small>

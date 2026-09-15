@@ -230,44 +230,24 @@ export class EditRendirCuentaComponent implements OnInit {
   ingresoManual: boolean = false;
   wrapper: WrapperComprobanteSunat = new WrapperComprobanteSunat();
   /**
-   * Nombre a mostrar en el campo "Proveedor": la RAZÓN SOCIAL.
-   *
-   * <p>Antes se priorizaba el nombre comercial porque es el que la gente
-   * reconoce —"POLLERÍA X" en vez de "INVERSIONES ABC S.A.C."—, pero
-   * contabilidad pidió lo contrario y tiene razón: lo que sustenta el gasto
-   * es la razón social, que es la que figura en el comprobante y la que va
-   * al registro de compras. El nombre comercial queda a la vista igual, como
-   * dato secundario al lado del campo.
-   *
-   * <p>Si no hay razón social se muestra el nombre comercial antes que dejar
-   * el campo vacío: eso pasa cuando SUNAT no respondió y lo único que hay es
-   * lo que leyó el OCR del papel.
+   * Nombre a mostrar en el campo "Proveedor".
+   * Prioriza el nombre comercial; si no viene, cae a la razón social.
+   * Si ninguno está disponible, devuelve cadena vacía.
    */
   get nombreProveedor(): string {
-    const rs = (this.padronRuc?.razonSocial || '').trim();
-    if (rs) return rs;
-    return (this.padronRuc?.nombreComercial || '').trim();
-  }
-
-  /**
-   * Tooltip del campo "Proveedor" — la razón social completa, que es lo que
-   * el campo muestra y suele venir cortado por el ancho del input.
-   */
-  get tituloProveedor(): string {
+    const nc = (this.padronRuc?.nombreComercial || '').trim();
+    if (nc) return nc;
     return (this.padronRuc?.razonSocial || '').trim();
   }
 
   /**
-   * El nombre comercial, para mostrarlo al lado del campo.
-   *
-   * <p>Solo si existe y es distinto de la razón social. Sirve para que el
-   * usuario reconozca al proveedor: nadie sabe de memoria que "INVERSIONES
-   * ABC S.A.C." es la pollería de la esquina.
+   * Tooltip del campo "Proveedor" — muestra la razón social completa,
+   * útil cuando se está mostrando el nombre comercial en el input visible.
+   * Se expone como getter para evitar problemas de strict template type-check
+   * con `padronRuc?.razonSocial || ''` directamente en el HTML.
    */
-  get nombreComercialAlLado(): string {
-    const nc = (this.padronRuc?.nombreComercial || '').trim();
-    const rs = (this.padronRuc?.razonSocial || '').trim();
-    return nc && nc !== rs ? nc : '';
+  get tituloProveedor(): string {
+    return (this.padronRuc?.razonSocial || '').trim();
   }
 
   /**
@@ -289,119 +269,6 @@ export class EditRendirCuentaComponent implements OnInit {
     const nc = (this.padronRuc?.nombreComercial || '').trim();
     const rs = (this.padronRuc?.razonSocial || '').trim();
     return !!nc && !!rs && nc !== rs;
-  }
-
-  /** Mientras se trae la ficha del RUC, para no disparar dos consultas. */
-  consultandoFicha = false;
-
-  /**
-   * Abre la ficha del RUC en una ventana, consultandola si hace falta.
-   *
-   * <p>Existe porque hay un momento en que el usuario necesita mirar el RUC
-   * completo y hoy tiene que salir del sistema a la pagina de SUNAT: cuando
-   * el proveedor no es el que esperaba, cuando el estado dice algo raro, o
-   * cuando quiere confirmar la direccion antes de aceptar el comprobante.
-   *
-   * <p>Siempre vuelve a preguntar en vez de mostrar lo que ya estaba en
-   * pantalla. Si alguien pide ver la ficha es justamente porque duda del
-   * dato que tiene delante, y mostrarle el mismo dato guardado no lo saca de
-   * la duda. Si la consulta falla, se muestra lo que hay y se avisa.
-   */
-  consultarFichaRuc(): void {
-    const ruc = (this.ruc || '').trim();
-
-    if (ruc.length !== 11) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Falta el RUC',
-        text: 'Escribi el RUC completo (11 digitos) y despues consultalo.',
-        confirmButtonText: 'Cerrar'
-      });
-      return;
-    }
-
-    if (this.consultandoFicha) {
-      return;
-    }
-    this.consultandoFicha = true;
-
-    this.sunatService.getDataRUC(ruc).subscribe({
-      next: (response: Response) => {
-        this.consultandoFicha = false;
-
-        if (response && response.error === 0 && response.resultado) {
-          this.mostrarFicha(response.resultado, ruc, null);
-        } else {
-          // SUNAT no contesto: se muestra lo que ya se sabia, avisando que
-          // es lo guardado y no una respuesta fresca.
-          this.mostrarFicha(this.padronRuc, ruc,
-              response?.mensaje || 'SUNAT no respondio. Esto es lo ultimo que se habia consultado.');
-        }
-      },
-      error: () => {
-        this.consultandoFicha = false;
-        this.mostrarFicha(this.padronRuc, ruc,
-            'No se pudo consultar SUNAT. Esto es lo ultimo que se habia consultado.');
-      }
-    });
-  }
-
-  /** Dibuja la ficha del RUC, con el estado y la condicion en colores. */
-  private mostrarFicha(ficha: any, ruc: string, aviso: string | null): void {
-
-    if (!ficha) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sin datos del RUC',
-        text: aviso || 'No hay informacion de este RUC todavia.',
-        confirmButtonText: 'Cerrar'
-      });
-      return;
-    }
-
-    const estado = (ficha.estado || '').toString().trim();
-    const condicion = (ficha.condicion || '').toString().trim();
-    const activo = this.esActivo(estado);
-    const habido = this.esHabido(condicion);
-
-    const fila = (rotulo: string, valor: string, color?: string) => {
-      const v = (valor || '').trim();
-      if (!v) { return ''; }
-      const estilo = color ? `color:${color}; font-weight:600;` : '';
-      return `
-        <tr>
-          <td style="padding:4px 10px 4px 0; color:#6c757d; white-space:nowrap;
-                     vertical-align:top;">${rotulo}</td>
-          <td style="padding:4px 0; user-select:text; word-break:break-word; ${estilo}">${v}</td>
-        </tr>`;
-    };
-
-    const ubigeo = [ficha.departamento, ficha.provincia, ficha.distrito]
-        .filter((x: string) => (x || '').trim()).join(' - ');
-
-    const html = `
-      ${aviso ? `<div style="margin-bottom:10px; padding:8px; border-left:3px solid #ffc107;
-                              background:#fff9e6; font-size:.85rem; text-align:left;
-                              color:#6b5900;">${aviso}</div>` : ''}
-      <table style="width:100%; text-align:left; font-size:.9rem;
-                    font-family: var(--app-font-family, Arial);">
-        ${fila('RUC', ruc)}
-        ${fila('Razon social', ficha.razonSocial)}
-        ${fila('Nombre comercial', ficha.nombreComercial)}
-        ${fila('Estado', estado, activo ? '#1e7e34' : '#c82333')}
-        ${fila('Condicion', condicion, habido ? '#1e7e34' : '#c82333')}
-        ${fila('Tipo', ficha.tipoContribuyente)}
-        ${fila('Direccion', ficha.direccion)}
-        ${fila('Ubicacion', ubigeo)}
-      </table>`;
-
-    Swal.fire({
-      title: 'Ficha RUC',
-      html,
-      width: 620,
-      icon: (activo && habido) ? 'success' : 'warning',
-      confirmButtonText: 'Cerrar'
-    });
   }
 
   /**
@@ -835,7 +702,15 @@ export class EditRendirCuentaComponent implements OnInit {
         // administrativos como 19901001, cuyo prefijo no matchea ningun tipo),
         // se muestran TODOS para que la orden se pueda rendir igual, en vez de
         // quedar sin opciones. Antes esto ademas reventaba en tiposGasto[0].
-        this.tiposGasto = filtrados.length > 0 ? filtrados : todosLosTipos;
+        //
+        // El orden es alfabetico POR EL NOMBRE, no por la descripcion cruda:
+        // en el maestro vienen como "010MOVILIDAD LOCAL", con el codigo
+        // pegado adelante, asi que ordenar el texto tal cual ordena por ese
+        // numero y ALIMENTACION no cae nunca bajo la A.
+        this.tiposGasto = (filtrados.length > 0 ? filtrados : todosLosTipos)
+          .slice()
+          .sort((a, b) => this.textoComparable(this.nombreConcepto(a))
+            .localeCompare(this.textoComparable(this.nombreConcepto(b)), 'es'));
         /*
         if (this.indMovilidad !== 'S') {
           if (this.codTipoGastoDefault?.length == 0) {
@@ -1006,6 +881,11 @@ export class EditRendirCuentaComponent implements OnInit {
         if (!this.hayImporte()) {
           this.total = this.aNumero(this.dataImagen.amount);
         }
+
+        // La tasa se fija ANTES de recalcular: recalcularImportes() deriva el
+        // subtotal y el impuesto de este porcentaje, y con el orden al reves
+        // el comprobante exonerado quedaria un instante con IGV calculado.
+        this.aplicarTasaSegunDocumento();
 
         this.recalcularImportes();
         this.onListaAuxiliares();
@@ -2446,12 +2326,7 @@ export class EditRendirCuentaComponent implements OnInit {
     comprobante.numItemOp = undefined;      // lo asigna el ERP al publicar
 
     comprobante.rucEmisor = (this.ruc || '').trim();
-    // Se guarda la RAZON SOCIAL, no el nombre comercial: es la que sustenta
-    // el gasto y la que va al registro de compras. Si no hay -SUNAT no
-    // respondio y solo esta lo que leyo el OCR- se guarda lo que haya antes
-    // que dejar el comprobante sin proveedor.
-    comprobante.razonSocialEmisor =
-        (this.padronRuc?.razonSocial || '').trim() || this.nombreProveedor || undefined;
+    comprobante.razonSocialEmisor = this.nombreProveedor || undefined;
     comprobante.igvTasa = (this.igvPercent ?? 0) / 100;
 
     comprobante.indValidadoSunat = this.validaComprobante ? 'S' : 'N';
@@ -3298,7 +3173,164 @@ export class EditRendirCuentaComponent implements OnInit {
     this.tipoGastoSeleccionado = this.tiposGasto.find(
       tg => tg.codTipoGasto == this.ordenPagoDet.codTipoGasto
     ) ?? new MaeTipoGasto();
+    // El combo de concepto es un campo de texto y el codigo tambien se
+    // asigna desde el codigo (al cargar la orden, al elegir movilidad). Se
+    // sincroniza aca para que el texto que se ve sea siempre el del concepto
+    // que esta realmente seleccionado.
+    this.sincronizarTextoConcepto();
     this.getMonedas();
+  }
+
+  /* ==========================================================
+     CONCEPTO: combo con busqueda por letras
+     ========================================================== */
+
+  /** Lo que el usuario tecleo en el campo de concepto. */
+  conceptoBusqueda = '';
+  /** true mientras la lista esta desplegada. */
+  conceptoAbierto = false;
+  /** Cual de las opciones esta marcada con el teclado; -1 es ninguna. */
+  conceptoResaltado = -1;
+
+  /**
+   * La descripcion del concepto sin el codigo con el que empieza.
+   *
+   * <p>En el maestro las descripciones vienen como "010MOVILIDAD LOCAL":
+   * tres digitos pegados al nombre, que esta pantalla usa para filtrar por
+   * centro de costos. Para el usuario ese prefijo es ruido, y ademas es lo
+   * que hacia que ordenar y buscar no funcionaran como se espera.
+   *
+   * <p>Si al sacar el prefijo no queda nada, se devuelve la descripcion
+   * entera: mejor mostrar el codigo que una fila vacia.
+   */
+  nombreConcepto(tg: MaeTipoGasto | undefined): string {
+    const d = (tg?.desTipoGasto ?? '').trim();
+    if (!d) return '';
+    const limpio = d.replace(/^\d+[\s.\-]*/, '').trim();
+    return limpio || d;
+  }
+
+  /** Mayusculas y sin tildes, para comparar lo que escribio el usuario. */
+  private textoComparable(v: string): string {
+    return (v ?? '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toUpperCase()
+      .trim();
+  }
+
+  /**
+   * Las opciones que quedan con lo tecleado.
+   *
+   * <p>Primero las que EMPIEZAN con el texto y despues las que lo contienen:
+   * quien escribe "A" busca ALIMENTACION, no las nueve que tienen una A en
+   * el medio. Se busca por el nombre, por el codigo y por la descripcion
+   * cruda, porque contabilidad a veces dicta el codigo y el usuario lo tipea
+   * tal cual.
+   */
+  get tiposGastoFiltrados(): MaeTipoGasto[] {
+
+    const t = this.textoComparable(this.conceptoBusqueda);
+    if (!t) return this.tiposGasto;
+
+    const empiezan: MaeTipoGasto[] = [];
+    const contienen: MaeTipoGasto[] = [];
+
+    for (const tg of this.tiposGasto) {
+      const nombre = this.textoComparable(this.nombreConcepto(tg));
+      const crudo  = this.textoComparable(tg.desTipoGasto ?? '');
+      const codigo = this.textoComparable(tg.codTipoGasto ?? '');
+
+      if (nombre.startsWith(t) || codigo.startsWith(t)) {
+        empiezan.push(tg);
+      } else if (nombre.includes(t) || crudo.includes(t) || codigo.includes(t)) {
+        contienen.push(tg);
+      }
+    }
+
+    return empiezan.concat(contienen);
+  }
+
+  /** Pone en el campo el nombre del concepto que esta seleccionado. */
+  private sincronizarTextoConcepto(): void {
+    if (this.conceptoAbierto) return;   // el usuario esta escribiendo
+    const sel = this.tiposGasto.find(tg => tg.codTipoGasto === this.ordenPagoDet.codTipoGasto);
+    this.conceptoBusqueda = sel ? this.nombreConcepto(sel) : '';
+  }
+
+  /**
+   * Abre la lista y deja el campo listo para escribir.
+   *
+   * <p>Se vacia el texto a proposito: si quedara el concepto actual, el
+   * filtro arrancaria mostrando una sola opcion —la que ya estaba— y
+   * pareceria que el resto se perdio.
+   */
+  abrirConcepto(): void {
+    this.conceptoAbierto = true;
+    this.conceptoBusqueda = '';
+    this.conceptoResaltado = -1;
+  }
+
+  /**
+   * Cierra sin elegir y restaura lo que estaba.
+   *
+   * <p>El retraso es para que un clic sobre una opcion alcance a dispararse:
+   * el blur del input llega antes que el click de la lista.
+   */
+  cerrarConcepto(): void {
+    setTimeout(() => {
+      if (!this.conceptoAbierto) return;
+      this.conceptoAbierto = false;
+      this.conceptoResaltado = -1;
+      this.sincronizarTextoConcepto();
+    }, 150);
+  }
+
+  elegirConcepto(tg: MaeTipoGasto): void {
+    this.ordenPagoDet.codTipoGasto = tg.codTipoGasto;
+    this.conceptoAbierto = false;
+    this.conceptoResaltado = -1;
+    this.onChangeTipoGasto();
+  }
+
+  /** Flechas para recorrer, Enter para elegir, Escape para cancelar. */
+  teclaConcepto(ev: KeyboardEvent): void {
+
+    const lista = this.tiposGastoFiltrados;
+
+    if (ev.key === 'Escape') {
+      this.conceptoAbierto = false;
+      this.conceptoResaltado = -1;
+      this.sincronizarTextoConcepto();
+      return;
+    }
+
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (!this.conceptoAbierto) { this.abrirConcepto(); return; }
+      if (!lista.length) return;
+      const paso = ev.key === 'ArrowDown' ? 1 : -1;
+      this.conceptoResaltado =
+        (this.conceptoResaltado + paso + lista.length) % lista.length;
+      return;
+    }
+
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      // Sin nada marcado se toma la primera: es la que el usuario esta
+      // mirando despues de tipear, y obligarlo a bajar una flecha para algo
+      // que ya quedo solo en la lista es friccion sin motivo.
+      const elegida = this.conceptoResaltado >= 0
+        ? lista[this.conceptoResaltado]
+        : lista[0];
+      if (elegida) this.elegirConcepto(elegida);
+      return;
+    }
+
+    if (!this.conceptoAbierto) {
+      this.conceptoAbierto = true;
+    }
+    this.conceptoResaltado = -1;
   }
 
   /** El usuario fuerza el ingreso manual del proveedor. */
@@ -3821,6 +3853,13 @@ export class EditRendirCuentaComponent implements OnInit {
    * NO reformatea aún para no interferir mientras se escribe.
    */
   setIgvPercent(value: any): void {
+    // Cinturon ademas del readonly del input: si el documento es exonerado,
+    // la tasa es cero venga de donde venga el valor.
+    if (this.documentoSinIgv) {
+      this.igvPercent = 0;
+      this.onIgvPercentChange();
+      return;
+    }
     if (value === null || value === undefined || value === '') {
       this.igvPercent = 0;
     } else {
@@ -3847,8 +3886,56 @@ export class EditRendirCuentaComponent implements OnInit {
    * esto es un atajo para los dos casos que se repiten todos los dias.
    */
   aplicarTasaIgv(valor: number): void {
+    if (this.documentoSinIgv) return;   // el documento no admite IGV
     this.igvPercent = valor;
     this.onIgvPercentChange();
+  }
+
+  /* ==========================================================
+     DOCUMENTOS SIN IGV
+     ========================================================== */
+
+  /** La tasa que habia antes de pasar a un documento exonerado. */
+  private tasaAntesDeExonerar: number | null = null;
+
+  /**
+   * true cuando el documento elegido no lleva IGV.
+   *
+   * <p>Sale de IND_EXON del maestro de documentos y no de una lista escrita
+   * aca. Hoy la marca la tiene FACTURA SIN I.G.V., que es el caso que se
+   * reporto; el dia que contabilidad marque otra factura exonerada, la
+   * pantalla la respeta sin recompilar nada.
+   */
+  get documentoSinIgv(): boolean {
+    return (this.documentoSeleccionado?.indExon ?? '').trim().toUpperCase() === 'S';
+  }
+
+  /**
+   * Pone la tasa en cero cuando el documento es exonerado, y la devuelve
+   * cuando se vuelve a uno gravado.
+   *
+   * <p>Se recuerda la tasa anterior en vez de reponer siempre el 18: quien
+   * estaba cargando facturas de restaurante al 10.5, pasa por una exonerada
+   * y vuelve, no tiene por que perder su tasa y darse cuenta tres
+   * comprobantes despues.
+   */
+  private aplicarTasaSegunDocumento(): void {
+
+    if (this.documentoSinIgv) {
+      if (this.tasaAntesDeExonerar === null) {
+        const actual = Number(this.igvPercent);
+        this.tasaAntesDeExonerar = Number.isFinite(actual) && actual > 0
+          ? actual
+          : this.TASA_GENERAL;
+      }
+      this.igvPercent = 0;
+      return;
+    }
+
+    if (this.tasaAntesDeExonerar !== null) {
+      this.igvPercent = this.tasaAntesDeExonerar;
+      this.tasaAntesDeExonerar = null;
+    }
   }
 
   /** true si la tasa cargada es esa, con tolerancia por el redondeo. */
