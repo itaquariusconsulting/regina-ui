@@ -12,7 +12,10 @@ export const environment = {
   apiUrlProcess: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlMaestros: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api/',
   apiUrlIA: 'https://developer.aquariusconsultores.com:8443/reginaIA-1/ai',
-  apiUrlOcr: 'https://developer.aquariusconsultores.com:8443/regina-ia'
+
+  // El OCR va por REGINA-API-PROCESS, igual que en produccion: el backend lo
+  // alcanza por localhost y el navegador nunca ve su puerto.
+  apiUrlOcr: 'https://developer.aquariusconsultores.com:8443/regina-process-dev/api'
 
   // apiUrlUtils (sai-web-utils) y coreApiUrl (aquarius-security) se quitaron:
   // ningun servicio los llamaba. El padron RUC vive ahora en el cache de

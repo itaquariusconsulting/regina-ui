@@ -20,7 +20,15 @@ export const environment = {
 
   // ── Servicios de apoyo ────────────────────────────────────────────────
   apiUrlIA:       'https://marcaciongps.aquariusconsultores.com:8443/reginaIA-1/ai',
-  apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-ia'
+
+  // El OCR ya no se llama directo. Va por REGINA-API-PROCESS, que lo alcanza
+  // por localhost y devuelve un error legible cuando no responde.
+  //
+  // Apuntaba a /regina-ia, un contexto de Tomcat que NO era el OCR: adentro
+  // tenia una copia de regina-billing. Cuando el pedido no encontraba a
+  // nadie caia en la aplicacion de la raiz y volvia el HTML de su login, que
+  // Angular no podia leer como JSON.
+  apiUrlOcr:      'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api'
 
   // Aca vivian apiUrlUtils (sai-web-utils) y coreApiUrl (aquarius-security).
   // Se quitaron porque no los llamaba nadie: el padron RUC pasó al cache de
