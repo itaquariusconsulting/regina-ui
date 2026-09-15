@@ -341,7 +341,7 @@
                 [(ngModel)]="ruc" />
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <label class="form-label fw-semibold mb-2 d-block">
                 Proveedor
                 <small *ngIf="mostrarBadgeComercial"
@@ -378,6 +378,16 @@
             <label class="form-label fw-semibold mb-2 d-block">Condición</label>
             <input [readonly]="!ingresoManual" class="form-control general-input" name="condicion" id="condicion"
                 [(ngModel)]="padronRuc.condicion" />
+        </div>
+
+        <!-- El resultado de la validacion en SUNAT, al lado de Estado y
+             Condicion: los tres dicen si el comprobante se puede rendir. -->
+        <div class="col-md-2">
+            <label class="form-label fw-semibold mb-2 d-block">Comprobante</label>
+            <div class="val-sunat" [ngClass]="claseValidacionSunat">
+                <i [ngClass]="iconoValidacionSunat"></i>
+                <span>{{ textoValidacionSunat }}</span>
+            </div>
         </div>
     </div>
 

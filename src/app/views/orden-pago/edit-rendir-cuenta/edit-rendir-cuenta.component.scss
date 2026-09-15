@@ -957,3 +957,52 @@ app-pdf-viewer.pdf-viewer-embedded {
 
   i { margin-right: 3px; }
 }
+
+/* ============================================================
+   VALIDACION DEL COMPROBANTE, AL LADO DE ESTADO Y CONDICION
+   ============================================================ */
+.val-sunat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;                 /* el alto de los inputs de al lado */
+  padding: 0 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  i { flex-shrink: 0; }
+}
+
+/* Verde solo cuando SUNAT acepto el comprobante. Que el verde signifique
+   una sola cosa es lo que lo hace util de un vistazo. */
+.val-sunat.val-ok {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.val-sunat.val-pendiente {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.val-sunat.val-manual {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #3730a3;
+}
+
+.val-sunat.val-neutro {
+  background: #f8fafc;
+  color: #94a3b8;
+}

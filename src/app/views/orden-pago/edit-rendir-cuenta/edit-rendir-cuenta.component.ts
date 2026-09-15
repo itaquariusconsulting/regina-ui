@@ -234,10 +234,35 @@ export class EditRendirCuentaComponent implements OnInit {
    * Prioriza el nombre comercial; si no viene, cae a la razón social.
    * Si ninguno está disponible, devuelve cadena vacía.
    */
+  /**
+   * El nombre con el que queda el proveedor: la RAZON SOCIAL.
+   *
+   * <p>Antes mandaba el nombre comercial y la razon social era el respaldo.
+   * Contabilidad pidio lo contrario: en el asiento tiene que figurar el
+   * nombre legal del emisor, que es el que aparece en el comprobante.
+   *
+   * <p>El nombre comercial queda como respaldo para cuando SUNAT no informa
+   * la razon social, que pasa en fichas viejas.
+   */
   get nombreProveedor(): string {
-    const nc = (this.padronRuc?.nombreComercial || '').trim();
-    if (nc) return nc;
-    return (this.padronRuc?.razonSocial || '').trim();
+    const rs = this.textoUtil(this.padronRuc?.razonSocial);
+    if (rs) return rs;
+    return this.textoUtil(this.padronRuc?.nombreComercial);
+  }
+
+  /**
+   * El valor si dice algo, o vacio.
+   *
+   * <p>SUNAT no deja el nombre comercial en blanco cuando no hay: pone un
+   * guion. Sin esto, un "-" contaba como nombre valido y terminaba en el
+   * campo Proveedor tapando la razon social, que es exactamente lo que se
+   * veia en pantalla con KE YOU S.A.C.
+   */
+  private textoUtil(valor: string | undefined | null): string {
+    const v = (valor || '').trim();
+    if (!v) return '';
+    // Un texto que solo tiene guiones, puntos o guiones bajos no es un nombre.
+    return /^[-_.\s]+$/.test(v) ? '' : v;
   }
 
   /**
@@ -266,9 +291,36 @@ export class EditRendirCuentaComponent implements OnInit {
    * "esto es el nombre comercial" cuando en realidad es la razón social.
    */
   get mostrarBadgeComercial(): boolean {
-    const nc = (this.padronRuc?.nombreComercial || '').trim();
-    const rs = (this.padronRuc?.razonSocial || '').trim();
+    const nc = this.textoUtil(this.padronRuc?.nombreComercial);
+    const rs = this.textoUtil(this.padronRuc?.razonSocial);
     return !!nc && !!rs && nc !== rs;
+  }
+
+  /* ==========================================================
+     VALIDACION DEL COMPROBANTE EN SUNAT, A LA VISTA
+     ========================================================== */
+
+  /** Texto del indicador que va al lado de Estado y Condicion. */
+  get textoValidacionSunat(): string {
+    if (this.ingresoManual) return 'Ingreso manual';
+    if (!this.selectedFile) return 'Sin comprobante';
+    if (this.validaComprobante) return 'Comprobante aceptado';
+    return 'Sin validar';
+  }
+
+  /** Clase del indicador: verde solo cuando SUNAT acepto el comprobante. */
+  get claseValidacionSunat(): string {
+    if (this.ingresoManual) return 'val-manual';
+    if (!this.selectedFile) return 'val-neutro';
+    return this.validaComprobante ? 'val-ok' : 'val-pendiente';
+  }
+
+  get iconoValidacionSunat(): string {
+    if (this.ingresoManual) return 'fa-solid fa-pen';
+    if (!this.selectedFile) return 'fa-regular fa-circle';
+    return this.validaComprobante
+      ? 'fa-solid fa-circle-check'
+      : 'fa-solid fa-circle-exclamation';
   }
 
   /**
@@ -3936,6 +3988,45 @@ export class EditRendirCuentaComponent implements OnInit {
       this.igvPercent = this.tasaAntesDeExonerar;
       this.tasaAntesDeExonerar = null;
     }
+
+    // El documento puede decir su propia tasa en el nombre: FACTURA HOTEL Y
+    // REST 10.5%. Si la dice, manda.
+    const delNombre = this.tasaQueDiceElDocumento();
+    if (delNombre !== null) {
+      this.igvPercent = delNombre;
+    }
+  }
+
+  /**
+   * La tasa de IGV que el documento anuncia en su propia descripcion.
+   *
+   * <p>En el maestro hay documentos cuyo nombre trae el porcentaje:
+   * "FACTURA HOTEL Y REST 10.5%" y "NOTA CREDITO HOTEL REST 10.5%". Elegir
+   * uno de esos y que la pantalla siga en 18 obliga al usuario a acordarse
+   * de tocar el chip, y cuando se olvida el asiento sale con el impuesto que
+   * no era.
+   *
+   * <p>Se exige el signo de porcentaje. Sin eso, el "6" de un nombre como
+   * RETENCION 6 o el "03" de un codigo se tomarian por una tasa. Tolera coma
+   * o punto decimal y un espacio antes del simbolo, que es como conviven
+   * escritos los nombres en el maestro.
+   *
+   * <p>Devuelve null cuando el nombre no dice ninguna tasa, que es el caso
+   * de casi todos: ahi no se toca nada y sigue mandando lo que haya elegido
+   * el usuario.
+   */
+  private tasaQueDiceElDocumento(): number | null {
+
+    const desc = (this.documentoSeleccionado?.desDocumento || '').trim();
+    if (!desc) return null;
+
+    const hallado = desc.match(/(\d{1,2}(?:[.,]\d{1,2})?)\s*%/);
+    if (!hallado) return null;
+
+    const valor = Number(hallado[1].replace(',', '.'));
+    if (!Number.isFinite(valor) || valor < 0 || valor > 100) return null;
+
+    return Math.round(valor * 100) / 100;
   }
 
   /** true si la tasa cargada es esa, con tolerancia por el redondeo. */
