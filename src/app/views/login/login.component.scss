@@ -24,24 +24,68 @@
 }
 
 /* ================= FONDO =================
-   Degradado claro en diagonal con dos manchas de color difuminadas,
-   que es lo que da profundidad sin usar una foto de fondo. */
+   La pieza de marca de RENDIX, a pantalla completa.
+
+   Va en JPEG y no en el PNG original: 186 KB contra 1.5 MB. El
+   login es lo primero que carga y todavia no hay nada en cache,
+   asi que ese peso lo paga el usuario mirando una pantalla vacia.
+
+   Se fija con position fixed para que no se desplace con el
+   formulario ni salte al abrirse el teclado del telefono.
+
+   La ruta va relativa a ESTE archivo y sin barra inicial: asi la
+   resuelve el build de Angular y la reescribe con hash. Con barra
+   inicial apuntaria a la raiz del dominio y daria 404 en /rendix/
+   igual que en /ren-aquarius/. */
 
 .login-background {
   position: fixed;
   inset: 0;
   z-index: -2;
-  background:
-    radial-gradient(760px 520px at 12% 8%, rgba(27, 95, 209, .16), transparent 60%),
-    radial-gradient(680px 520px at 88% 92%, rgba(47, 169, 140, .14), transparent 60%),
+
+  /* El degradado queda DEBAJO de la imagen, no en su lugar: es lo
+     que se ve el primer instante mientras el JPEG viaja, y lo que
+     queda si la imagen no carga. Sin esto el login parpadea en
+     blanco. */
+  background-color: var(--rx-50);
+  background-image:
+    url("../../../assets/images/brand/login-fondo.jpg"),
     linear-gradient(160deg, var(--rx-50) 0%, #EAF1FB 55%, #E3ECF8 100%);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
 }
 
+/* El velo entre la imagen y la tarjeta.
+
+   La pieza tiene un telefono a la izquierda, una laptop a la
+   derecha y texto chico en las dos. Sin atenuarla, el borde de la
+   tarjeta blanca se pierde contra los blancos de la foto y los
+   campos compiten con las capturas del fondo.
+
+   Es un velo claro, no un oscurecido: la marca se sigue leyendo. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: transparent;
+  background:
+    radial-gradient(1100px 760px at 50% 42%, rgba(255, 255, 255, .78), rgba(255, 255, 255, .34) 62%, rgba(255, 255, 255, .18) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .30));
+}
+
+/* En pantalla angosta la imagen es apaisada y "cover" recorta una
+   franja central donde no se entiende que es. Ahi se usa la version
+   chica y se sube el velo, porque el formulario manda. */
+@media (max-width: 768px) {
+  .login-background {
+    background-image:
+      url("../../../assets/images/brand/login-fondo-chico.jpg"),
+      linear-gradient(160deg, var(--rx-50) 0%, #EAF1FB 55%, #E3ECF8 100%);
+  }
+
+  .overlay {
+    background: rgba(255, 255, 255, .72);
+  }
 }
 
 /* ================= TARJETA ================= */
