@@ -51,7 +51,38 @@ pipeline {
                 // ng-bootstrap 17 declara Angular 18 como peer y el proyecto va en Angular 19.
                 // El arbol nunca ha sido resoluble en estricto; se instala como siempre
                 // se instalo. PENDIENTE: subir @ng-bootstrap/ng-bootstrap a 18.x.
-                bat 'npm ci --legacy-peer-deps'
+                //
+                // EBUSY al instalar
+                // -----------------
+                // npm ci borra node_modules entero antes de instalar. En este
+                // Windows Server el antivirus abre los archivos para escanearlos
+                // y, si justo esta mirando uno, el borrado falla:
+                //
+                //   EBUSY: resource busy or locked, rmdir
+                //   node_modules\@angular\common\locales
+                //
+                // Es el MISMO problema que ya obliga a reintentar el empaquetado
+                // con jar mas abajo, y se comporta igual: es intermitente y el
+                // mismo commit pasa al segundo intento. Un workspace recien
+                // creado lo dispara mas seguido porque hay miles de archivos
+                // nuevos que el antivirus nunca vio.
+                //
+                // Se borra la carpeta antes de cada intento: si quedo a medio
+                // borrar, npm se encuentra un arbol corrupto y falla por otra
+                // razon, que despista mas que el EBUSY original.
+                bat """
+                    @echo off
+                    for /L %%i in (1,1,3) do (
+                        if exist node_modules rmdir /S /Q node_modules 2>nul
+                        npm ci --legacy-peer-deps && goto :instalado
+                        echo Intento %%i fallido al instalar dependencias. Espero 20 segundos.
+                        timeout /t 20 /nobreak >nul
+                    )
+                    echo No se pudieron instalar las dependencias despues de tres intentos.
+                    exit /b 1
+                    :instalado
+                    echo Dependencias instaladas.
+                """
             }
         }
 
