@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from "./../../services/auth.service";
@@ -55,51 +55,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
-  videos: string[] = [
-    'assets/videos/regina.mp4',
-    'assets/videos/regina.mp4',
-    'assets/videos/regina.mp4',
-    'assets/videos/regina.mp4',
-    'assets/videos/regina.mp4'
-  ];
-
-  currentIndex = 0;
-
-  @ViewChild('videoPlayer') video!: ElementRef<HTMLVideoElement>;
+  // Se quito la franja "Nuestros Productos" y el video regina.mp4
+  // que corria debajo de la tarjeta de ingreso, junto con el
+  // ViewChild y los tres metodos que lo hacian rotar.
+  //
+  // El ngAfterViewInit se va entero: lo unico que hacia era
+  // arrancar ese video, y dejarlo apuntando a un #videoPlayer que
+  // ya no existe reventaba el login con "nativeElement of
+  // undefined".
 
   ngOnInit(): void {
     document.documentElement.style.overflow = 'hidden';
-  }
-
-  ngAfterViewInit() {
-    const videoEl = this.video.nativeElement;
-
-    videoEl.muted = true; // 🔇 sin audio siempre
-    videoEl.src = this.videos[this.currentIndex];
-    videoEl.load();
-    videoEl.play();
-
-    videoEl.onended = () => {
-      this.nextVideo();
-    };
-  }
-
-
-  playVideo() {
-    const videoEl = this.video.nativeElement;
-    videoEl.src = this.videos[this.currentIndex];
-    videoEl.load();
-    videoEl.play();
-  }
-
-  nextVideo() {
-    this.currentIndex = (this.currentIndex + 1) % this.videos.length;
-
-    const videoEl = this.video.nativeElement;
-
-    videoEl.src = this.videos[this.currentIndex];
-    videoEl.load();
-    videoEl.play();
   }
 
   ngOnDestroy(): void {

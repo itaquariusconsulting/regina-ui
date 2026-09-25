@@ -24,11 +24,27 @@
   height: var(--size);
   border-radius: 6px;
 
-  background: linear-gradient(135deg, var(--primary-color), var(--sidebar-color));
+  /* Los cuadritos seguian el degradado del tema y la sombra quedo
+     en el indigo de Material, que no es de ninguna de las dos
+     marcas. Ahora toman el azul y el verde del isotipo. */
+  background: linear-gradient(135deg, var(--rx-blue), var(--rx-teal));
 
   animation: dance 1.2s ease-in-out infinite;
   transform-origin: center;
-  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 6px 14px rgba(24, 90, 246, .28);
+}
+
+/* El logo debajo de los cuadritos, en un tamano fijo y con aire. */
+.loader-marca {
+  margin-top: 18px;
+  text-align: center;
+
+  img {
+    width: 132px;
+    max-width: 55vw;
+    height: auto;
+    display: block;
+  }
 }
 
 @keyframes dance {

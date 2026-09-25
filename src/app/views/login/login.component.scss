@@ -312,78 +312,6 @@ form {
    tema claro, porque el negro sobre el fondo nuevo se veia como un
    recorte de otra pagina. */
 
-.marquee-header {
-  position: fixed;
-  bottom: 22vh;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-
-  h6 {
-    color: var(--rx-500);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
-
-  hr {
-    width: 200px;
-    margin: 6px auto;
-    background: linear-gradient(to right, transparent, var(--rx-300), transparent);
-    height: 1px;
-    border: none;
-    opacity: 1;
-  }
-}
-
-.video-marquee {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  height: 20vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  background: transparent;
-}
-
-.video-marquee::before,
-.video-marquee::after {
-  content: "";
-  position: absolute;
-  width: 20%;
-  height: 100%;
-  top: 0;
-  pointer-events: none;
-}
-
-.video-marquee::before {
-  left: 0;
-  background: linear-gradient(to right, #E6EEF9, transparent);
-}
-
-.video-marquee::after {
-  right: 0;
-  background: linear-gradient(to left, #E3ECF8, transparent);
-}
-
-.video-wrapper {
-  width: 320px;
-  height: 180px;
-  border-radius: var(--rx-r);
-  overflow: hidden;
-  animation: slideVideo 12.75s linear infinite;
-}
-
-.video-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: .95;
-}
-
 @keyframes slideVideo {
   0%   { transform: translateX(80%); opacity: 0; }
   10%  { opacity: .5; }
@@ -399,10 +327,6 @@ form {
    hacer, que es entrar. */
 
 @media (max-width: 768px), (max-height: 820px) {
-  .marquee-header,
-  .video-marquee {
-    display: none;
-  }
 }
 
 @media (max-width: 768px) {

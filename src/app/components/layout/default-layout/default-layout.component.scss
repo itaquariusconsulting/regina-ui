@@ -104,6 +104,63 @@
   }
 }
 
+/* ============================================================
+   MENU LATERAL EN PANTALLA CHICA
+   ------------------------------------------------------------
+   En pantalla grande el menu es una columna de la grilla y
+   empuja al contenido. En una de 360px eso deja 140px utiles, o
+   sea nada. Ahi el menu pasa a FLOTAR por encima del contenido:
+   se abre con la hamburguesa, tapa lo de atras y se va al elegir
+   una opcion o al tocar afuera.
+============================================================ */
+
+.layout.menu-flotante {
+  /* La grilla deja de reservarle una columna: el contenido usa
+     todo el ancho, tenga el menu abierto o cerrado. */
+  grid-template-columns: 0 1fr;
+  grid-template-areas:
+    "header header"
+    "content content";
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1040;
+
+    width: 260px;
+    max-width: 82vw;
+
+    background: var(--rx-superficie);
+    border-right: 1px solid var(--rx-borde);
+    box-shadow: 0 0 40px rgba(15, 23, 42, .28);
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    animation: menu-entra 180ms ease-out;
+  }
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1035;
+  background: rgba(15, 23, 42, .45);
+  animation: fondo-entra 180ms ease-out;
+}
+
+@keyframes menu-entra {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes fondo-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .content-inner {
   flex: 1 1 auto;
 

@@ -1,5 +1,5 @@
-import { Component, OnInit, NgZone } from '@angular/core';
-import { RouterOutlet, Router } from '@angular/router';
+import { Component, OnInit, NgZone, HostListener } from '@angular/core';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -52,6 +52,27 @@ export class DefaultLayoutComponent implements OnInit {
     ? JSON.parse(sessionStorage.getItem('user')!)
     : null;
 
+  /* ============================================================
+     MENU LATERAL
+     ------------------------------------------------------------
+     Antes el menu dependia solo de isDesktop, que sale del
+     user-agent. Eso dejaba dos agujeros:
+
+     1. En un telefono de verdad isDesktop es false y el *ngIf
+        nunca pintaba el menu: no habia forma de navegar.
+     2. En una laptop con la ventana angosta isDesktop sigue
+        siendo true, asi que el menu se quedaba abierto comiendose
+        220px de los 360 disponibles.
+
+     Ahora manda el ANCHO de la pantalla, que es lo que realmente
+     define si el menu entra o estorba, y la hamburguesa funciona
+     en los dos casos.
+  ============================================================ */
+
+  /** Debajo de esto el menu estorba mas de lo que ayuda. */
+  private static readonly ANCHO_CHICO = 992;
+
+  esPantallaChica = false;
   isSidebarVisible = true;
   isDesktop: boolean = false;
   showReginaChat = false;
@@ -77,6 +98,21 @@ export class DefaultLayoutComponent implements OnInit {
 
   ngOnInit(): void {
     this.isDesktop = this.deviceService.isDesktopDevice();
+
+    // El menu arranca cerrado en pantalla chica y abierto en una
+    // grande. En un telefono arranca cerrado aunque el navegador
+    // reporte un ancho generoso.
+    this.esPantallaChica = this.calcularPantallaChica();
+    this.isSidebarVisible = !this.esPantallaChica;
+
+    // En pantalla chica el menu tapa el contenido, asi que al
+    // elegir una opcion se cierra solo. Si no, el usuario entra a
+    // una pantalla y sigue viendo el menu encima.
+    this.router.events.subscribe(ev => {
+      if (ev instanceof NavigationEnd && this.esPantallaChica) {
+        this.isSidebarVisible = false;
+      }
+    });
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
       try {
@@ -157,6 +193,32 @@ export class DefaultLayoutComponent implements OnInit {
 
   toggleSidebar() {
     this.isSidebarVisible = !this.isSidebarVisible;
+  }
+
+  /** Cierra el menu al tocar fuera de el (solo en pantalla chica). */
+  cerrarMenuLateral(): void {
+    if (this.esPantallaChica) {
+      this.isSidebarVisible = false;
+    }
+  }
+
+  private calcularPantallaChica(): boolean {
+    return this.deviceService.isMobileDevice()
+        || window.innerWidth <= DefaultLayoutComponent.ANCHO_CHICO;
+  }
+
+  /* Girar el telefono, abrir las herramientas del navegador o
+     arrastrar el borde de la ventana cambian el ancho sin recargar
+     la pagina. Solo se actua al CRUZAR el umbral: si se recalculara
+     siempre, cualquier reajuste de un pixel volveria a abrir el
+     menu que el usuario acaba de cerrar. */
+  @HostListener('window:resize')
+  alCambiarElTamano(): void {
+    const chicaAhora = this.calcularPantallaChica();
+    if (chicaAhora === this.esPantallaChica) { return; }
+
+    this.esPantallaChica = chicaAhora;
+    this.isSidebarVisible = !chicaAhora;
   }
 
   enviarTexto(): void {
