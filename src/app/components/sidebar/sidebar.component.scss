@@ -1,119 +1,158 @@
+/* ============================================================
+   MENU LATERAL · RENDIX
+   ------------------------------------------------------------
+   Pasa de panel de color solido con una imagen de fondo al panel
+   blanco de la referencia.
+
+   El motivo no es solo estetico: el fondo iba al 50% de opacidad
+   detras del texto blanco, asi que el contraste del menu cambiaba
+   segun el dibujo que quedara debajo de cada item. Sobre blanco,
+   el contraste es el mismo en toda la lista.
+
+   El item activo se marca con una pastilla azul clara y una barra
+   a la izquierda, que es como se lee de un vistazo donde estoy
+   parado sin tener que pintar toda la fila.
+============================================================ */
+
 :host {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-/* Sidebar */
 .sidebar {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: var(--sidebar-color);
-  color: white !important;
-  padding: 12px;
+  background-color: var(--rx-superficie);
+  color: var(--rx-700);
+  padding: 10px 10px 18px;
   overflow-y: auto;
+  border-right: 1px solid var(--rx-borde);
   font-weight: 400;
 }
 
-/* Imagen de fondo */
+/* La imagen de fondo se retira: competia con el texto del menu.
+   La regla queda vacia para no dejar un pseudo-elemento suelto si
+   algun estilo heredado todavia la referencia. */
 .sidebar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  background-image: url('../../../assets/images/sidebar/imagen-sidebar.png');
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: auto 100vh;
-
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
-/* Contenido encima del fondo */
 .sidebar > * {
   position: relative;
   z-index: 1;
 }
 
-/* Items */
+/* ---------- items ---------- */
+
 .menu-item {
   cursor: pointer;
   user-select: none;
   font-family: var(--app-font-family);
   font-weight: 600;
-  color: white !important;
-  font-size: 0.6rem !important;
+  color: var(--rx-700);
 }
 
-/* Header menú */
 .menu-header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 1rem;
+  margin-bottom: 2px;
+  border-radius: var(--rx-r-sm);
+  font-size: .875rem;
   font-weight: 600;
-  color: white !important;
+  color: var(--rx-700);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
 }
 
 .menu-header:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--rx-100);
+  color: var(--rx-900);
 }
 
-/* Flecha */
+.menu-header.activo,
+.menu-header:active {
+  background-color: rgba(27, 95, 209, .10);
+  border-left-color: var(--rx-blue-600);
+  color: var(--rx-blue-700);
+}
+
+/* ---------- flecha ---------- */
+
 .arrow {
   margin-left: auto;
-  transition: transform 0.2s ease;
+  font-size: .8rem;
+  color: var(--rx-400);
+  transition: transform .2s ease;
 }
 
 .arrow.rotate {
   transform: rotate(90deg);
 }
 
-/* Submenu */
+/* ---------- submenu ----------
+   La linea vertical a la izquierda agrupa visualmente los hijos
+   con su padre. Sin ella, con dos menus abiertos a la vez no se
+   sabe de cual cuelga cada item. */
+
 .submenu {
-  padding-left: 20px;
+  padding-left: 14px;
+  margin: 2px 0 6px 18px;
+  border-left: 1px solid var(--rx-200);
 }
 
-/* Items submenu */
 .submenu-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 0.9rem !important;
-  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: var(--rx-r-sm);
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--rx-600);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color .18s ease, color .18s ease;
 }
 
 .submenu-item:hover {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: var(--rx-100);
+  color: var(--rx-blue-700);
+}
+
+.submenu-item.activo {
+  background-color: rgba(27, 95, 209, .10);
+  color: var(--rx-blue-700);
+  font-weight: 600;
 }
 
 /* ============================================================
-   Iconos a color (emoji)
+   Iconos
+   Siguen siendo emoji, pero el recuadro pasa de un velo blanco
+   translucido —que sobre blanco desaparecia— a un gris claro
+   solido.
 ============================================================ */
+
 .emoji-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  font-size: 1.05rem;
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
   line-height: 1;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--rx-r-sm);
+  background: var(--rx-100);
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
+}
+
+.menu-header:hover .emoji-icon,
+.menu-header.activo .emoji-icon {
+  background: rgba(27, 95, 209, .12);
 }
 
 .emoji-icon-sm {
@@ -122,10 +161,9 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  font-size: 0.9rem;
+  font-size: .85rem;
   line-height: 1;
-  border-radius: 5px;
+  border-radius: 6px;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
   font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
 }

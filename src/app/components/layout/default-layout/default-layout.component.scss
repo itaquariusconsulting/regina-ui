@@ -23,18 +23,50 @@
 
 .sidebar {
   grid-area: sidebar;
-  background-color: white;
-  color: rgb(45, 45, 45);
+  background-color: var(--rx-superficie);
+  color: var(--rx-700);
 
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabecera del panel lateral, donde vive el logo. Altura fija
+   igual a la de la barra superior para que las dos lineas de
+   arriba queden alineadas entre si. */
+.sidebar .logo-container {
+  flex: 0 0 auto;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-right: 1px solid var(--rx-borde);
+  border-bottom: 1px solid var(--rx-borde);
+  background: var(--rx-superficie);
+}
+
+.sidebar .logo-container img {
+  max-width: 150px;
+  width: auto;
+  height: auto;
+  max-height: 34px;
+  object-fit: contain;
+}
+
+.sidebar app-sidebar {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 }
 
 .header {
   grid-area: header;
   background-color: var(--primary-color) !important;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--rx-borde);
   display: flex;
   align-items: center;
   width: 100%;
@@ -52,10 +84,19 @@
 
   overflow: hidden;
   padding: 16px;
-  background: #f5f6fa;
+  background: var(--rx-fondo);
 
   display: flex;
   flex-direction: column;
+}
+
+/* En pantallas chicas el panel lateral ya no se muestra —la
+   navegacion pasa a la barra inferior— asi que el contenido usa
+   todo el ancho y solo deja aire para esa barra. */
+@media (max-width: 992px) {
+  .content {
+    padding: 12px 12px 78px;
+  }
 }
 
 .content-inner {

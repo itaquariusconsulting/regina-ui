@@ -1,3 +1,14 @@
+/* La identidad visual vive en styles/_rendix.scss: paleta, radios,
+   sombras, primitivas y el puente con Bootstrap y Material.
+
+   Va primero de todo porque Sass exige que @use preceda a
+   cualquier regla, incluido el @font-face de abajo.
+
+   Ese archivo define --primary-color, --sidebar-color y
+   --text-on-primary apuntando a la marca RENDIX, asi que todo lo
+   que hay en este archivo cambio de color sin tocarse una linea. */
+@use 'styles/rendix';
+
 @font-face {
   font-family: 'Hind';
   src: url('./assets/fonts/Hind-Regular.ttf') format('truetype');
@@ -11,9 +22,6 @@
 
 :root {
   --app-font-family: 'Hind', Arial, sans-serif !important;
-  --primary-color: #198754;
-  --sidebar-color: #0e6f43;
-  --text-on-primary: #ffffff;
 }
 
 /* ==========================
@@ -49,7 +57,11 @@ table {
 
 .layout {
   display: flex;
-  width: 100vw;
+  /* 100vw incluye el ancho de la barra de scroll vertical, asi que
+     en escritorio la pagina quedaba unos pixeles mas ancha que la
+     ventana y aparecia un scroll horizontal fantasma. 100% mide el
+     contenedor real. */
+  width: 100%;
   height: calc(100vh - 50px);
   overflow: hidden;
 }
@@ -73,7 +85,18 @@ app-sidebar {
   min-width: 0;
   overflow: auto;
   padding: 5px;
-  background: #ffffff;
+  /* Fondo gris claro en vez de blanco: es lo que hace que las
+     tarjetas y las tablas blancas se despeguen del lienzo. Con
+     todo blanco no se distingue donde empieza cada bloque. */
+  background: var(--rx-fondo);
+}
+
+@media (max-width: 992px) {
+  .content {
+    /* Espacio para la barra de navegacion inferior del movil, que
+       es fija y tapaba la ultima fila de cada listado. */
+    padding: 10px 12px 76px;
+  }
 }
 
 /* ==========================
@@ -93,30 +116,22 @@ app-sidebar {
    Card Theme Global
 ========================== */
 
+/* El borde de 3px en el color de la marca y el fondo teñido eran
+   lo que mas envejecia la pantalla: cada tarjeta gritaba. La
+   version nueva usa borde fino gris y sombra suave, que es lo que
+   separa los bloques sin competir con el contenido. */
 .theme-card {
-  --card-radius: 15px;
-
-  border-radius: var(--card-radius);
-  border: 3px solid var(--primary-color);
-
-  background: color-mix(in srgb,
-      var(--primary-color) 6%,
-      transparent);
-
-  box-shadow:
-    0 6px 14px color-mix(in srgb,
-      var(--primary-color) 25%,
-      transparent);
-
-  padding: 16px;
-  transition: all 0.25s ease;
+  border-radius: var(--rx-r);
+  border: 1px solid var(--rx-borde);
+  background: var(--rx-superficie);
+  box-shadow: var(--rx-sombra-sm);
+  padding: 18px;
+  transition: box-shadow .18s ease, transform .18s ease;
 }
 
 .theme-card:hover {
-  box-shadow:
-    0 10px 22px color-mix(in srgb,
-      var(--primary-color) 40%,
-      transparent);
+  box-shadow: var(--rx-sombra);
+  transform: translateY(-2px);
 }
 
 /* ==========================
@@ -149,32 +164,56 @@ app-sidebar {
   text-align: left;
 }
 
+/* Las tablas de la aplicacion, sin pedirles que cambien de clase.
+   Son 24 vistas: si el look nuevo exigiera tocar cada una, la
+   mitad se iba a quedar vieja. */
 table {
   width: 100%;
-  border-radius: 9px;
+  border-radius: var(--rx-r);
   overflow: hidden;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--rx-superficie);
+  border: 1px solid var(--rx-borde);
+  font-size: 0.82rem;
+  box-shadow: var(--rx-sombra-sm);
 }
 
+/* Encabezado claro con texto gris en vez de una franja de color
+   solido. La franja pesaba mas que los datos, que es justo al
+   reves de lo que uno quiere mirar en un listado. */
 table thead th {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--rx-50);
+  color: var(--rx-600);
+  font-weight: 600;
+  font-size: .72rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
   height: 40px;
+  padding: 10px 12px;
   vertical-align: middle;
   text-align: center;
+  border-bottom: 1px solid var(--rx-borde);
 }
 
 table tbody td {
-  padding: 2px 6px;
-  line-height: 16px;
+  padding: 9px 12px;
+  line-height: 1.35;
   font-size: 0.8rem;
-  height: 21px !important;
+  color: var(--rx-texto);
+  border-bottom: 1px solid var(--rx-100);
 }
 
 table tbody tr {
   height: auto !important;
+}
+
+table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table tbody tr:hover {
+  background: var(--rx-50);
 }
 
 /* ==========================
@@ -203,44 +242,41 @@ button.general-button {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 
   font-size: 0.8rem;
-  padding: 10px 22px;
-  border-radius: 20px;
+  font-weight: 600;
+  padding: 0 18px;
+  border-radius: var(--rx-r-sm);
   border: none;
-  background: #0063A7;
-  color: white;
+  background: var(--rx-blue-600);
+  color: var(--rx-white);
   cursor: pointer;
 
-  box-shadow: none;
-  height: 32px !important;
+  box-shadow: var(--rx-sombra-sm);
+  height: var(--rx-alto-control) !important;
   transition:
     transform 0.15s ease,
-    filter 0.15s ease,
+    box-shadow 0.15s ease,
     background-color 0.15s ease;
 }
 
 /* ==========================
    Borde interior
-========================== */
+==========================
+
+   Se saco el anillo blanco de 2px que llevaba cada boton por
+   dentro. Era el detalle que mas delataba la edad de la interfaz:
+   ningun sistema actual lo usa, y encima obligaba al boton a tener
+   un radio grande para que el anillo no se viera torcido en las
+   esquinas.
+
+   La regla queda, neutralizada, para que cualquier componente que
+   todavia la referencie no herede un pseudo-elemento suelto. */
 
 button.general-button::before {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  right: 3px;
-  bottom: 3px;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  pointer-events: none;
-  transition: border-color 0.15s ease;
-}
-
-/* LIGHT → borde gris */
-button.general-button.btn-light::before {
-  border-color: #adb5bd;
+  content: none;
 }
 
 /* ==========================
@@ -248,12 +284,13 @@ button.general-button.btn-light::before {
 ========================== */
 
 button.general-button:hover {
-  filter: brightness(1.15);
+  filter: brightness(1.06);
   transform: translateY(-1px);
+  box-shadow: var(--rx-sombra);
 }
 
 button.general-button.btn-light:hover {
-  background-color: #e9ecef;
+  background-color: var(--rx-100);
 }
 
 /* ==========================
@@ -265,47 +302,46 @@ button.general-button:active {
   filter: brightness(0.9);
 }
 
-button.general-button:active::before {
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
 /* ==========================
    Colores Bootstrap
 ========================== */
 
 button.general-button.btn-primary {
-  background-color: #0063a7;
+  background-color: var(--rx-blue-600);
 }
 
 button.general-button.btn-success {
-  background-color: #198754;
+  background-color: var(--rx-ok);
 }
 
 button.general-button.btn-danger {
-  background-color: #dc3545;
+  background-color: var(--rx-danger);
 }
 
 button.general-button.btn-warning {
-  background-color: #ffc107;
-  color: #212529;
+  background-color: var(--rx-warn);
+  color: var(--rx-white);
 }
 
 button.general-button.btn-info {
-  background-color: #1192d1;
-  color: #212529;
+  background-color: var(--rx-info);
+  color: var(--rx-white);
 }
 
 button.general-button.btn-secondary {
-  background-color: #6c757d;
+  background-color: var(--rx-500);
 }
 
 button.general-button.btn-dark {
-  background-color: #212529;
+  background-color: var(--rx-navy);
 }
 
+/* El boton claro ahora lleva borde: sin el, sobre el fondo gris
+   del contenido se perdia y no se leia como boton. */
 button.general-button.btn-light {
-  background-color: #f8f9fa;
-  color: #212529;
+  background-color: var(--rx-white);
+  color: var(--rx-700);
+  border: 1px solid var(--rx-300);
 }
 
 /* ==========================
@@ -349,21 +385,26 @@ button.general-button i {
   padding: 0.5rem 0;
 }
 
-.modal-header,
-.modal-footer {
+/* Cabecera del modal en blanco con titulo oscuro. La franja de
+   color ocupaba un tercio de los dialogos chicos —que en esta app
+   son casi todos— y dejaba el mensaje real apretado abajo. */
+.modal-header {
   flex: 0 0 auto;
-  border-bottom: 1px solid #dee2e6;
-  padding-left: 10px !important;
-  padding-right: 10px !important;
-  padding-bottom: 10px !important;
-  padding-top: 10px !important;
-  background-color: var(--primary-color);
-  color: var(--text-on-primary);
+  padding: 14px 18px !important;
+  background-color: var(--rx-superficie);
+  color: var(--rx-900);
+  font-weight: 600;
+  border-bottom: 1px solid var(--rx-borde);
 }
 
 .modal-footer {
-  border-top: 1px solid #dee2e6;
+  flex: 0 0 auto;
+  padding: 12px 18px !important;
+  background-color: var(--rx-50);
+  color: var(--rx-texto);
+  border-top: 1px solid var(--rx-borde);
   border-bottom: none;
+  gap: 8px;
 }
 
 /* Anillo interno */

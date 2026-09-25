@@ -2,6 +2,27 @@ import { Injectable } from '@angular/core';
 
 export type ThemeKey = 'AZUL' | 'VERDE' | 'ROJO' | 'NARANJA' | 'VIOLETA' | 'GRIS';
 
+/**
+ * Preferencia de color del usuario.
+ *
+ * RETIRADO (setiembre 2026). RENDIX es una marca, no una paleta a
+ * elegir: el color lo define styles/_rendix.scss y es uno solo.
+ *
+ * Por que el servicio sigue existiendo y no se borro:
+ *
+ *   1. La preferencia esta guardada en la base, por usuario, y el
+ *      backend la sigue devolviendo. El login la lee al entrar.
+ *   2. Varios componentes lo inyectan. Borrarlo obliga a tocarlos
+ *      todos, que es justo el tipo de cambio colateral que rompe
+ *      cosas en una tanda de estilos.
+ *
+ * Entonces se conserva la firma y se apaga el efecto: applyTheme ya
+ * no pinta nada. Guardar la preferencia sigue funcionando y no
+ * molesta a nadie.
+ *
+ * Esto es lo que impide que un usuario que dejo elegido VERDE entre
+ * y vea el logo RENDIX sobre una barra verde.
+ */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly storageKey = 'theme';
@@ -10,46 +31,16 @@ export class ThemeService {
     return sessionStorage.getItem(this.storageKey) as ThemeKey | null;
   }
 
-  applyTheme(theme: ThemeKey): void {
-    const root = document.documentElement;
-
-    switch (theme) {
-      case 'AZUL':
-        root.style.setProperty('--primary-color', '#0063A7');
-        root.style.setProperty('--primary-color-hover', '#004f86');
-        root.style.setProperty('--sidebar-color', '#00508f');
-        break;
-
-      case 'VERDE':
-        root.style.setProperty('--primary-color', '#198754');
-        root.style.setProperty('--primary-color-hover', '#1b5e20');
-        root.style.setProperty('--sidebar-color', '#0e6f43');
-        break;
-
-      case 'NARANJA':
-        root.style.setProperty('--primary-color', '#d9a121');
-        root.style.setProperty('--primary-color-hover', '#8e0000');
-        root.style.setProperty('--sidebar-color', '#bc8e26');
-        break;
-
-      case 'VIOLETA':
-        root.style.setProperty('--primary-color', '#b9a8ff');
-        root.style.setProperty('--primary-color-hover', '#8e0000');
-        root.style.setProperty('--sidebar-color', '#9400d3');
-        break;
-
-      case 'GRIS':
-        root.style.setProperty('--primary-color', '#939598');
-        root.style.setProperty('--primary-color-hover', '#8e0000');
-        root.style.setProperty('--sidebar-color', '#7e8081');
-        break;
-
-      case 'ROJO':
-        root.style.setProperty('--primary-color', '#e14946');
-        root.style.setProperty('--primary-color-hover', '#8e0000');
-        root.style.setProperty('--sidebar-color', '#b43e3a');
-        break;
-    }
+  /**
+   * Ya no cambia ningun color.
+   *
+   * Antes escribia --primary-color y --sidebar-color directamente
+   * sobre :root con setProperty, o sea con estilo en linea, que le
+   * gana a cualquier hoja de estilos. Por eso pisaba la identidad de
+   * la marca y no habia forma de defenderse desde el CSS.
+   */
+  applyTheme(_theme: ThemeKey): void {
+    /* intencionalmente vacio */
   }
 
   setTheme(theme: ThemeKey): void {

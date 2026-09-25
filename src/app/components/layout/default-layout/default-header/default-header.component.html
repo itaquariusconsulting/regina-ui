@@ -24,72 +24,12 @@
       <span class="help-button-icon">?</span>
     </button>
 
-    <div class="theme-area">
-      <i class="fas fa-brush user-icon" (click)="showThemeDropdown = !showThemeDropdown"
-        style="padding: 50px !important; cursor: pointer;"></i>
-      <div class="theme-dropdown" *ngIf="showThemeDropdown" style="margin-top: 50px !important;">
-        <div class="perfil-header">Tema</div>
-        <div class="card theme-card">
-          <div class="card-body py-2 px-3">
-
-            <div class="radio-group">
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'AZUL'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Azul</span>
-              </label>
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'VERDE'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Verde</span>
-              </label>
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'ROJO'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Rojo</span>
-              </label>
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'NARANJA'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Naranja</span>
-              </label>
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'VIOLETA'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Violeta</span>
-              </label>
-
-              <label class="donut-radio">
-                <input type="radio" name="theme" [value]="'GRIS'" [(ngModel)]="selectedTheme"
-                  (ngModelChange)="changeTheme($event)" />
-                <span class="control"></span>
-                <span class="text">Gris</span>
-              </label>
-
-            </div>
-            <div class="d-flex gap-2 justify-content-end" style="margin-top: 20px !important;">
-              <button title="Establecer" class="btn general-button btn-primary btn-sm" (click)="saveTheme()">
-                <i class="fas fa-save"></i>
-              </button>
-              <button title="Cerrar" class="btn general-button btn-danger btn-sm" (click)="showThemeDropdown = !showThemeDropdown">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
+    <!-- El selector de temas (Azul, Verde, Rojo, Naranja, Violeta,
+         Gris) se retiro: escribia --primary-color en linea sobre
+         :root, asi que le ganaba a la identidad de la marca y un
+         usuario con VERDE guardado veia el logo RENDIX sobre una
+         barra verde. El color ahora es uno solo y sale de
+         styles/_rendix.scss. -->
 
     <!-- User area -->
     <div class="user-area" (click)="toggleDropdown()">

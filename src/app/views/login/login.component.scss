@@ -1,224 +1,337 @@
-html,
-body {
-  height: 100%;
-  overflow: hidden !important;
-  margin: 0;
-  padding: 0;
+/* ============================================================
+   INGRESO · RENDIX
+   ------------------------------------------------------------
+   Antes: un circulo verde de 300px sobre fondo negro, con anillos
+   animados alrededor. El circulo obligaba a que el formulario
+   entrara en un espacio redondo, asi que los campos median 200px
+   fijos y en un telefono quedaban a un costado.
+
+   Ahora: tarjeta centrada sobre fondo claro, como la referencia.
+   La tarjeta crece y se achica con la pantalla, que es lo que
+   hace que funcione igual en un monitor y en un celular.
+
+   Se conservan todos los nombres de clase del HTML para no tocar
+   el TypeScript: lo unico que cambia en la plantilla es la imagen
+   del logo.
+============================================================ */
+
+:host {
+  display: block;
 }
 
 * {
   box-sizing: border-box;
 }
 
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
+/* ================= FONDO =================
+   Degradado claro en diagonal con dos manchas de color difuminadas,
+   que es lo que da profundidad sin usar una foto de fondo. */
+
+.login-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(760px 520px at 12% 8%, rgba(27, 95, 209, .16), transparent 60%),
+    radial-gradient(680px 520px at 88% 92%, rgba(47, 169, 140, .14), transparent 60%),
+    linear-gradient(160deg, var(--rx-50) 0%, #EAF1FB 55%, #E3ECF8 100%);
 }
 
-img {
-  width: 50%;
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: transparent;
 }
 
-/* ================= BOTONES ================= */
-.btn-casa-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+/* ================= TARJETA ================= */
 
-.btn-casa {
-  background-color: rgb(2, 36, 3);
-  width: 200px;
-  color: white;
-  height: 45px;
-  border-radius: 15px;
-  border: solid 2px #ffffff;
-}
-
-/* ================= INPUTS ================= */
-.input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-
-  input {
-    padding: 10px 40px;
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 15px;
-  }
-
-  i {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #aaa;
-  }
-
-  .password-toggle {
-    position: absolute;
-    right: 30px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #aaa;
-    display: flex;
-    align-items: center;
-  }
-
-  input:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-}
-
-/* ================= LOGIN ================= */
 .login-container {
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background-color: #a0b258;
+  /* Deja de ser un circulo absoluto de medidas fijas. */
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  margin: 0 auto;
 
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  width: min(100% - 32px, 420px);
+  min-height: auto;
+  height: auto;
+  border-radius: var(--rx-r-lg);
+  background: var(--rx-white);
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  gap: 6px;
 
+  padding: 38px 32px 34px;
+  /* El margen de arriba deja la tarjeta en el tercio superior, no
+     pegada al borde, y la baja en pantallas altas. */
+  margin-top: clamp(24px, 9vh, 96px);
+  margin-bottom: 32px;
+
+  border: 1px solid var(--rx-200);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .12);
   z-index: 1;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
-/* ================= SPINNER + PULSO ================= */
-.spinner-container {
-  position: absolute;
-  width: 110%;
-  height: 110%;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 0;
-  pointer-events: none;
+/* El logo manda el aire de toda la tarjeta. */
+.login-container > img {
+  width: min(78%, 250px);
+  height: auto;
+  margin-bottom: 4px;
 }
 
-/* CÍRCULO BASE */
+/* La linea fina debajo del logo, como en la referencia. */
+.login-container > img + .login-form::before {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 2px;
+  margin: 14px auto 22px;
+  border-radius: var(--rx-r-full);
+  background: var(--rx-200);
+}
+
+/* ================= ANILLOS =================
+   Los anillos que pulsaban alrededor del circulo ya no tienen
+   circulo al que rodear. Se neutralizan aca en vez de sacarlos del
+   HTML, para no tocar la plantilla mas de lo necesario. */
+
+.spinner-container,
 .spinner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.8);
-  z-index: 1;
+  display: none;
 }
 
-/* 🔥 ANILLOS DE PULSO */
 .spinner-container::before,
 .spinner-container::after {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.6);
-  animation: pulseRing 2.5s ease-out infinite;
+  content: none;
 }
 
-.spinner-container::after {
-  animation-delay: 1.2s;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-}
+/* ================= FORMULARIO ================= */
 
-/* ANIMACIÓN PULSO */
-@keyframes pulseRing {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-
-  70% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-/* ================= FORM ================= */
 .login-form {
+  width: 100%;
   z-index: 1;
   text-align: center;
-  color: white;
+  color: var(--rx-texto);
 }
 
 form {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
 
-input {
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 5px;
-  border: none;
+.form-group {
+  width: 100%;
 }
 
+/* ================= CAMPOS ================= */
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  input {
+    width: 100%;
+    /* Sin !important y sin ancho fijo: el campo ocupa la tarjeta. */
+    padding: 12px 44px;
+    height: 48px;
+    border: 1px solid var(--rx-200);
+    border-radius: var(--rx-r-sm);
+    background: var(--rx-50);
+    color: var(--rx-900);
+    /* 16px para que iOS no haga zoom al enfocar. */
+    font-size: 16px;
+    transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+  }
+
+  input::placeholder {
+    color: var(--rx-400);
+  }
+
+  input:focus {
+    border-color: var(--rx-blue-600);
+    background: var(--rx-white);
+    box-shadow: 0 0 0 3px rgba(27, 95, 209, .16);
+    outline: none;
+  }
+
+  i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--rx-400);
+    font-size: .95rem;
+    /* El icono no debe robar el clic del campo. */
+    pointer-events: none;
+    /* Anula el padding-top suelto que traia la plantilla. */
+    padding-top: 0 !important;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--rx-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--rx-r-sm);
+    padding: 0;
+    max-width: none;
+    transition: color .18s ease, background-color .18s ease;
+
+    &:hover {
+      color: var(--rx-600);
+      background: var(--rx-100);
+    }
+  }
+}
+
+/* Se anula el ancho fijo de 200px que llevaba la clase. */
 .input-all {
-  width: 200px !important;
-  border-radius: 15px !important;
+  width: 100% !important;
+  border-radius: var(--rx-r-sm) !important;
 }
 
-button {
-  max-width: 260px;
-  background: #008cff;
-  color: white;
-  padding: 5px;
-  border-radius: 5px;
-  border: none;
+/* El primer campo traia un padding-top suelto en la plantilla. */
+.input-container[style] {
+  padding-top: 0 !important;
+}
+
+/* ================= BOTONES ================= */
+
+.btn-casa-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  color: var(--rx-texto-suave);
+  font-size: .85rem;
+}
+
+.boton-inicio,
+.btn-casa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: 100% !important;
+  max-width: none;
+  height: 48px !important;
+
+  background-color: var(--rx-blue-600) !important;
+  color: var(--rx-white);
+  border: none !important;
+  border-radius: var(--rx-r-sm) !important;
+
+  font-size: .95rem;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(27, 95, 209, .26);
+  transition: background-color .18s ease, transform .15s ease, box-shadow .18s ease;
 }
 
-button:hover {
-  background: #22621f;
+.boton-inicio:hover,
+.btn-casa:hover {
+  background-color: var(--rx-blue-700) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(27, 95, 209, .32);
 }
 
-.boton-inicio {
-  margin-top: 20px;
-  border-radius: 15px !important;
-  background-color: rgb(2, 31, 7);
-  border: 2px solid white !important;
-  height: 38px !important;
-  width: 160px !important;
+.boton-inicio:active,
+.btn-casa:active {
+  transform: translateY(1px);
 }
 
-/* ================= BACKGROUND ================= */
-.login-background {
+.boton-inicio:disabled {
+  background-color: var(--rx-400) !important;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ================= CODIGO DE 4 DIGITOS ================= */
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 22px;
+
+  input {
+    width: 56px;
+    height: 62px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--rx-900);
+    background: var(--rx-50);
+    border: 1px solid var(--rx-200);
+    border-radius: var(--rx-r-sm);
+    transition: border-color .18s ease, box-shadow .18s ease;
+  }
+
+  input:focus {
+    border-color: var(--rx-blue-600);
+    background: var(--rx-white);
+    box-shadow: 0 0 0 3px rgba(27, 95, 209, .16);
+    outline: none;
+  }
+}
+
+.login-form p {
+  color: var(--rx-texto-suave);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+/* ================= MARQUESINA =================
+   Se conserva: es contenido, no decoracion. Solo se la pasa al
+   tema claro, porque el negro sobre el fondo nuevo se veia como un
+   recorte de otra pagina. */
+
+.marquee-header {
   position: fixed;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
+  bottom: 22vh;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+
+  h6 {
+    color: var(--rx-500);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  hr {
+    width: 200px;
+    margin: 6px auto;
+    background: linear-gradient(to right, transparent, var(--rx-300), transparent);
+    height: 1px;
+    border: none;
+    opacity: 1;
+  }
 }
 
-.overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background-color: rgb(22, 22, 22);
-  z-index: -1;
-}
-
-/* ================= MARQUESINA ================= */
 .video-marquee {
   position: fixed;
   bottom: 0;
@@ -228,10 +341,9 @@ button:hover {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background: rgb(22, 22, 22);
+  background: transparent;
 }
 
-/* FADE */
 .video-marquee::before,
 .video-marquee::after {
   content: "";
@@ -239,44 +351,24 @@ button:hover {
   width: 20%;
   height: 100%;
   top: 0;
+  pointer-events: none;
 }
 
 .video-marquee::before {
   left: 0;
-  background: linear-gradient(to right, rgb(22, 22, 22), transparent);
+  background: linear-gradient(to right, #E6EEF9, transparent);
 }
 
 .video-marquee::after {
   right: 0;
-  background: linear-gradient(to left, rgb(22, 22, 22), transparent);
+  background: linear-gradient(to left, #E3ECF8, transparent);
 }
 
-/* CABECERA */
-.marquee-header {
-  position: fixed;
-  bottom: 22vh;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-
-  h6 {
-    color: #ffffff;
-    font-size: 14px;
-  }
-
-  hr {
-    width: 200px;
-    margin: 5px auto;
-    background: linear-gradient(to right, transparent, #ffffff, transparent);
-    height: 1px;
-    border: none;
-  }
-}
-
-/* VIDEO */
 .video-wrapper {
   width: 320px;
   height: 180px;
+  border-radius: var(--rx-r);
+  overflow: hidden;
   animation: slideVideo 12.75s linear infinite;
 }
 
@@ -284,32 +376,49 @@ button:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.85;
-  filter: brightness(1) contrast(1.2) saturate(1.2);
+  opacity: .95;
 }
 
-/* ANIMACIÓN VIDEO */
 @keyframes slideVideo {
-  0% {
-    transform: translateX(80%);
-    opacity: 0;
+  0%   { transform: translateX(80%); opacity: 0; }
+  10%  { opacity: .5; }
+  50%  { transform: translateX(0%); opacity: .95; }
+  90%  { opacity: .5; }
+  100% { transform: translateX(-80%); opacity: 0; }
+}
+
+/* ================= PANTALLAS CHICAS =================
+   Debajo de 820px de alto la marquesina se come la tarjeta: en un
+   telefono en vertical el formulario terminaba tapado. Ahi se
+   oculta y la pantalla queda solo con lo que el usuario vino a
+   hacer, que es entrar. */
+
+@media (max-width: 768px), (max-height: 820px) {
+  .marquee-header,
+  .video-marquee {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    width: calc(100% - 28px);
+    padding: 30px 22px 28px;
+    margin-top: 28px;
+    border-radius: var(--rx-r);
   }
 
-  10% {
-    opacity: 0.5;
+  .otp-inputs input {
+    width: 48px;
+    height: 56px;
+    font-size: 1.3rem;
   }
+}
 
-  50% {
-    transform: translateX(0%);
-    opacity: 0.85;
-  }
-
-  90% {
-    opacity: 0.5;
-  }
-
-  100% {
-    transform: translateX(-80%);
-    opacity: 0;
-  }
+/* La plantilla trae el logo, el formulario y la marquesina como
+   hermanos sueltos en el body. Este contenedor minimo evita que en
+   pantallas anchas el bloque se pegue al borde izquierdo. */
+:host {
+  min-height: 100vh;
+  padding-bottom: 8px;
 }

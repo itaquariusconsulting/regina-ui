@@ -1,0 +1,468 @@
+/* ============================================================
+   RENDIX · capa de identidad
+   ------------------------------------------------------------
+   Todo el color de la aplicacion sale de aca.
+
+   Por que un archivo aparte y no colores sueltos en cada
+   componente: hoy hay 757 colores escritos a mano repartidos en
+   37 hojas de estilo, y por eso cambiar el look significaba
+   tocar 37 archivos y olvidarse de la mitad. Con esto, la marca
+   se cambia en un solo lugar.
+
+   Los valores salen del logo, medidos sobre el PNG:
+     navy    #0E2240   el texto RENDIX
+     azul    #1557F0   el trazo del isotipo
+     teal    #2FA98C   los nodos del circuito
+     verde   #34B36E   los nodos del circuito
+     cyan    #37A6C8   la X final
+
+   REGLA PARA DE ACA EN ADELANTE: ningun componente nuevo escribe
+   un color en hexadecimal. Usa las variables de abajo. Si hace
+   falta un color que no esta, se agrega aca.
+============================================================ */
+
+:root {
+
+  /* ---------- marca ---------- */
+  --rx-navy: #0E2240;
+  --rx-navy-700: #14305C;
+  --rx-blue: #1557F0;
+  --rx-blue-600: #1B5FD1;
+  --rx-blue-700: #1142C4;
+  --rx-teal: #2FA98C;
+  --rx-green: #34B36E;
+  --rx-cyan: #37A6C8;
+
+  /* ---------- neutros ----------
+     Escala slate. Ya estaba a medias en el dashboard y en los
+     reportes; se formaliza para que todos usen la misma. */
+  --rx-900: #0F172A;
+  --rx-800: #1E293B;
+  --rx-700: #334155;
+  --rx-600: #475569;
+  --rx-500: #64748B;
+  --rx-400: #94A3B8;
+  --rx-300: #CBD5E1;
+  --rx-200: #E2E8F0;
+  --rx-100: #F1F5F9;
+  --rx-50:  #F8FAFC;
+  --rx-white: #FFFFFF;
+
+  /* ---------- estados ----------
+     Tonos elegidos para que el texto oscuro encima de la version
+     "suave" tenga contraste suficiente. No son los de Bootstrap:
+     los de Bootstrap sobre fondo claro se leen mal. */
+  --rx-ok: #16A34A;
+  --rx-ok-soft: #DCFCE7;
+  --rx-ok-ink: #14532D;
+
+  --rx-warn: #D97706;
+  --rx-warn-soft: #FEF3C7;
+  --rx-warn-ink: #78350F;
+
+  --rx-danger: #DC2626;
+  --rx-danger-soft: #FEE2E2;
+  --rx-danger-ink: #7F1D1D;
+
+  --rx-info: #0284C7;
+  --rx-info-soft: #E0F2FE;
+  --rx-info-ink: #075985;
+
+  /* ---------- superficies ---------- */
+  --rx-fondo: var(--rx-100);
+  --rx-superficie: var(--rx-white);
+  --rx-borde: var(--rx-200);
+  --rx-texto: var(--rx-800);
+  --rx-texto-suave: var(--rx-500);
+
+  /* ---------- formas ----------
+     Un solo juego de radios y sombras. La app tenia 9px, 14px,
+     15px, 18px y 20px conviviendo en la misma pantalla, que es lo
+     que la hacia ver despareja aunque los colores estuvieran bien. */
+  --rx-r-sm: 8px;
+  --rx-r: 12px;
+  --rx-r-lg: 16px;
+  --rx-r-full: 999px;
+
+  --rx-sombra-sm: 0 1px 2px rgba(15, 23, 42, .06);
+  --rx-sombra: 0 4px 12px rgba(15, 23, 42, .08);
+  --rx-sombra-lg: 0 12px 28px rgba(15, 23, 42, .12);
+
+  --rx-alto-control: 38px;
+
+  /* ---------- puente con lo que ya existe ----------
+     Estos nombres los usa media aplicacion (el dashboard entero,
+     las tablas, los modales, el sidebar). Se los reapunta a la
+     marca nueva en vez de ir a buscarlos uno por uno. Es lo que
+     hace que el cambio se vea en pantallas que no toque. */
+  --primary-color: var(--rx-blue-600);
+  --sidebar-color: var(--rx-navy);
+  --text-on-primary: var(--rx-white);
+  --card-radius: var(--rx-r);
+}
+
+
+/* ============================================================
+   BOOTSTRAP
+   Bootstrap 5 lee sus propias variables en tiempo de ejecucion,
+   asi que alcanza con reasignarlas: no hay que recompilar su
+   SCSS ni pelearse con !important en cada boton.
+============================================================ */
+
+:root {
+  --bs-primary: var(--rx-blue-600);
+  --bs-primary-rgb: 27, 95, 209;
+  --bs-success: var(--rx-ok);
+  --bs-danger: var(--rx-danger);
+  --bs-warning: var(--rx-warn);
+  --bs-info: var(--rx-info);
+  --bs-dark: var(--rx-navy);
+  --bs-body-color: var(--rx-texto);
+  --bs-border-color: var(--rx-borde);
+  --bs-border-radius: var(--rx-r-sm);
+  --bs-link-color: var(--rx-blue-600);
+  --bs-link-hover-color: var(--rx-blue-700);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--rx-blue-600);
+  --bs-btn-border-color: var(--rx-blue-600);
+  --bs-btn-hover-bg: var(--rx-blue-700);
+  --bs-btn-hover-border-color: var(--rx-blue-700);
+  --bs-btn-active-bg: var(--rx-blue-700);
+  --bs-btn-disabled-bg: var(--rx-400);
+  --bs-btn-disabled-border-color: var(--rx-400);
+}
+
+.form-control,
+.form-select {
+  border-color: var(--rx-borde);
+  border-radius: var(--rx-r-sm);
+  color: var(--rx-texto);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--rx-blue-600);
+  /* El anillo de foco tiene que verse: es lo unico que le dice a
+     alguien que navega con teclado donde esta parado. */
+  box-shadow: 0 0 0 3px rgba(27, 95, 209, .18);
+}
+
+.form-control::placeholder {
+  color: var(--rx-400);
+}
+
+
+/* ============================================================
+   ANGULAR MATERIAL
+   Conviven Material y Bootstrap en la misma pantalla. Material
+   trae su propio indigo, que al lado del azul de la marca se ve
+   como un error de impresion. Se lo reapunta igual que Bootstrap.
+============================================================ */
+
+:root {
+  --mdc-theme-primary: var(--rx-blue-600);
+  --mat-primary: var(--rx-blue-600);
+  --mdc-filled-button-container-color: var(--rx-blue-600);
+  --mdc-protected-button-container-color: var(--rx-blue-600);
+  --mat-toolbar-container-background-color: var(--rx-navy);
+  --mdc-dialog-container-shape: var(--rx-r);
+  --mat-form-field-container-text-font: var(--app-font-family);
+}
+
+.mat-mdc-dialog-surface {
+  border-radius: var(--rx-r) !important;
+  box-shadow: var(--rx-sombra-lg) !important;
+}
+
+
+/* ============================================================
+   PRIMITIVAS
+   Las piezas que se repiten en todas las pantallas. Puestas aca
+   una vez, para que una tarjeta se vea igual en rendiciones que
+   en reportes.
+============================================================ */
+
+/* ---------- tarjeta ---------- */
+.rx-card {
+  background: var(--rx-superficie);
+  border: 1px solid var(--rx-borde);
+  border-radius: var(--rx-r);
+  box-shadow: var(--rx-sombra-sm);
+  padding: 18px;
+}
+
+.rx-card--hover {
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+
+.rx-card--hover:hover {
+  box-shadow: var(--rx-sombra);
+  transform: translateY(-2px);
+}
+
+/* ---------- tarjeta de indicador (los KPI del dashboard) ---------- */
+.rx-kpi {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--rx-superficie);
+  border: 1px solid var(--rx-borde);
+  border-radius: var(--rx-r);
+  box-shadow: var(--rx-sombra-sm);
+  padding: 16px 18px;
+}
+
+.rx-kpi__icono {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: var(--rx-r-sm);
+  font-size: 1.05rem;
+  background: var(--rx-info-soft);
+  color: var(--rx-info-ink);
+}
+
+.rx-kpi__icono--ok { background: var(--rx-ok-soft); color: var(--rx-ok-ink); }
+.rx-kpi__icono--warn { background: var(--rx-warn-soft); color: var(--rx-warn-ink); }
+.rx-kpi__icono--danger { background: var(--rx-danger-soft); color: var(--rx-danger-ink); }
+
+.rx-kpi__valor {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--rx-900);
+}
+
+.rx-kpi__etiqueta {
+  font-size: .75rem;
+  color: var(--rx-texto-suave);
+}
+
+/* ---------- pildora de estado ----------
+   Reemplaza los badges de colores planos. El texto va en el tono
+   oscuro de su familia y el fondo en el claro: se lee bien y no
+   grita. */
+.rx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--rx-r-full);
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.rx-pill--ok { background: var(--rx-ok-soft); color: var(--rx-ok-ink); }
+.rx-pill--warn { background: var(--rx-warn-soft); color: var(--rx-warn-ink); }
+.rx-pill--danger { background: var(--rx-danger-soft); color: var(--rx-danger-ink); }
+.rx-pill--info { background: var(--rx-info-soft); color: var(--rx-info-ink); }
+.rx-pill--neutro { background: var(--rx-100); color: var(--rx-600); }
+
+
+/* ============================================================
+   TABLAS QUE SE VUELVEN TARJETAS EN EL TELEFONO
+   ------------------------------------------------------------
+   El problema de fondo: una rendicion tiene once columnas y en un
+   telefono no entran. El scroll horizontal "funciona" pero nadie
+   lo usa: el usuario ve la primera columna, no encuentra el
+   importe y abandona.
+
+   Como se usa, sin tocar el TypeScript ni la estructura de la
+   tabla:
+
+     <table class="rx-tabla">
+       <thead>...</thead>
+       <tbody>
+         <tr>
+           <td data-rx="Orden">000016716</td>
+           <td data-rx="Importe">S/ 500.00</td>
+         </tr>
+       </tbody>
+     </table>
+
+   El atributo data-rx es la etiqueta que se muestra al costado
+   del valor cuando la fila se convierte en tarjeta. Sin el, la
+   celda igual se ve, solo que sin titulo.
+
+   Pintar data-rx en cada celda es lo unico manual que queda, y es
+   una linea por columna en el HTML.
+============================================================ */
+
+.rx-tabla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--rx-superficie);
+  border: 1px solid var(--rx-borde);
+  border-radius: var(--rx-r);
+  overflow: hidden;
+  box-shadow: var(--rx-sombra-sm);
+  font-size: .82rem;
+}
+
+.rx-tabla thead th {
+  background: var(--rx-50);
+  color: var(--rx-600);
+  font-weight: 600;
+  font-size: .72rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  padding: 11px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--rx-borde);
+  white-space: nowrap;
+}
+
+.rx-tabla tbody td {
+  padding: 11px 12px;
+  color: var(--rx-texto);
+  border-bottom: 1px solid var(--rx-100);
+  vertical-align: middle;
+}
+
+.rx-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rx-tabla tbody tr:hover {
+  background: var(--rx-50);
+}
+
+/* Los importes en tabular-nums: sin eso las cifras no alinean por
+   la coma y una columna de montos se lee torcida. */
+.rx-tabla .rx-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+
+  .rx-tabla,
+  .rx-tabla tbody,
+  .rx-tabla tr,
+  .rx-tabla td {
+    display: block;
+    width: 100%;
+  }
+
+  /* El encabezado se esconde de la vista pero NO con display:none
+     a secas en un contexto accesible: cada celda lleva su propia
+     etiqueta desde data-rx, asi que el th deja de hacer falta. */
+  .rx-tabla thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .rx-tabla {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .rx-tabla tbody tr {
+    background: var(--rx-superficie);
+    border: 1px solid var(--rx-borde);
+    border-radius: var(--rx-r);
+    box-shadow: var(--rx-sombra-sm);
+    margin-bottom: 12px;
+    padding: 6px 4px;
+  }
+
+  .rx-tabla tbody tr:hover {
+    background: var(--rx-superficie);
+  }
+
+  .rx-tabla tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--rx-100);
+    text-align: right;
+  }
+
+  .rx-tabla tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .rx-tabla tbody td::before {
+    content: attr(data-rx);
+    flex: 0 0 auto;
+    max-width: 48%;
+    text-align: left;
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--rx-500);
+  }
+
+  /* Una celda sin data-rx no deja un hueco vacio a la izquierda. */
+  .rx-tabla tbody td:not([data-rx])::before {
+    content: '';
+    display: none;
+  }
+
+  .rx-tabla tbody td:not([data-rx]) {
+    justify-content: flex-end;
+  }
+
+  .rx-tabla .rx-num {
+    text-align: right;
+  }
+}
+
+
+/* ============================================================
+   UTILIDADES DE RESPONSIVE
+============================================================ */
+
+/* Para bloques que no son tablas y tambien tienen que apilarse. */
+.rx-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.rx-solo-movil { display: none; }
+.rx-solo-escritorio { display: initial; }
+
+@media (max-width: 768px) {
+  .rx-solo-movil { display: initial; }
+  .rx-solo-escritorio { display: none; }
+
+  /* Nadie deberia poder arrastrar la pagina de costado en un
+     telefono. Cuando pasa, casi siempre es un ancho fijo suelto. */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Los controles tocables necesitan altura: 38px es comodo con el
+     dedo, 24px no. */
+  .form-control,
+  .form-select,
+  input,
+  select {
+    min-height: var(--rx-alto-control);
+    /* 16px evita que iOS haga zoom solo al enfocar un campo, que
+       despues deja la pagina corrida y el usuario no entiende por que. */
+    font-size: 16px !important;
+  }
+
+  .btn,
+  button.general-button {
+    min-height: var(--rx-alto-control);
+  }
+}
