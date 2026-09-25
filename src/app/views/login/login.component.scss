@@ -52,8 +52,28 @@
     url("../../../assets/images/brand/login-fondo.jpg"),
     linear-gradient(160deg, var(--rx-50) 0%, #EAF1FB 55%, #E3ECF8 100%);
   background-repeat: no-repeat;
-  background-position: center center;
   background-size: cover;
+
+  /* Centrada, ahora que la pieza trae marco propio.
+     ------------------------------------------------
+     "cover" agranda la imagen hasta tapar la ventana y tira el
+     sobrante de UN eje: el alto si la ventana es mas ancha que la
+     imagen, el ancho si es mas alta. Por eso el logo de Aquarius,
+     que estaba pegado al borde, se cortaba distinto en cada
+     monitor y en el grande desaparecia.
+
+     La imagen ahora tiene 12% de margen difuminado a cada lado.
+     Ese margen es lo que se come el recorte, y la parte que
+     importa queda adentro en todo el rango util:
+
+       ventana comun    (1.93)  ->  se recorta  4% de alto
+       ultrapanoramica  (2.33)  ->  se recorta 12% de alto
+       ventana alta     (1.45)  ->  se recorta 11% de ancho
+
+     Fuera de ese rango vuelve a recortar contenido. No hay forma
+     de evitarlo con una imagen fija: "cover" siempre sacrifica un
+     eje. */
+  background-position: center center;
 }
 
 /* El velo entre la imagen y la tarjeta.

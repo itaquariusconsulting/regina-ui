@@ -1,5 +1,16 @@
-<div class="layout" [class.no-sidebar]="!isDesktop || !isSidebarVisible">
-  <aside *ngIf="isDesktop && isSidebarVisible" class="sidebar">
+<div class="layout"
+     [class.no-sidebar]="!isSidebarVisible"
+     [class.menu-flotante]="esPantallaChica">
+
+  <!-- Fondo oscuro detras del menu abierto en pantalla chica: da
+       el "toca afuera para cerrar" y separa el menu del contenido. -->
+  <div class="sidebar-backdrop"
+       *ngIf="esPantallaChica && isSidebarVisible"
+       (click)="cerrarMenuLateral()"></div>
+
+  <!-- El *ngIf ya no mira isDesktop: en un telefono tambien tiene
+       que poder abrirse con la hamburguesa. -->
+  <aside *ngIf="isSidebarVisible" class="sidebar">
     <div class="logo-container">
       <!-- Version sin la bajada: en 150px de ancho "Sistema de
            Rendicion de Cuentas" mide 4px y se ve como una mancha. -->
