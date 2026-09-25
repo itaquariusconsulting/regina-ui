@@ -56,33 +56,46 @@ pipeline {
                 // -----------------
                 // npm ci borra node_modules entero antes de instalar. En este
                 // Windows Server el antivirus abre los archivos para escanearlos
-                // y, si justo esta mirando uno, el borrado falla:
+                // y, si justo esta mirando uno, el borrado falla con
+                // "EBUSY: resource busy or locked, rmdir". Es el mismo problema
+                // que ya obliga a reintentar el empaquetado con jar mas abajo:
+                // intermitente, y el mismo commit pasa al segundo intento.
                 //
-                //   EBUSY: resource busy or locked, rmdir
-                //   node_modules\@angular\common\locales
+                // El reintento va en Groovy y NO en un bucle de batch. Dos
+                // razones, las dos aprendidas a los golpes:
                 //
-                // Es el MISMO problema que ya obliga a reintentar el empaquetado
-                // con jar mas abajo, y se comporta igual: es intermitente y el
-                // mismo commit pasa al segundo intento. Un workspace recien
-                // creado lo dispara mas seguido porque hay miles de archivos
-                // nuevos que el antivirus nunca vio.
+                //   1. npm en Windows es npm.cmd. Si se lo llama sin "call"
+                //      dentro de un bloque entre parentesis, el "&&" posterior
+                //      nunca se evalua: la instalacion termina bien y el script
+                //      igual sigue de largo como si hubiera fallado.
                 //
-                // Se borra la carpeta antes de cada intento: si quedo a medio
-                // borrar, npm se encuentra un arbol corrupto y falla por otra
-                // razon, que despista mas que el EBUSY original.
-                bat """
-                    @echo off
-                    for /L %%i in (1,1,3) do (
-                        if exist node_modules rmdir /S /Q node_modules 2>nul
-                        npm ci --legacy-peer-deps && goto :instalado
-                        echo Intento %%i fallido al instalar dependencias. Espero 20 segundos.
-                        timeout /t 20 /nobreak >nul
-                    )
-                    echo No se pudieron instalar las dependencias despues de tres intentos.
-                    exit /b 1
-                    :instalado
-                    echo Dependencias instaladas.
-                """
+                //   2. "timeout /t" necesita una consola de verdad. En Jenkins
+                //      no la hay y aborta con "No es compatible la redireccion
+                //      de entradas". El sleep de Groovy no depende de eso.
+                //
+                // Ademas asi se ve el codigo de salida real de npm en el log,
+                // en vez de tener que deducirlo.
+                script {
+                    int intento = 0
+                    while (true) {
+                        intento++
+
+                        // Un borrado a medias no es motivo de fallo: npm ci
+                        // vuelve a limpiar lo que quede. Se ignora su codigo.
+                        bat(returnStatus: true, script: 'if exist node_modules rmdir /S /Q node_modules')
+
+                        def rc = bat(returnStatus: true, script: 'npm ci --legacy-peer-deps')
+                        if (rc == 0) {
+                            echo "Dependencias instaladas en el intento ${intento}."
+                            break
+                        }
+                        if (intento >= 3) {
+                            error("No se pudieron instalar las dependencias despues de ${intento} intentos (ultimo codigo ${rc}).")
+                        }
+                        echo "Intento ${intento} fallido al instalar dependencias (codigo ${rc}). Espero 20 segundos."
+                        sleep time: 20, unit: 'SECONDS'
+                    }
+                }
             }
         }
 
