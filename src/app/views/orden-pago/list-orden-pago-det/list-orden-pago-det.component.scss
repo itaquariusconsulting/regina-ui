@@ -223,3 +223,26 @@ app-pdf-viewer.pdf-doc-viewer {
 .sunat-ok   { background: #d4edda; color: #155724; }
 .sunat-mal  { background: #f8d7da; color: #721c24; }
 .sunat-nada { background: #eceff1; color: #546e7a; }
+
+/* -------------------------------------------------------------------------
+   TELEFONO
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+
+  .bar-buttons-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title-f6 {
+    font-size: 1.15rem;
+  }
+
+  /* El bloque que se despliega debajo de un comprobante trae su
+     propio padding de Bootstrap (p-3). En una tarjeta de telefono
+     eso deja el contenido en una columna de menos de 200px. */
+  .rx-tabla tbody td[colspan] {
+    padding: 10px 8px !important;
+  }
+}

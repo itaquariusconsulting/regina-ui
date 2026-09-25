@@ -55,7 +55,7 @@
   </div>
 
   <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="table global-table table-striped table-hover rx-tabla">
       <thead>
         <th class="text-center">Orden</th>
         <th class="text-center">Periodo</th>
@@ -78,17 +78,17 @@
       <tbody>
         <ng-container *ngFor="let op of pagina">
         <tr [class.fila-abierta]="estaDesplegada(op)">
-          <td class="text-center">{{ op.numOrden }}</td>
-          <td class="text-center">{{ mesEtiqueta(op.codPeriodo) }} {{ op.anoPeriodo }}</td>
-          <td class="text-start">{{ op.desAuxiliar || op.codAuxiliar }}</td>
-          <td class="text-center">{{ op.fecOrden | date: 'dd-MM-yyyy' }}</td>
-          <td class="text-center">{{ op.fecRendicion | date: 'dd-MM-yyyy' }}</td>
-          <td class="text-center">{{ op.numComprobantes ?? '-' }}</td>
+          <td data-rx="Orden" class="text-center">{{ op.numOrden }}</td>
+          <td data-rx="Periodo" class="text-center">{{ mesEtiqueta(op.codPeriodo) }} {{ op.anoPeriodo }}</td>
+          <td data-rx="Persona" class="text-start">{{ op.desAuxiliar || op.codAuxiliar }}</td>
+          <td data-rx="Fecha OP" class="text-center">{{ op.fecOrden | date: 'dd-MM-yyyy' }}</td>
+          <td data-rx="Rendida el" class="text-center">{{ op.fecRendicion | date: 'dd-MM-yyyy' }}</td>
+          <td data-rx="Compr." class="text-center">{{ op.numComprobantes ?? '-' }}</td>
 
           <!-- Contabilidad venía abriendo el detalle de cada orden solo para
                ver este número. El aviso amarillo son planillas abiertas sin
                un solo viaje: no suman nada y hay que limpiarlas. -->
-          <td class="text-end">
+          <td data-rx="Movilidad" class="text-end">
             <ng-container *ngIf="op.numPlanillas">
               <span [title]="tituloMovilidad(op)">
                 S/ {{ op.impMovilidad | number: '1.2-2' }}
@@ -100,15 +100,15 @@
             </ng-container>
             <small class="text-muted" *ngIf="!op.numPlanillas">—</small>
           </td>
-          <td class="text-end">{{ op.desMoneda }} {{ op.impOrdPago | number: '1.2-2' }}</td>
-          <td class="text-end">{{ op.desMoneda }} {{ importeRendido(op) | number: '1.2-2' }}</td>
+          <td data-rx="Entregado" class="text-end">{{ op.desMoneda }} {{ op.impOrdPago | number: '1.2-2' }}</td>
+          <td data-rx="Rendido" class="text-end">{{ op.desMoneda }} {{ importeRendido(op) | number: '1.2-2' }}</td>
 
           <!--
             La diferencia es el numero que contabilidad mira primero: positivo
             es dinero por devolver, negativo es gasto de mas. Cero no se
             resalta, que es como deberia estar la mayoria.
           -->
-          <td class="text-end"
+          <td data-rx="Diferencia" class="text-end"
               [class.dif-sobra]="diferencia(op) > 0"
               [class.dif-falta]="diferencia(op) < 0">
             {{ diferencia(op) | number: '1.2-2' }}
@@ -117,7 +117,7 @@
           <!-- El recorrido lo registra REGINA: el ERP no guarda cuándo
                cambia de estado, así que sin esto el tiempo hasta la
                aprobación no se puede medir. -->
-          <td class="text-center">
+          <td data-rx="Estado" class="text-center">
             <span class="marca-proc" [ngClass]="claseProceso(op.estProceso)"
                   [title]="explicacionProceso(op.estProceso)">
               {{ etiquetaProceso(op.estProceso) }}
@@ -128,7 +128,7 @@
           </td>
 
           <!-- El único check manual de todo el recorrido. -->
-          <td class="text-center">
+          <td data-rx="Recepcion" class="text-center">
             <button class="general-button btn-primary btn-sm"
                     *ngIf="puedeRecepcionar(op)" [disabled]="guardando"
                     (click)="recepcionar(op)"
@@ -148,7 +148,7 @@
                    *ngIf="!puedeRecepcionar(op) && !yaRecepcionada(op)">—</small>
           </td>
 
-          <td class="text-center">
+          <td data-rx="Revision" class="text-center">
             <button class="general-button btn-secondary btn-sm" (click)="alternarDetalle(op)"
                     [class.activo]="estaDesplegada(op)"
                     title="Ver los comprobantes, planillas y devoluciones de esta orden">
@@ -366,7 +366,7 @@
                       Esta planilla no tiene viajes registrados.
                     </div>
 
-                    <table class="tabla-viajes" *ngIf="!cargandoViajes && viajesDe(pl).length">
+                    <table class="tabla-viajes rx-tabla" *ngIf="!cargandoViajes && viajesDe(pl).length">
                       <thead>
                         <tr>
                           <th>Fecha</th>
@@ -378,11 +378,11 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let v of viajesDe(pl)">
-                          <td>{{ v.fecItemPlanilla | date:'dd-MM-yyyy' }}</td>
-                          <td>{{ trayecto(v) }}</td>
-                          <td>{{ v.glosa }}</td>
-                          <td>{{ v.ocupantes || '—' }}</td>
-                          <td class="text-end">S/ {{ v.importe | number:'1.2-2' }}</td>
+                          <td data-rx="Fecha">{{ v.fecItemPlanilla | date:'dd-MM-yyyy' }}</td>
+                          <td data-rx="Trayecto">{{ trayecto(v) }}</td>
+                          <td data-rx="Motivo">{{ v.glosa }}</td>
+                          <td data-rx="Ocupantes">{{ v.ocupantes || '—' }}</td>
+                          <td data-rx="Importe" class="text-end">S/ {{ v.importe | number:'1.2-2' }}</td>
                         </tr>
                       </tbody>
                     </table>

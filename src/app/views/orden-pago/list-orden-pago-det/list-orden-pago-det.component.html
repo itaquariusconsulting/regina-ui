@@ -45,7 +45,7 @@
   <div class="grilla-titulo">Rendiciones</div>
 
   <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="table global-table table-striped table-hover rx-tabla">
       <thead>
         <th></th>
         <th class="text-center">Orden</th>
@@ -77,20 +77,20 @@
                   <span style="opacity: 0.2;">▶</span>
                 </ng-template>
               </td>
-              <td data-col="orden" class="text-center">{{reg.numOrden}}</td>
-              <td data-col="item" class="text-center">{{reg.numItemOp}}</td>
-              <td data-col="ruc" class="text-center">{{ rucDelComprobante(reg) }}</td>
-              <td data-col="prov" class="text-start">{{ proveedorDelComprobante(reg) }}</td>
-              <td data-col="fecha" class="text-center">{{reg.fecDocumento | date:'dd-MM-yyyy'}}</td>
-              <td data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
-              <td data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
-              <td data-col="imp" class="text-end">
+              <td data-rx="Orden" data-col="orden" class="text-center">{{reg.numOrden}}</td>
+              <td data-rx="Item" data-col="item" class="text-center">{{reg.numItemOp}}</td>
+              <td data-rx="RUC" data-col="ruc" class="text-center">{{ rucDelComprobante(reg) }}</td>
+              <td data-rx="Proveedor" data-col="prov" class="text-start">{{ proveedorDelComprobante(reg) }}</td>
+              <td data-rx="Fecha" data-col="fecha" class="text-center">{{reg.fecDocumento | date:'dd-MM-yyyy'}}</td>
+              <td data-rx="Documento" data-col="doc" class="text-center">{{reg.numSerieDoc}}-{{reg.numDocumento}}</td>
+              <td data-rx="Moneda" data-col="mon" class="text-center">{{reg.codMoneda=='01' ? 'S/' : 'US$'}}</td>
+              <td data-rx="Importe" data-col="imp" class="text-end">
                 {{ (reg.codMoneda=='01' ? reg.impSoles : reg.impDolares) | number:'1.2-2'}}
               </td>
 
               <!-- Lo que respondió SUNAT. Contabilidad revisa por acá y
                    necesita ver cuáles pasaron sin abrir uno por uno. -->
-              <td data-col="sunat" class="text-center">
+              <td data-rx="Estado" data-col="sunat" class="text-center">
                 <span class="sunat-marca" [ngClass]="claseSunat(reg)"
                       [title]="tituloSunat(reg)">
                   {{ estadoSunatTexto(reg) }}
@@ -223,7 +223,7 @@
 
   <ng-container *ngIf="tienePlanillas">
     <div class="table-container table-responsive">
-      <table class="table global-table table-striped table-hover">
+      <table class="table global-table table-striped table-hover rx-tabla">
         <thead>
           <tr>
             <th></th>
@@ -239,15 +239,15 @@
           <ng-container *ngFor="let p of planillas">
             <tr (click)="togglePlanilla(p)" style="cursor:pointer">
               <td class="text-center">{{ planillaAbierta === p ? '▼' : '▶' }}</td>
-              <td class="text-center">{{ p.codPlanilla }}</td>
-              <td class="text-center">{{ p.fechaPlanilla | date:'dd-MM-yyyy' }}</td>
-              <td class="text-center">{{ p.anioPeriodo }}-{{ p.codPeriodo }}</td>
+              <td data-rx="Planilla" class="text-center">{{ p.codPlanilla }}</td>
+              <td data-rx="Fecha" class="text-center">{{ p.fechaPlanilla | date:'dd-MM-yyyy' }}</td>
+              <td data-rx="Periodo" class="text-center">{{ p.anioPeriodo }}-{{ p.codPeriodo }}</td>
               <!-- El centro de costos sale, es el de la OP y ya esta en la
                    cabecera de la pantalla: repetirlo en cada fila gastaba una
                    columna para decir ocho veces lo mismo. -->
-              <td class="text-center">{{ p.maxNumViajes || 0 }}</td>
-              <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
-              <td>{{ p.glosa }}</td>
+              <td data-rx="Viajes" class="text-center">{{ p.maxNumViajes || 0 }}</td>
+              <td data-rx="Total S/" class="text-end">{{ p.total | number:'1.2-2' }}</td>
+              <td data-rx="Glosa">{{ p.glosa }}</td>
             </tr>
 
             <tr class="row-detail" *ngIf="planillaAbierta === p">
@@ -300,7 +300,7 @@
 
   <ng-container *ngIf="tieneAbonos">
     <div class="table-container table-responsive">
-      <table class="table global-table table-striped table-hover">
+      <table class="table global-table table-striped table-hover rx-tabla">
         <thead>
           <tr>
             <th></th>
@@ -315,14 +315,14 @@
           <ng-container *ngFor="let a of abonosVigentes">
             <tr (click)="toggleAbono(a)" style="cursor:pointer">
               <td class="text-center">{{ abonoAbierto === a ? '▼' : '▶' }}</td>
-              <td class="text-center">{{ a.fecDeposito | date:'dd-MM-yyyy' }}</td>
-              <td>
+              <td data-rx="Fecha" class="text-center">{{ a.fecDeposito | date:'dd-MM-yyyy' }}</td>
+              <td data-rx="Banco / cuenta">
                 {{ a.desBanco }}
                 <small class="d-block text-muted">{{ a.numCuentaBco }}</small>
               </td>
-              <td class="text-center">{{ a.numOperacion }}</td>
-              <td class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
-              <td class="text-center">
+              <td data-rx="N de operacion" class="text-center">{{ a.numOperacion }}</td>
+              <td data-rx="Importe S/" class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
+              <td data-rx="Voucher" class="text-center">
                 <button type="button" class="general-button btn-success btn-sm"
                         [disabled]="!a.archivoRuta"
                         [title]="a.archivoRuta ? 'Ver voucher' : 'Este depósito no tiene voucher adjunto'"

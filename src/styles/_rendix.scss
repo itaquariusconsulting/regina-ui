@@ -422,6 +422,29 @@
   .rx-tabla .rx-num {
     text-align: right;
   }
+
+  /* La clase .global-table que traen las tablas de la aplicacion
+     impone min-width: 600px. En modo tarjeta eso obliga a la
+     pantalla a desplazarse de costado aunque ya no haya columnas
+     que mostrar, que es exactamente lo que veniamos a evitar. */
+  .rx-tabla {
+    min-width: 0 !important;
+  }
+
+  /* Celdas que ocupan toda la fila: el detalle desplegable de una
+     orden, o el aviso de "no se encontraron resultados". No son un
+     dato con etiqueta, son un bloque entero, asi que se muestran a
+     lo ancho y alineadas a la izquierda. */
+  .rx-tabla tbody td[colspan] {
+    display: block;
+    text-align: left;
+    padding: 12px 14px;
+  }
+
+  .rx-tabla tbody td[colspan]::before {
+    content: '';
+    display: none;
+  }
 }
 
 

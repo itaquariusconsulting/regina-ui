@@ -369,3 +369,50 @@ tr.fila-detalle > td {
 
   em { font-style: normal; color: #6c757d; }
 }
+
+/* -------------------------------------------------------------------------
+   TELEFONO
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+
+  /* Los filtros ya se acomodaban solos por flex-wrap, pero con
+     min-width de 9rem entraban de a dos por fila y quedaban campos
+     de 140px donde hay que escribir un nombre completo. En un
+     telefono cada filtro ocupa la fila entera. */
+  .filtros-rendidas {
+    gap: 0.6rem;
+
+    .filtro,
+    .filtro--ancho {
+      min-width: 0;
+      flex: 1 1 100%;
+      width: 100%;
+    }
+
+    .filtro-acciones {
+      width: 100%;
+      padding-bottom: 0;
+
+      /* Buscar y Limpiar a mitad y mitad: son los dos botones que
+         se tocan en esta pantalla y merecen el ancho completo. */
+      > * {
+        flex: 1 1 0;
+        justify-content: center;
+      }
+    }
+  }
+
+  .bar-buttons-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .title-f6 {
+    font-size: 1.15rem;
+  }
+
+  .resumen-rendidas {
+    font-size: 0.8rem;
+  }
+}
