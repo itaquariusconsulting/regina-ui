@@ -31,11 +31,11 @@
 
   i { margin-right: 6px; }
 
-  &:hover { color: var(--primary-color, #1976d2); }
+  &:hover { color: var(--primary-color, var(--rx-blue-600)); }
 
   &.activa {
-    color: var(--primary-color, #1976d2);
-    border-bottom-color: var(--primary-color, #1976d2);
+    color: var(--primary-color, var(--rx-blue-600));
+    border-bottom-color: var(--primary-color, var(--rx-blue-600));
   }
 }
 
@@ -91,7 +91,7 @@
 .rr-tarjeta {
   background: #fff;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid var(--primary-color, #1976d2);
+  border-left: 4px solid var(--primary-color, var(--rx-blue-600));
   border-radius: 12px;
   padding: 14px 16px;
 

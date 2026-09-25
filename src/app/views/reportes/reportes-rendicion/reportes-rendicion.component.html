@@ -236,7 +236,7 @@
   <!-- ============================ 2. POR USUARIO ========================== -->
   <ng-container *ngIf="vista === 'usuarios'">
     <div class="table-container table-responsive">
-      <table class="table global-table table-striped table-hover">
+      <table class="rx-tabla table global-table table-striped table-hover">
         <thead>
           <th>Usuario</th>
           <th class="text-center">Rendiciones</th>
@@ -251,26 +251,26 @@
         </thead>
         <tbody>
           <tr *ngFor="let u of usuarios">
-            <td>
+            <td data-rx="Usuario">
               {{ u.usuario }}
               <small class="rr-username" *ngIf="u.username">({{ u.username }})</small>
             </td>
-            <td class="text-center"><strong>{{ u.rendiciones }}</strong></td>
-            <td class="text-center">{{ u.comprobantes }}</td>
-            <td class="text-end">
+            <td data-rx="Rendiciones" class="text-center"><strong>{{ u.rendiciones }}</strong></td>
+            <td data-rx="Comprobantes" class="text-center">{{ u.comprobantes }}</td>
+            <td data-rx="Entregado S/" class="text-end">
               <span *ngIf="u.importeEntregado != null">{{ u.importeEntregado | number:'1.2-2' }}</span>
               <span class="rr-sindato" *ngIf="u.importeEntregado == null">—</span>
             </td>
-            <td class="text-end">{{ u.importeSoles | number:'1.2-2' }}</td>
-            <td class="text-end" [ngClass]="clasePendiente(u.porcentajePendiente)">
+            <td data-rx="Rendido S/" class="text-end">{{ u.importeSoles | number:'1.2-2' }}</td>
+            <td data-rx="% pend." class="text-end" [ngClass]="clasePendiente(u.porcentajePendiente)">
               <span *ngIf="u.porcentajePendiente != null">{{ u.porcentajePendiente | number:'1.1-1' }} %</span>
               <span class="rr-sindato" *ngIf="u.porcentajePendiente == null">—</span>
             </td>
-            <td class="text-center">{{ u.comprobantesPorRendicion | number:'1.1-1' }}</td>
+            <td data-rx="Comp. por rendición" class="text-center">{{ u.comprobantesPorRendicion | number:'1.1-1' }}</td>
 
             <!-- En qué anda lo de cada uno. Sin esto la gente pregunta por
                  teléfono en qué quedó su rendición. -->
-            <td class="rr-estados">
+            <td data-rx="Estado" class="rr-estados">
               <span class="rr-pastilla p-pend" *ngIf="u.pendientes"
                     title="Sin enviar a contabilidad">{{ u.pendientes }} pend.</span>
               <span class="rr-pastilla p-proc" *ngIf="u.enProceso"
@@ -283,8 +283,8 @@
                     title="Liquidadas en contabilidad">{{ u.liquidadas }} liq.</span>
             </td>
 
-            <td class="text-center">{{ u.primerEnvio | date:'dd/MM/yyyy' }}</td>
-            <td class="text-center">{{ u.ultimoEnvio | date:'dd/MM/yyyy' }}</td>
+            <td data-rx="Primer envío" class="text-center">{{ u.primerEnvio | date:'dd/MM/yyyy' }}</td>
+            <td data-rx="Último envío" class="text-center">{{ u.ultimoEnvio | date:'dd/MM/yyyy' }}</td>
           </tr>
           <tr *ngIf="buscoAlgunaVez && !usuarios.length">
             <td colspan="10" class="text-center rr-vacio">

@@ -50,10 +50,15 @@
 }
 
 .sidebar .logo-container img {
-  max-width: 150px;
+  /* El menu mide 220px con 14px de aire a cada lado: quedan 192
+     utiles. 170 deja margen y no pega el logo contra el borde.
+     El alto manda sobre el ancho porque la version compacta es una
+     tira de 3.2 a 1 y lo que no puede pasarse es la altura de la
+     franja. */
+  max-width: 170px;
   width: auto;
   height: auto;
-  max-height: 34px;
+  max-height: 42px;
   object-fit: contain;
 }
 
@@ -303,9 +308,9 @@
   border-radius: 4px;
 
   background: linear-gradient(90deg,
-      #0063A7 0%,
+      var(--rx-blue-600) 0%,
       #4fc3ff 50%,
-      #0063A7 100%);
+      var(--rx-blue-600) 100%);
 
   background-size: 200% 100%;
   animation: regina-wave 1.1s linear infinite;

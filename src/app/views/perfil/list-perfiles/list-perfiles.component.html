@@ -18,7 +18,7 @@
     </div>
 </div>
 <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
         <thead>
             <th class="text-center">Cod Empresa</th>
             <th class="text-center">Cod Sucursal</th>
@@ -29,12 +29,12 @@
         </thead>
         <tbody *ngIf="profiles.length > 0">
             <tr *ngFor="let profile of profiles">
-                <td class="text-center">{{profile.codEmpresa}}</td>
-                <td class="text-start">{{profile.codSucursal}}</td>
-                <td class="text-start">{{profile.profileShortName}}</td>
-                <td class="text-start">{{profile.profileLongName}}</td>
-                <td class="text-center">{{profile.profileType}}</td>
-                <td class="text-center">
+                <td data-rx="Cod Empresa" class="text-center">{{profile.codEmpresa}}</td>
+                <td data-rx="Cod Sucursal" class="text-start">{{profile.codSucursal}}</td>
+                <td data-rx="Perfil" class="text-start">{{profile.profileShortName}}</td>
+                <td data-rx="Perfil Detalle" class="text-start">{{profile.profileLongName}}</td>
+                <td data-rx="Tipo de Perfil" class="text-center">{{profile.profileType}}</td>
+                <td data-rx="Acciones" class="text-center">
                     <button (click)="onEditProfile(profile.profileId!)" type="button" title="Editar Perfil"
                         type="button" class="btn btn-warning btn-sm me-1"
                         *hasPermission="{ route: '/list-perfiles', action: 'permitEdit' }">

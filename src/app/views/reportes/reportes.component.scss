@@ -14,13 +14,13 @@
 /* HEADER */
 .rep-header {
   background: linear-gradient(120deg,
-      var(--primary-color, #1976d2),
-      color-mix(in srgb, var(--primary-color, #1976d2) 65%, #000));
+      var(--primary-color, var(--rx-blue-600)),
+      color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 65%, #000));
   color: #fff;
   border-radius: 14px;
   padding: 16px 20px;
   margin-bottom: 16px;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--primary-color, #1976d2) 25%, transparent);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 25%, transparent);
 }
 
 .rep-title {
@@ -62,7 +62,7 @@
 
 /* CARD */
 .rep-card {
-  --c: #1976d2;
+  --c: var(--rx-blue-600);
   background: #fff;
   border-radius: 11px;
   border: 1px solid #e2e8f0;

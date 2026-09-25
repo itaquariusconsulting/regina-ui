@@ -105,7 +105,7 @@
     </div>
 
     <div class="table-container table-responsive">
-      <table class="table global-table table-striped table-hover table-sm">
+      <table class="rx-tabla table global-table table-striped table-hover table-sm">
         <thead>
           <th class="text-center">Fila</th>
           <th class="text-center">Estado</th>
@@ -118,14 +118,14 @@
         </thead>
         <tbody>
           <tr *ngFor="let f of filas">
-            <td class="text-center">{{ f.fila }}</td>
-            <td class="text-center" [ngClass]="claseEstado(f.estado)">{{ f.estado }}</td>
-            <td class="text-center">{{ f.codAuxiliar || '-' }}</td>
-            <td class="text-center">{{ f.usuario }}</td>
-            <td class="text-start">{{ f.apePaterno }} {{ f.apeMaterno }} {{ f.nombres }}</td>
-            <td class="text-start small">{{ f.correo || '-' }}</td>
-            <td class="text-center">{{ f.perfil }}</td>
-            <td class="text-start small">{{ f.detalle }}</td>
+            <td data-rx="Fila" class="text-center">{{ f.fila }}</td>
+            <td data-rx="Estado" class="text-center" [ngClass]="claseEstado(f.estado)">{{ f.estado }}</td>
+            <td data-rx="Auxiliar" class="text-center">{{ f.codAuxiliar || '-' }}</td>
+            <td data-rx="Usuario" class="text-center">{{ f.usuario }}</td>
+            <td data-rx="Apellidos y nombres" class="text-start">{{ f.apePaterno }} {{ f.apeMaterno }} {{ f.nombres }}</td>
+            <td data-rx="Correo" class="text-start small">{{ f.correo || '-' }}</td>
+            <td data-rx="Perfil" class="text-center">{{ f.perfil }}</td>
+            <td data-rx="Detalle" class="text-start small">{{ f.detalle }}</td>
           </tr>
         </tbody>
       </table>

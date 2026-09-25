@@ -50,8 +50,8 @@
   flex: 0 0 auto;
   background: linear-gradient(
     135deg,
-    var(--primary-color, #1976d2) 0%,
-    color-mix(in srgb, var(--primary-color, #1976d2) 70%, #000) 100%
+    var(--primary-color, var(--rx-blue-600)) 0%,
+    color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 70%, #000) 100%
   );
   color: #fff;
   padding: 14px 22px;
@@ -256,15 +256,15 @@
     color: #0f172a;
   }
   &.active {
-    background: color-mix(in srgb, var(--primary-color, #1976d2) 12%, white);
-    color: var(--primary-color, #1976d2);
+    background: color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 12%, white);
+    color: var(--primary-color, var(--rx-blue-600));
     font-weight: 600;
   }
 
   .hm-nav-icon {
     width: 22px;
     text-align: center;
-    color: var(--primary-color, #1976d2);
+    color: var(--primary-color, var(--rx-blue-600));
     font-size: 0.85rem;
   }
 
@@ -309,14 +309,14 @@
     &:hover {
       background: #f8fafc;
       color: #0f172a;
-      i { color: var(--primary-color, #1976d2); }
+      i { color: var(--primary-color, var(--rx-blue-600)); }
     }
 
     &.active {
-      background: color-mix(in srgb, var(--primary-color, #1976d2) 10%, white);
-      color: var(--primary-color, #1976d2);
+      background: color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 10%, white);
+      color: var(--primary-color, var(--rx-blue-600));
       font-weight: 600;
-      i { color: var(--primary-color, #1976d2); }
+      i { color: var(--primary-color, var(--rx-blue-600)); }
     }
   }
 }
@@ -351,8 +351,8 @@
 .hm-hero {
   background: linear-gradient(
     120deg,
-    var(--primary-color, #1976d2),
-    color-mix(in srgb, var(--primary-color, #1976d2) 60%, #000)
+    var(--primary-color, var(--rx-blue-600)),
+    color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 60%, #000)
   );
   color: #fff;
   border-radius: 16px;
@@ -361,7 +361,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary-color, #1976d2) 32%, transparent);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 32%, transparent);
   margin-bottom: 36px;
 
   .hm-hero-text {
@@ -452,8 +452,8 @@
     border-radius: 12px;
     background: linear-gradient(
       135deg,
-      var(--primary-color, #1976d2),
-      color-mix(in srgb, var(--primary-color, #1976d2) 60%, #000)
+      var(--primary-color, var(--rx-blue-600)),
+      color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 60%, #000)
     );
     color: #fff;
     display: flex;
@@ -473,7 +473,7 @@
     align-items: center;
     gap: 10px;
 
-    i { color: var(--primary-color, #1976d2); }
+    i { color: var(--primary-color, var(--rx-blue-600)); }
   }
 
   p {
@@ -500,7 +500,7 @@
     gap: 8px;
 
     i {
-      color: var(--primary-color, #1976d2);
+      color: var(--primary-color, var(--rx-blue-600));
       font-size: 0.95rem;
     }
   }
@@ -513,7 +513,7 @@
   }
 
   strong { color: #0f172a; font-weight: 600; }
-  em { color: var(--primary-color, #1976d2); font-style: normal; font-weight: 600; }
+  em { color: var(--primary-color, var(--rx-blue-600)); font-style: normal; font-weight: 600; }
 }
 
 /* LISTS */
@@ -526,7 +526,7 @@
     line-height: 1.6;
     margin-bottom: 6px;
     font-size: 0.9rem;
-    &::marker { color: var(--primary-color, #1976d2); }
+    &::marker { color: var(--primary-color, var(--rx-blue-600)); }
   }
 }
 
@@ -547,7 +547,7 @@
     color: #334155;
     line-height: 1.5;
     font-size: 0.9rem;
-    border-left: 3px solid var(--primary-color, #1976d2);
+    border-left: 3px solid var(--primary-color, var(--rx-blue-600));
 
     &::before {
       content: counter(hmstep);
@@ -558,7 +558,7 @@
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: var(--primary-color, #1976d2);
+      background: var(--primary-color, var(--rx-blue-600));
       color: #fff;
       display: flex;
       align-items: center;
@@ -628,7 +628,7 @@
     .term {
       display: block;
       font-weight: 700;
-      color: var(--primary-color, #1976d2);
+      color: var(--primary-color, var(--rx-blue-600));
       font-size: 0.88rem;
       margin-bottom: 4px;
     }
@@ -730,7 +730,7 @@
       gap: 8px;
       margin-bottom: 6px;
       font-size: 0.92rem;
-      i { color: var(--primary-color, #1976d2); font-size: 0.8rem; }
+      i { color: var(--primary-color, var(--rx-blue-600)); font-size: 0.8rem; }
     }
     .a {
       color: #475569;
@@ -759,7 +759,7 @@
 
     i {
       font-size: 1.4rem;
-      color: var(--primary-color, #1976d2);
+      color: var(--primary-color, var(--rx-blue-600));
       width: 36px;
       text-align: center;
     }
@@ -797,7 +797,7 @@
   padding: 18px 0;
 
   .hm-foot-btn {
-    background: var(--primary-color, #1976d2);
+    background: var(--primary-color, var(--rx-blue-600));
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -812,7 +812,7 @@
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color, #1976d2) 35%, transparent);
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color, var(--rx-blue-600)) 35%, transparent);
     }
   }
 

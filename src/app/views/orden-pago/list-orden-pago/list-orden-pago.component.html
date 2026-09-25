@@ -17,7 +17,7 @@
     </button>
   </div>
   <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
       <thead>
         <th class="text-center">Orden</th>
         <th *ngIf="isAdminUser" class="text-center">Auxiliar</th>
@@ -38,13 +38,13 @@
       </thead>
       <tbody>
         <tr *ngFor="let reg of pagedOrdenes">
-          <td class="text-center">{{reg.numOrden}}</td>
-          <td *ngIf="isAdminUser" class="text-start">{{reg.cdesAuxiliar}}</td>
-          <td class="text-center">{{reg.fecOrden | date: 'yyyy-MM-dd'}}</td>
-          <td class="text-start">{{reg.cdesTipoGasto}}</td>
-          <td class="text-center">{{reg.cdesMoneda}}</td>
-          <td class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
-          <td class="text-end">
+          <td data-rx="Orden" class="text-center">{{reg.numOrden}}</td>
+          <td data-rx="Auxiliar" *ngIf="isAdminUser" class="text-start">{{reg.cdesAuxiliar}}</td>
+          <td data-rx="Fecha de Orden" class="text-center">{{reg.fecOrden | date: 'yyyy-MM-dd'}}</td>
+          <td data-rx="Tipo de Gasto" class="text-start">{{reg.cdesTipoGasto}}</td>
+          <td data-rx="Moneda" class="text-center">{{reg.cdesMoneda}}</td>
+          <td data-rx="Importe" class="text-end">{{reg.impOrdPago | number: '1.2-2'}}</td>
+          <td data-rx="Cargado" class="text-end">
             {{(reg.codMoneda=='01' ? (reg.impCargadoSoles ?? 0) : (reg.impCargadoDolares ?? 0))
               | number: '1.2-2'}}
             <small class="d-block text-muted" *ngIf="reg.comprobantesCargados">
@@ -68,13 +68,13 @@
                del importe. En negativo cuando se rindio de mas, que pasa
                —hay ordenes con 524 rendidos sobre 500 entregados— y esconderlo
                lo volveria invisible. -->
-          <td class="text-end col-rendido"
+          <td data-rx="Pendiente" class="text-end col-rendido"
               [class.sin-enviar]="tienePendienteDeEnviar(reg)"
               [class.en-exceso]="pendienteDeRendir(reg) < 0">
             {{ pendienteDeRendir(reg) | number: '1.2-2' }}
           </td>
 
-          <td class="text-center">
+          <td data-rx="Estado" class="text-center">
             <span class="status-circle" [attr.title]="getStatusTitle(reg.tipEstado ?? '')" [ngClass]="{
       'status-em': reg.tipEstado === 'EM',
       'status-pe': reg.tipEstado === 'PE',
@@ -171,7 +171,7 @@
       <div class="modal-body p-2">
 
         <div *ngIf="detailsAsiento" class="contenedor-scroll">
-          <table style="font-size: 0.8rem !important;" class="global-table table-hover table-striped">
+          <table style="font-size: 0.8rem !important;" class="rx-tabla global-table table-hover table-striped">
             <tr>
               <td colspan="3"></td>
               <td style="background-color: gray !important; color: white !important; font-weight: 600 !important;"
@@ -191,22 +191,22 @@
             <tbody>
 
               <tr *ngFor="let asiento of detailsAsiento">
-                <td data-col="codCuenta" class="text-center">{{asiento.codCuenta}}</td>
-                <td data-col="desCuenta" class="text-start">{{asiento.desCuenta}}</td>
-                <td data-col="auxiliar" class="text-start">{{asiento.codAuxiliar}}</td>
-                <td class="text-end">
+                <td data-rx="Cuenta" data-col="codCuenta" class="text-center">{{asiento.codCuenta}}</td>
+                <td data-rx="Descripción" data-col="desCuenta" class="text-start">{{asiento.desCuenta}}</td>
+                <td data-rx="Auxiliar" data-col="auxiliar" class="text-start">{{asiento.codAuxiliar}}</td>
+                <td data-rx="Importe S/" class="text-end">
                   {{ (asiento.indDebeHaber === 'D' ? asiento.impSoles : 0) | number: '1.2-2'}}
                 </td>
 
-                <td class="text-end">
+                <td data-rx="Importe US$" class="text-end">
                   {{ (asiento.indDebeHaber === 'D' ? asiento.impDolares : 0) | number: '1.2-2' }}
                 </td>
 
-                <td class="text-end">
+                <td data-rx="Importe S/" class="text-end">
                   {{ (asiento.indDebeHaber === 'H' ? asiento.impSoles : 0) | number: '1.2-2' }}
                 </td>
 
-                <td class="text-end">
+                <td data-rx="Importe US$" class="text-end">
                   {{ (asiento.indDebeHaber === 'H' ? asiento.impDolares : 0) | number: '1.2-2' }}
                 </td>
               </tr>

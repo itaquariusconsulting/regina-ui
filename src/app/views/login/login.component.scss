@@ -76,9 +76,14 @@
   z-index: 1;
 }
 
-/* El logo manda el aire de toda la tarjeta. */
+/* El logo manda el aire de toda la tarjeta.
+   Se agranda respecto de la primera version porque el archivo
+   oficial incluye la bajada "Sistema de Rendicion de Cuentas": a
+   250px de ancho esa linea medía 6px y se leia como una mancha
+   gris. A 320px respira. El login es el unico lugar de la
+   aplicacion donde entra el logo completo, asi que vale el espacio. */
 .login-container > img {
-  width: min(78%, 250px);
+  width: min(86%, 320px);
   height: auto;
   margin-bottom: 4px;
 }

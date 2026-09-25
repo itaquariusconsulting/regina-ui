@@ -98,7 +98,7 @@
   </div>
 
   <div class="table-container table-responsive" *ngIf="planillas.length">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
       <thead>
         <tr>
           <th class="text-center">Fecha</th>
@@ -113,21 +113,21 @@
       </thead>
       <tbody>
         <tr *ngFor="let p of planillas">
-          <td class="text-center">{{ p.fechaPlanilla | date:'dd/MM/yyyy' }}</td>
-          <td class="text-center">{{ p.numOrden }}</td>
-          <td class="text-center">{{ p.codPlanilla }}</td>
-          <td *ngIf="admin">
+          <td data-rx="Fecha" class="text-center">{{ p.fechaPlanilla | date:'dd/MM/yyyy' }}</td>
+          <td data-rx="Orden" class="text-center">{{ p.numOrden }}</td>
+          <td data-rx="Planilla" class="text-center">{{ p.codPlanilla }}</td>
+          <td data-rx="Persona" *ngIf="admin">
             {{ p.persona || '—' }}
             <small class="d-block text-muted">{{ p.codAuxiliar }}</small>
           </td>
-          <td class="text-center">{{ p.viajes }}</td>
+          <td data-rx="Viajes" class="text-center">{{ p.viajes }}</td>
           <!-- Lo gastado, no el tope declarado: son distintos y el que cuadra
                con el asiento es este. El tope queda en el tooltip. -->
-          <td class="text-end"
+          <td data-rx="Gastado S/" class="text-end"
               [title]="'Tope declarado S/ ' + (p.total | number:'1.2-2')">
             {{ gastadoDe(p) | number:'1.2-2' }}
           </td>
-          <td class="text-center">
+          <td data-rx="Estado" class="text-center">
             <span class="pm-estado" [ngClass]="estadoClase(p)">{{ estadoTexto(p) }}</span>
           </td>
           <td class="text-center">

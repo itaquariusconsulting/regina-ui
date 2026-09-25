@@ -334,7 +334,7 @@
             <h4><i class="fas fa-palette"></i> Personalización de Temas</h4>
             <p>Regina permite seis temas para adaptarse a tu preferencia visual:</p>
             <div class="hm-themes">
-              <div class="hm-theme-chip" style="--c:#1976d2;">Azul</div>
+              <div class="hm-theme-chip" style="--c:var(--rx-blue-600);">Azul</div>
               <div class="hm-theme-chip" style="--c:#2e7d32;">Verde</div>
               <div class="hm-theme-chip" style="--c:#c62828;">Rojo</div>
               <div class="hm-theme-chip" style="--c:#ef6c00;">Naranja</div>
@@ -399,7 +399,7 @@
           <article id="hm-sub-dash-kpis" class="hm-article">
             <h4><i class="fas fa-th"></i> KPI Cards</h4>
             <div class="hm-table-wrap">
-              <table class="hm-table">
+              <table class="rx-tabla hm-table">
                 <thead>
                   <tr>
                     <th>KPI</th>
@@ -407,14 +407,14 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td><strong>Total Órdenes</strong></td><td>Conteo total filtrado</td></tr>
-                  <tr><td><strong>Emitidas / Pendientes / Liquidadas / Procesadas</strong></td><td>Cantidad por estado</td></tr>
-                  <tr><td><strong>Vencidas</strong></td><td>OPs con fecha de rendición pasada</td></tr>
-                  <tr><td><strong>Importe S/ y US$</strong></td><td>Totales por moneda</td></tr>
-                  <tr><td><strong>Rendido S/</strong></td><td>Sustentado en soles</td></tr>
-                  <tr><td><strong>Por Rendir S/</strong></td><td>Pendiente de sustentar</td></tr>
-                  <tr><td><strong>% Cumplimiento</strong></td><td>Rendido vs Importe</td></tr>
-                  <tr><td><strong>Promedio OP</strong></td><td>Ticket promedio por orden</td></tr>
+                  <tr><td data-rx="KPI"><strong>Total Órdenes</strong></td><td data-rx="Descripción">Conteo total filtrado</td></tr>
+                  <tr><td data-rx="KPI"><strong>Emitidas / Pendientes / Liquidadas / Procesadas</strong></td><td data-rx="Descripción">Cantidad por estado</td></tr>
+                  <tr><td data-rx="KPI"><strong>Vencidas</strong></td><td data-rx="Descripción">OPs con fecha de rendición pasada</td></tr>
+                  <tr><td data-rx="KPI"><strong>Importe S/ y US$</strong></td><td data-rx="Descripción">Totales por moneda</td></tr>
+                  <tr><td data-rx="KPI"><strong>Rendido S/</strong></td><td data-rx="Descripción">Sustentado en soles</td></tr>
+                  <tr><td data-rx="KPI"><strong>Por Rendir S/</strong></td><td data-rx="Descripción">Pendiente de sustentar</td></tr>
+                  <tr><td data-rx="KPI"><strong>% Cumplimiento</strong></td><td data-rx="Descripción">Rendido vs Importe</td></tr>
+                  <tr><td data-rx="KPI"><strong>Promedio OP</strong></td><td data-rx="Descripción">Ticket promedio por orden</td></tr>
                 </tbody>
               </table>
             </div>
@@ -592,7 +592,7 @@
           <article id="hm-sub-op-estados" class="hm-article">
             <h4><i class="fas fa-tags"></i> Estados de la Orden</h4>
             <div class="hm-table-wrap">
-              <table class="hm-table">
+              <table class="rx-tabla hm-table">
                 <thead>
                   <tr>
                     <th>Código</th>
@@ -602,24 +602,24 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td><span class="hm-badge em">EM</span></td>
-                    <td>Emitida</td>
-                    <td>Planilla de Movilidad</td>
+                    <td data-rx="Código"><span class="hm-badge em">EM</span></td>
+                    <td data-rx="Estado">Emitida</td>
+                    <td data-rx="Acciones permitidas">Planilla de Movilidad</td>
                   </tr>
                   <tr>
-                    <td><span class="hm-badge pe">PE</span></td>
-                    <td>Pendiente</td>
-                    <td>Rendir Cuenta · Detalle · Planilla</td>
+                    <td data-rx="Código"><span class="hm-badge pe">PE</span></td>
+                    <td data-rx="Estado">Pendiente</td>
+                    <td data-rx="Acciones permitidas">Rendir Cuenta · Detalle · Planilla</td>
                   </tr>
                   <tr>
-                    <td><span class="hm-badge lq">LQ</span></td>
-                    <td>Liquidada</td>
-                    <td>Asiento Contable · Detalle · Planilla</td>
+                    <td data-rx="Código"><span class="hm-badge lq">LQ</span></td>
+                    <td data-rx="Estado">Liquidada</td>
+                    <td data-rx="Acciones permitidas">Asiento Contable · Detalle · Planilla</td>
                   </tr>
                   <tr>
-                    <td><span class="hm-badge pr">PR</span></td>
-                    <td>Procesada</td>
-                    <td>Solo lectura</td>
+                    <td data-rx="Código"><span class="hm-badge pr">PR</span></td>
+                    <td data-rx="Estado">Procesada</td>
+                    <td data-rx="Acciones permitidas">Solo lectura</td>
                   </tr>
                 </tbody>
               </table>

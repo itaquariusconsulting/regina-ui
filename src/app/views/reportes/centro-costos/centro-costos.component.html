@@ -82,7 +82,7 @@
   </div>
 
   <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
       <thead>
         <th class="text-start">Centro de costos</th>
         <th class="text-center">Órdenes</th>
@@ -95,21 +95,21 @@
       </thead>
       <tbody>
         <tr *ngFor="let f of filas">
-          <td class="text-start">
+          <td data-rx="Centro de costos" class="text-start">
             {{ f.codigo }}
             <small class="cc-sin" *ngIf="f.codigo === 'SIN IMPUTAR'">sin centro asignado</small>
           </td>
-          <td class="text-center">{{ f.ordenes }}</td>
-          <td class="text-center">
+          <td data-rx="Órdenes" class="text-center">{{ f.ordenes }}</td>
+          <td data-rx="Sin rendir" class="text-center">
             <span class="cc-marca" *ngIf="f.sinRendir">{{ f.sinRendir }}</span>
             <span class="cc-cero" *ngIf="!f.sinRendir">—</span>
           </td>
-          <td class="text-end"><strong>{{ f.entregado | number:'1.2-2' }}</strong></td>
-          <td class="text-end">{{ f.rendido | number:'1.2-2' }}</td>
-          <td class="text-end" [class.cc-debe]="f.pendiente > 0.005">
+          <td data-rx="Entregado S/" class="text-end"><strong>{{ f.entregado | number:'1.2-2' }}</strong></td>
+          <td data-rx="Rendido S/" class="text-end">{{ f.rendido | number:'1.2-2' }}</td>
+          <td data-rx="Pendiente S/" class="text-end" [class.cc-debe]="f.pendiente > 0.005">
             {{ f.pendiente | number:'1.2-2' }}
           </td>
-          <td class="text-end">{{ f.porcentaje | number:'1.1-1' }}%</td>
+          <td data-rx="% del total" class="text-end">{{ f.porcentaje | number:'1.1-1' }}%</td>
 
           <!-- La barra dice de un vistazo dónde se concentra el gasto, que es
                lo que la columna de porcentaje obliga a comparar leyendo. -->

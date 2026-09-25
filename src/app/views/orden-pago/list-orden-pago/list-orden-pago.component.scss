@@ -63,7 +63,7 @@
     box-shadow: none;
   }
 
-  &--primary  { background: #1976d2; }
+  &--primary  { background: var(--rx-blue-600); }
   &--success  { background: #2e7d32; }
   &--warning  { background: #f59e0b; color: #fff; }
   &--info     { background: #0288d1; }

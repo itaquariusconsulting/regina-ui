@@ -24,7 +24,7 @@
   padding: 12px 14px;
 
   &.principal {
-    border-left-color: var(--primary-color, #1976d2);
+    border-left-color: var(--primary-color, var(--rx-blue-600));
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   }
 
@@ -87,7 +87,7 @@
 
 .cc-barra-fill {
   height: 100%;
-  background: var(--primary-color, #1976d2);
+  background: var(--primary-color, var(--rx-blue-600));
   border-radius: 999px;
 }
 
@@ -127,7 +127,7 @@
 .cc-link {
   text-decoration: underline;
   cursor: pointer;
-  color: var(--primary-color, #1976d2);
+  color: var(--primary-color, var(--rx-blue-600));
   font-weight: 600;
 }
 

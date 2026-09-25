@@ -114,7 +114,7 @@
 
   <!-- =============================== TABLA =============================== -->
   <div class="table-container table-responsive" *ngIf="!cargando">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
       <thead>
         <th>Orden</th>
         <th class="text-center">Fecha</th>
@@ -131,32 +131,32 @@
       </thead>
       <tbody>
         <tr *ngFor="let f of paginaActual">
-          <td>{{ f.numOrden }}</td>
-          <td class="text-center">{{ f.fecOrden | date:'dd/MM/yyyy' }}</td>
-          <td>
+          <td data-rx="Orden">{{ f.numOrden }}</td>
+          <td data-rx="Fecha" class="text-center">{{ f.fecOrden | date:'dd/MM/yyyy' }}</td>
+          <td data-rx="Personal">
             {{ f.desAuxiliar || f.codAuxiliar }}
             <small class="opr-cod" *ngIf="f.desAuxiliar">({{ f.codAuxiliar }})</small>
           </td>
-          <td class="opr-centro">
+          <td data-rx="Centro de costos" class="opr-centro">
             {{ f.desCCostos || f.codCCostos }}
             <small class="opr-cod" *ngIf="f.desCCostos">{{ f.codCCostos }}</small>
           </td>
-          <td class="text-end">{{ f.desMoneda }} {{ f.impOrdPago | number:'1.2-2' }}</td>
-          <td class="text-end">{{ f.impRendido | number:'1.2-2' }}</td>
-          <td class="text-end" [class.opr-saldo]="f.saldo > 0">{{ f.saldo | number:'1.2-2' }}</td>
-          <td class="text-center"><span class="opr-erp">{{ f.tipEstado }}</span></td>
-          <td class="text-center">
+          <td data-rx="Entregado" class="text-end">{{ f.desMoneda }} {{ f.impOrdPago | number:'1.2-2' }}</td>
+          <td data-rx="Rendido" class="text-end">{{ f.impRendido | number:'1.2-2' }}</td>
+          <td data-rx="Saldo" class="text-end" [class.opr-saldo]="f.saldo > 0">{{ f.saldo | number:'1.2-2' }}</td>
+          <td data-rx="ERP" class="text-center"><span class="opr-erp">{{ f.tipEstado }}</span></td>
+          <td data-rx="Rendición" class="text-center">
             <span class="opr-si" *ngIf="f.tieneRendicion">Sí</span>
             <span class="opr-no" *ngIf="!f.tieneRendicion">No</span>
           </td>
-          <td class="text-center">
+          <td data-rx="Estado REGINA" class="text-center">
             <span class="opr-proc" [ngClass]="claseProceso(f.estProceso)">
               {{ f.etiquetaProceso }}
             </span>
             <small class="opr-obs" *ngIf="f.observados">{{ f.observados }} obs.</small>
           </td>
-          <td class="text-center">{{ f.comprobantes }}</td>
-          <td class="text-center" [ngClass]="claseDias(f.diasSinRendir)">{{ f.diasSinRendir }}</td>
+          <td data-rx="Comp." class="text-center">{{ f.comprobantes }}</td>
+          <td data-rx="Días" class="text-center" [ngClass]="claseDias(f.diasSinRendir)">{{ f.diasSinRendir }}</td>
         </tr>
         <tr *ngIf="buscoAlgunaVez && !filas.length">
           <td colspan="12" class="text-center opr-vacio">

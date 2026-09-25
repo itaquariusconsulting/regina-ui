@@ -102,7 +102,7 @@
   </div>
 
   <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
       <thead>
         <th class="text-center">Orden</th>
         <th class="text-center">Fecha OP</th>
@@ -115,20 +115,20 @@
       </thead>
       <tbody>
         <tr *ngFor="let o of pagina">
-          <td class="text-center">{{ o.numOrden }}</td>
-          <td class="text-center">{{ o.fecOrden | date:'dd-MM-yyyy' }}</td>
-          <td class="text-start">{{ o.cdesAuxiliar || o.codAuxiliar }}</td>
-          <td class="text-center">{{ o.fecRendicion | date:'dd-MM-yyyy' }}</td>
-          <td class="text-center">
+          <td data-rx="Orden" class="text-center">{{ o.numOrden }}</td>
+          <td data-rx="Fecha OP" class="text-center">{{ o.fecOrden | date:'dd-MM-yyyy' }}</td>
+          <td data-rx="Persona" class="text-start">{{ o.cdesAuxiliar || o.codAuxiliar }}</td>
+          <td data-rx="Vence" class="text-center">{{ o.fecRendicion | date:'dd-MM-yyyy' }}</td>
+          <td data-rx="Plazo" class="text-center">
             <span class="venc-plazo" [ngClass]="claseFila(o)">{{ etiquetaDias(o) }}</span>
           </td>
-          <td class="text-center">{{ o.tipEstado }}</td>
-          <td class="text-center">
+          <td data-rx="Estado ERP" class="text-center">{{ o.tipEstado }}</td>
+          <td data-rx="Rendición" class="text-center">
             <span class="venc-rend" *ngIf="o.estadoRendicion === 'RENDIDA'">Rendida</span>
             <span class="venc-rend abierta" *ngIf="o.estadoRendicion === 'ABIERTA'">En preparación</span>
             <span class="venc-rend sin" *ngIf="!o.estadoRendicion">Sin empezar</span>
           </td>
-          <td class="text-end">{{ o.impOrdPago | number:'1.2-2' }}</td>
+          <td data-rx="Importe" class="text-end">{{ o.impOrdPago | number:'1.2-2' }}</td>
         </tr>
 
         <tr *ngIf="buscoAlgunaVez && !filtradas.length">

@@ -815,7 +815,7 @@
 
         <!-- Lo cargado -->
         <div class="table-container table-responsive" *ngIf="abonos.length">
-            <table class="table global-table table-striped table-hover">
+            <table class="rx-tabla table global-table table-striped table-hover">
                 <thead>
                     <th class="text-center">Fecha</th>
                     <th>Banco / cuenta</th>
@@ -828,20 +828,20 @@
                 </thead>
                 <tbody>
                     <tr *ngFor="let a of abonos" [class.dev-anulado]="a.indAnulado === 'S'">
-                        <td class="text-center">{{ a.fecDeposito | date:'dd/MM/yyyy' }}</td>
-                        <td>
+                        <td data-rx="Fecha" class="text-center">{{ a.fecDeposito | date:'dd/MM/yyyy' }}</td>
+                        <td data-rx="Banco / cuenta">
                             {{ a.desBanco || abonoBanco }}
                             <small class="d-block text-muted">{{ a.numCuentaBco }}</small>
                         </td>
-                        <td class="text-center">{{ a.numOperacion }}</td>
-                        <td class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
-                        <td>{{ a.usuario }}</td>
+                        <td data-rx="N° operación" class="text-center">{{ a.numOperacion }}</td>
+                        <td data-rx="Importe S/" class="text-end">{{ a.impSoles | number:'1.2-2' }}</td>
+                        <td data-rx="Cargado por">{{ a.usuario }}</td>
 
                         <!-- Con archivo, se ve. Sin archivo, se puede subir
                              ahora: el deposito se pudo grabar antes de tener
                              la foto a mano, y obligar a anular y recargar solo
                              para adjuntarla seria absurdo. -->
-                        <td class="text-center">
+                        <td data-rx="Voucher" class="text-center">
                             <button type="button" class="general-button btn-success btn-sm"
                                     *ngIf="a.archivoRuta" title="Ver voucher"
                                     (click)="verVoucher(a)">
@@ -856,7 +856,7 @@
                             </label>
                         </td>
 
-                        <td class="text-center">
+                        <td data-rx="Estado" class="text-center">
                             <span *ngIf="a.indAnulado === 'S'" class="dev-pastilla dev-p-anulado">Anulado</span>
                             <span *ngIf="a.indAnulado !== 'S'" class="dev-pastilla dev-p-vigente">Vigente</span>
                         </td>

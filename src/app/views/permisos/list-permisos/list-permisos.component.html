@@ -23,7 +23,7 @@
   </div>
 
   <div class="table-container mt-3" *ngIf="permissionMatrix.length > 0">
-    <table class="matrix-table table-hover">
+    <table class="rx-tabla matrix-table table-hover">
       <thead>
         <tr>
           <th style="text-align: left; padding-left: 15px;">Menú / Módulo</th>
@@ -35,20 +35,20 @@
       </thead>
       <tbody>
         <tr *ngFor="let item of permissionMatrix" [class.is-parent]="!item.menuParentId">
-          <td [style.padding-left.px]="item.menuParentId ? 30 : 10">
+          <td data-rx="Menú / Módulo" [style.padding-left.px]="item.menuParentId ? 30 : 10">
             <i [class]="item.menuIcon"></i>
             {{ item.menuLabel }}
           </td>
-          <td>
+          <td data-rx="Ver">
             <input type="checkbox" [(ngModel)]="item.permitView" (change)="onPermissionChange(item, 'permitView')">
           </td>
-          <td>
+          <td data-rx="Crear">
             <input type="checkbox" [(ngModel)]="item.permitCreate" (change)="onPermissionChange(item, 'permitCreate')">
           </td>
-          <td>
+          <td data-rx="Editar">
             <input type="checkbox" [(ngModel)]="item.permitEdit" (change)="onPermissionChange(item, 'permitEdit')">
           </td>
-          <td>
+          <td data-rx="Eliminar">
             <input type="checkbox" [(ngModel)]="item.permitDelete" (change)="onPermissionChange(item, 'permitDelete')">
           </td>
         </tr>

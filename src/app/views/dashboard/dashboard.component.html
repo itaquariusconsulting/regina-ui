@@ -394,7 +394,7 @@
     </div>
 
     <div class="det-body">
-      <table class="det-tabla" *ngIf="detalleFilasVisibles.length > 0; else sinDetalle">
+      <table class="rx-tabla det-tabla" *ngIf="detalleFilasVisibles.length > 0; else sinDetalle">
         <thead>
           <tr>
             <th>Orden</th>
@@ -409,20 +409,20 @@
         </thead>
         <tbody>
           <tr *ngFor="let f of detalleFilasVisibles">
-            <td class="mono">{{ f.numOrden }}</td>
-            <td>{{ f.fecOrden ? (f.fecOrden | date:'dd/MM/yyyy') : '—' }}</td>
-            <td>{{ f.persona || '—' }}</td>
-            <td class="det-glosa" [title]="f.glosa">{{ short(f.glosa, 60) || '—' }}</td>
-            <td class="num" [class.resalta]="detalleColumna === 'importe'">
+            <td data-rx="Orden" class="mono">{{ f.numOrden }}</td>
+            <td data-rx="Fecha">{{ f.fecOrden ? (f.fecOrden | date:'dd/MM/yyyy') : '—' }}</td>
+            <td data-rx="Persona">{{ f.persona || '—' }}</td>
+            <td data-rx="Glosa" class="det-glosa" [title]="f.glosa">{{ short(f.glosa, 60) || '—' }}</td>
+            <td data-rx="Importe" class="num" [class.resalta]="detalleColumna === 'importe'">
               {{ f.moneda }} {{ fmtFull(f.importe) }}
             </td>
-            <td class="num" [class.resalta]="detalleColumna === 'rendido'">
+            <td data-rx="Rendido" class="num" [class.resalta]="detalleColumna === 'rendido'">
               {{ fmtFull(f.rendido) }}
             </td>
-            <td class="num" [class.resalta]="detalleColumna === 'porRendir'">
+            <td data-rx="Por rendir" class="num" [class.resalta]="detalleColumna === 'porRendir'">
               {{ fmtFull(f.porRendir) }}
             </td>
-            <td>
+            <td data-rx="Estado">
               <span class="det-chip" [attr.data-estado]="f.estado">{{ f.estado }}</span>
             </td>
           </tr>

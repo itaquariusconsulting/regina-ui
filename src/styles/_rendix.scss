@@ -23,15 +23,30 @@
 
 :root {
 
-  /* ---------- marca ---------- */
-  --rx-navy: #0E2240;
+  /* ---------- marca ----------
+     Valores medidos sobre el archivo oficial del logo, no estimados
+     a ojo. La primera version salia de un PNG chico y estaba cerca,
+     pero cerca no alcanza cuando el logo y la interfaz se ven uno al
+     lado del otro. */
+  --rx-navy: #0C1E42;        /* el texto RENDIX */
   --rx-navy-700: #14305C;
-  --rx-blue: #1557F0;
+  --rx-blue: #185AF6;        /* el trazo del isotipo y la X */
+  --rx-teal: #1EB490;
+  --rx-green: #36BA54;       /* los nodos del circuito */
+  --rx-cyan: #18A8A8;
+  --rx-gris-marca: #6C788A;  /* la bajada "Sistema de Rendicion de Cuentas" */
+
+  /* Azul de accion: NO es el azul puro de la marca, y es a proposito.
+     #185AF6 en un boton de 48px o en una barra entera vibra y cansa;
+     ademas da 4.5:1 de contraste con texto blanco, justo en el limite.
+     Este tono da 5.9:1 y se lee igual de RENDIX cuando esta al lado
+     del logo. El azul puro queda para acentos chicos y degradados. */
   --rx-blue-600: #1B5FD1;
   --rx-blue-700: #1142C4;
-  --rx-teal: #2FA98C;
-  --rx-green: #34B36E;
-  --rx-cyan: #37A6C8;
+
+  /* Degradado de la marca: es lo que hace reconocible al isotipo.
+     Sirve para cabeceras y acentos, nunca detras de texto largo. */
+  --rx-degradado: linear-gradient(135deg, var(--rx-blue) 0%, var(--rx-teal) 55%, var(--rx-green) 100%);
 
   /* ---------- neutros ----------
      Escala slate. Ya estaba a medias en el dashboard y en los
@@ -487,5 +502,131 @@
   .btn,
   button.general-button {
     min-height: var(--rx-alto-control);
+  }
+}
+
+
+/* ============================================================
+   COMPORTAMIENTO EN TELEFONO, PARA TODA LA APLICACION
+   ------------------------------------------------------------
+   Veintiuna pantallas no tenian ni una media query. Escribir un
+   bloque en cada una significaba tocar veintiun archivos para
+   repetir las mismas cinco reglas, y que la numero veintidos
+   naciera rota otra vez.
+
+   Esto ataca los patrones que se repiten en todas: barras de
+   titulo con botones, anchos fijos heredados, formularios en dos
+   columnas y dialogos mas anchos que la pantalla.
+
+   Va al final del archivo a proposito: asi gana sobre las reglas
+   de los componentes sin necesidad de !important, salvo donde el
+   ancho venga de un estilo en linea.
+============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ---------- barras de titulo ----------
+     .bar-buttons-top pone el titulo y los botones en extremos
+     opuestos. En 360px el titulo se parte en tres renglones y los
+     botones se amontonan contra el borde. */
+  .bar-buttons-top {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .title-f6 {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+
+  /* ---------- anchos heredados ----------
+     Varias pantallas fijan el ancho de un bloque en pixeles
+     —620px, 500px, 480px— pensando en un monitor. En un telefono
+     eso saca la pagina de cuadro y aparece el desplazamiento
+     lateral que ya nadie entiende de donde sale. */
+  .card,
+  .theme-card,
+  .rx-card,
+  form,
+  fieldset,
+  .form-container,
+  .modal-content {
+    max-width: 100% !important;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ---------- formularios ----------
+     Las columnas de Bootstrap ya se apilan solas. Lo que no se
+     arregla solo es el campo al que alguien le puso un ancho en
+     pixeles al lado de uno que se estira: quedan desparejos y el
+     formulario se ve roto aunque entre. */
+  .form-control,
+  .form-select,
+  textarea,
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="email"],
+  input[type="password"] {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Las etiquetas arriba del campo, nunca al costado: en 360px una
+     etiqueta al costado deja 120px para escribir. */
+  .form-label {
+    display: block;
+    margin-bottom: .25rem;
+  }
+
+  /* ---------- grupos de botones ----------
+     Los botones de accion de cada pantalla van juntos y se
+     reparten el ancho, en vez de quedar tres pegados a la derecha
+     con el cuarto cortado. */
+  .bar-buttons-top > div:last-child,
+  .acciones,
+  .botones,
+  .d-flex.gap-2.justify-content-end {
+    flex-wrap: wrap;
+  }
+
+  /* ---------- dialogos ----------
+     Material y Bootstrap calculan el ancho del dialogo sobre el
+     ancho pedido en codigo, que suele ser 600px o 800px. */
+  .mat-mdc-dialog-panel,
+  .cdk-overlay-pane {
+    max-width: calc(100vw - 20px) !important;
+    width: auto !important;
+  }
+
+  .modal-dialog {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  /* ---------- contenedores ---------- */
+  .container,
+  .container-fluid {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* ---------- lo que de verdad no entra ----------
+     Un bloque ancho que no se puede apilar —un asiento contable,
+     un grafico— se deja desplazar solo a el, no a la pagina
+     entera. Es la diferencia entre "esta tabla se mueve" y "la
+     pantalla esta rota". */
+  .table-responsive,
+  .scroll-lateral {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }

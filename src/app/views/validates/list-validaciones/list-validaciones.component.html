@@ -19,7 +19,7 @@
     </div>
 </div>
 <div class="table-container table-responsive">
-    <table class="table global-table table-striped table-hover">
+    <table class="rx-tabla table global-table table-striped table-hover">
         <thead>
             <th class="text-center">ID</th>
             <th class="text-center">Nombre Regla</th>
@@ -29,16 +29,16 @@
         </thead>
         <tbody>
             <tr style="vertical-align: middle;" *ngFor="let reg of validaciones">
-                <td class="text-center">{{reg.idRule}}</td>
-                <td class="text-start">{{reg.ruleName?.toUpperCase() }}</td>
-                <td class="text-center">{{reg.fieldCode}}</td>
-                <td class="text-center">
+                <td data-rx="ID" class="text-center">{{reg.idRule}}</td>
+                <td data-rx="Nombre Regla" class="text-start">{{reg.ruleName?.toUpperCase() }}</td>
+                <td data-rx="Field Code" class="text-center">{{reg.fieldCode}}</td>
+                <td data-rx="Estado" class="text-center">
                     <button style="font-size: 0.7rem; cursor: default !important;" class="general-button btn-sm"
                         [ngClass]="reg.isActive ? 'btn-primary' : 'btn-danger'">
                         {{ reg.isActive ? 'ACTIVA' : 'INACTIVA' }}
                     </button>
                 </td>
-                <td class="text-center">
+                <td data-rx="Acciones" class="text-center">
                     <button (click)="onEditValidacion(reg.idRule!)" type="button" title="Editar Regla" type="button" class="btn btn-warning btn-sm">
                         <i class="fa fa-edit"></i>
                     </button>

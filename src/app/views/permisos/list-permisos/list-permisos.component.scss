@@ -21,7 +21,7 @@
   thead {
     position: sticky;
     top: 0;
-    background-color: #0063a7;
+    background-color: var(--rx-blue-600);
     color: white;
     z-index: 10;
   }
@@ -39,7 +39,7 @@
 }
 
 .matrix-table input[type="checkbox"] {
-  accent-color: #0063a7;
+  accent-color: var(--rx-blue-600);
   cursor: pointer;
   transform: scale(1.2); 
 }
