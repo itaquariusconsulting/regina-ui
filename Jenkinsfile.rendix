@@ -1,0 +1,177 @@
+// ============================================================================
+//  REGINA-UI-RENDIX  -  regina-ui  (Angular 19)   *** VISTA PREVIA ***
+//  Rama: rendix   |   MISMO Tomcat del 248, contexto aparte: /rendix
+//
+//  Para que existe
+//  ---------------
+//  Publica la rama rendix en un contexto propio para poder mirar el
+//  rediseno corriendo, SIN tocar /ren-aquarius, que es lo que usa la
+//  gente todos los dias.
+//
+//  ATENCION, ESTO NO ES UN ENTORNO DE PRUEBA
+//  -----------------------------------------
+//  Apunta a las MISMAS bases de datos de produccion, porque el front
+//  lleva grabadas las URLs de los backends en environment.prod.ts. Lo
+//  que se guarde desde aca se guarda de verdad. Sirve para MIRAR como
+//  quedo, no para ensayar.
+//
+//  Lo unico que cambia respecto del job de produccion son tres cosas:
+//    - la rama          (rendix en vez de prod)
+//    - el contexto      (/rendix en vez de /ren-aquarius)
+//    - el base-href     (tiene que coincidir con el contexto, ver abajo)
+//
+//  Cuando el diseno se apruebe: se mezcla rendix a prod, se corre el
+//  job de siempre y se borra este contexto del Tomcat.
+// ============================================================================
+
+pipeline {
+    agent any
+
+    environment {
+        TOMCAT_URL  = 'http://192.168.50.248:8080'
+        TOMCAT_CRED = credentials('tomcat-manager-sicore')
+
+        WAR_NAME    = 'rendix'
+        CONTEXT     = 'rendix'         // debe coincidir con el --base-href del build
+        NODE_OPTIONS = '--max_old_space_size=4096'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+        timeout(time: 40, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Dependencias') {
+            steps {
+                script { env.SHA = env.GIT_COMMIT.take(7) }
+                echo "Commit a desplegar: ${env.SHA}"
+                // ng-bootstrap 17 declara Angular 18 como peer y el proyecto va en Angular 19.
+                // El arbol nunca ha sido resoluble en estricto; se instala como siempre
+                // se instalo. PENDIENTE: subir @ng-bootstrap/ng-bootstrap a 18.x.
+                bat 'npm ci --legacy-peer-deps'
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                // El base-href esta fijo en angular.json como /ren-aquarius/.
+                // Si no se pisa aca, el WAR se despliega en /rendix pero el
+                // index.html sigue pidiendo los bundles a /ren-aquarius/: la
+                // pantalla queda en blanco y todo da 404. Es el error que se
+                // comete siempre al clonar un job de frontend.
+                bat 'npx ng build --configuration=production --base-href=/rendix/'
+            }
+        }
+
+        stage('Empaquetar WAR') {
+            steps {
+                script {
+                    // Angular 17+ (builder "application") deja la salida en dist/<app>/browser
+                    def dir = fileExists('dist/ren-aquarius/browser/index.html') ?
+                              'dist\\ren-aquarius\\browser' : 'dist\\ren-aquarius'
+                    echo "Empaquetando desde ${dir}"
+                    // Se usa 'jar' del JDK y no Compress-Archive ni ZipFile:
+                    // en Windows esos escriben las rutas de subcarpetas con barra
+                    // invertida (assets\config.ini) y Tomcat no las encuentra.
+                    // Sintoma: los bundles de la raiz cargan y assets/ y media/ dan 404.
+                    // El temporal de 'jar' va al workspace y no a %TEMP%.
+                    //
+                    // jar arma el archivo en el temp del sistema y al terminar
+                    // lo borra. En Windows Server ese borrado falla cada tanto
+                    // -"el proceso no tiene acceso al archivo"- porque el
+                    // antivirus todavia lo tiene abierto escaneandolo. Es
+                    // intermitente y tumba el build despues de compilar.
+                    //
+                    // Se reintenta tres veces porque el bloqueo dura segundos:
+                    // volver a lanzar el pipeline entero por esto cuesta cinco
+                    // minutos de compilacion que ya estaban hechos.
+                    bat """
+                        @echo off
+                        if exist "%WORKSPACE%\\%WAR_NAME%.war" del /F /Q "%WORKSPACE%\\%WAR_NAME%.war"
+                        if not exist "%WORKSPACE%\\_tmp" mkdir "%WORKSPACE%\\_tmp"
+                        set "TMP=%WORKSPACE%\\_tmp"
+                        set "TEMP=%WORKSPACE%\\_tmp"
+                        set "JARX=jar"
+                        if exist "%JAVA_HOME%\\bin\\jar.exe" set "JARX=%JAVA_HOME%\\bin\\jar.exe"
+                        cd /d "%WORKSPACE%\\${dir}"
+                        for /L %%i in (1,1,3) do (
+                            "%JARX%" -cf "%WORKSPACE%\\%WAR_NAME%.war" .
+                            if exist "%WORKSPACE%\\%WAR_NAME%.war" goto :listo
+                            echo Intento %%i fallido al empaquetar. Reintento en 5 segundos.
+                            timeout /t 5 /nobreak >nul
+                        )
+                        echo No se pudo empaquetar el WAR despues de tres intentos.
+                        exit /b 1
+                        :listo
+                        echo WAR empaquetado.
+                    """
+                    bat """
+                        @echo off
+                        set "JARX=jar"
+                        if exist "%JAVA_HOME%\\bin\\jar.exe" set "JARX=%JAVA_HOME%\\bin\\jar.exe"
+                        echo --- verificacion: rutas de assets/ y media/ dentro del WAR ---
+                        "%JARX%" -tf "%WORKSPACE%\\%WAR_NAME%.war" | findstr /i "assets/ media/ icons/"
+                    """
+                }
+            }
+        }
+
+        stage('Aprobacion') {
+            steps {
+                timeout(time: 60, unit: 'MINUTES') {
+                    input message: "Publicar la VISTA PREVIA del rediseno (${env.SHA}) en /rendix? No toca /ren-aquarius.", ok: 'Publicar vista previa'
+                }
+            }
+        }
+
+        stage('Publicar') {
+            steps {
+                bat """
+                    @echo off
+                    curl -f -u %TOMCAT_CRED_USR%:%TOMCAT_CRED_PSW% ^
+                         --upload-file %WAR_NAME%.war ^
+                         "%TOMCAT_URL%/manager/text/deploy?path=/%CONTEXT%&update=true"
+                """
+            }
+        }
+
+        stage('Health-check') {
+            steps {
+                script {
+                    def running = false
+                    for (int i = 1; i <= 12 && !running; i++) {
+                        sleep 5
+                        def rc = bat(returnStatus: true, script:
+                            '@curl -f -s -u %TOMCAT_CRED_USR%:%TOMCAT_CRED_PSW% ' +
+                            '"%TOMCAT_URL%/manager/text/list" | findstr /C:"/%CONTEXT%:running" >nul')
+                        if (rc == 0) { running = true }
+                        else { echo "Intento ${i}: el contexto aun no figura como running" }
+                    }
+                    if (!running) { error("Health-check FALLIDO: Tomcat no reporta /%CONTEXT% como running.") }
+
+                    // A diferencia de los backends, aqui el 200 SI es exigible:
+                    // es un sitio estatico, la raiz debe devolver index.html.
+                    def out = bat(returnStdout: true, script:
+                        '@echo off\ncurl -s -o nul -w "%%{http_code}" "%TOMCAT_URL%/%CONTEXT%/"').trim()
+                    def code = out.tokenize().last()
+                    echo "La raiz del frontend respondio HTTP ${code}"
+                    if (code != '200') { error("Health-check FALLIDO: index.html no se sirve (HTTP ${code}).") }
+                    echo "Health-check OK."
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: "${WAR_NAME}.war", fingerprint: true
+            echo "VISTA PREVIA publicada: ${TOMCAT_URL}/rendix/  (commit ${env.SHA})"
+        }
+        failure {
+            echo "FALLO la vista previa. No afecta a /ren-aquarius: son dos contextos distintos."
+        }
+    }
+}
