@@ -44,9 +44,7 @@ export const environment = {
   // El OCR va por REGINA-API-PROCESS, asi que sigue al mismo servidor.
   apiUrlOcr:      'http://192.168.2.9:9080/regina-process-dev/api',
 
-  // OJO: la IA nunca estuvo desplegada en el 2.9 -en el historial
-  // siempre apunto al 248-. Se la deja aqui a proposito: si el contexto
-  // no existe, el chat falla y se nota; apuntarla a produccion haria que
-  // la demo escriba en la base de chat real sin que nadie lo vea.
+  // Verificado en el Tomcat Manager del 2.9: reginaIA-1 esta desplegado
+  // y corriendo, igual que los otros dos.
   apiUrlIA:       'http://192.168.2.9:9080/reginaIA-1/ai'
 };
