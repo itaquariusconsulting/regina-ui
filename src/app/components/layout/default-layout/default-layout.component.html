@@ -90,5 +90,13 @@
 
 <!-- El pie de escritorio se saco a pedido: ocupaba una franja fija en
      pantallas donde las tablas de reportes ya llegan al borde. El de
-     movil se queda porque ahi vive la barra de navegacion. -->
-<app-default-footer-mobile *ngIf="!isDesktop"></app-default-footer-mobile>
+     movil se queda porque ahi vive la barra de navegacion.
+
+     Antes dependia de isDesktop, que sale del user-agent y se calcula
+     UNA sola vez al cargar. Si la pagina abria con las herramientas de
+     desarrollo en modo responsive, quedaba en false para siempre y la
+     barra de celular aparecia en pantalla completa, con su franja azul
+     y su texto ocupando media pantalla.
+
+     Ahora sigue al ancho real, igual que el menu lateral. -->
+<app-default-footer-mobile *ngIf="esPantallaChica"></app-default-footer-mobile>
