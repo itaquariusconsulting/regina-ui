@@ -101,12 +101,20 @@ pipeline {
 
         stage('Compilar') {
             steps {
-                // El base-href esta fijo en angular.json como /ren-aquarius/.
-                // Si no se pisa aca, el WAR se despliega en /rendix pero el
-                // index.html sigue pidiendo los bundles a /ren-aquarius/: la
-                // pantalla queda en blanco y todo da 404. Es el error que se
-                // comete siempre al clonar un job de frontend.
-                bat 'npx ng build --configuration=production --base-href=/rendix/'
+                // Configuracion "demo", no "production". Cambia dos cosas:
+                //
+                //   baseHref  /rendix/ en vez de /ren-aquarius/. Sin esto el
+                //             WAR se despliega en /rendix pero el index.html
+                //             sigue pidiendo los bundles a /ren-aquarius/: la
+                //             pantalla queda en blanco y todo da 404.
+                //
+                //   entorno   environment.demo.ts en vez de environment.prod.ts,
+                //             que apunta a los backends del 192.168.2.9 y no a
+                //             los de produccion.
+                //
+                // Los dos van en angular.json y no como parametros sueltos: asi
+                // un build a mano sale igual que el del pipeline.
+                bat 'npx ng build --configuration=demo'
             }
         }
 
