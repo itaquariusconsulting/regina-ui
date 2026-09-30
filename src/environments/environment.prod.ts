@@ -13,6 +13,8 @@
 export const environment = {
   production: true,
 
+  demo: false,
+
   // ── Backends de REGINA ────────────────────────────────────────────────
   apiUrlAuth:     'https://marcaciongps.aquariusconsultores.com:8443/regina-billing-dev',
   apiUrlProcess:  'https://marcaciongps.aquariusconsultores.com:8443/regina-process-dev/api/',

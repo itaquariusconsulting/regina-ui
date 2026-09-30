@@ -36,6 +36,9 @@
 export const environment = {
   production: true,
 
+  // Pinta el cartel DEMO sobre la interfaz. Solo esta en true aca.
+  demo: true,
+
   // ── Backends de REGINA, en el servidor de demostracion ────────────────
   apiUrlAuth:     'http://192.168.2.9:9080/regina-billing-dev',
   apiUrlProcess:  'http://192.168.2.9:9080/regina-process-dev/api/',

@@ -72,6 +72,9 @@ export class DefaultLayoutComponent implements OnInit {
   /** Debajo de esto el menu estorba mas de lo que ayuda. */
   private static readonly ANCHO_CHICO = 992;
 
+  /** Cartel DEMO. Viene del entorno, asi que en produccion no existe. */
+  esDemo = environment.demo;
+
   esPantallaChica = false;
   isSidebarVisible = true;
   isDesktop: boolean = false;

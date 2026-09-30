@@ -1,3 +1,8 @@
+<!-- Cartel de entorno. Se ve en todas las pantallas porque el layout
+     envuelve a todas. No existe en el build de produccion: environment.demo
+     es false alli, asi que Angular ni siquiera lo incluye. -->
+<div class="cartel-demo" *ngIf="esDemo">DEMO</div>
+
 <div class="layout"
      [class.no-sidebar]="!isSidebarVisible"
      [class.menu-flotante]="esPantallaChica">

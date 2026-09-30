@@ -1,6 +1,8 @@
 export const environment = {
   production: false,
 
+  demo: false,
+
   // === Backends de DESARROLLO ===
   // Auth/permisos: regina-api LOCAL (sin context-path, puerto 8080).
   apiUrlAuth: 'https://developer.aquariusconsultores.com:8443/regina-billing-dev',
