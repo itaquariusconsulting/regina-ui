@@ -630,3 +630,51 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+
+/* ============================================================
+   CARTEL DE ENTORNO
+   ------------------------------------------------------------
+   Produccion y la demostracion viven en el mismo servidor y se
+   distinguen por una palabra en la direccion. Esto lo hace
+   evidente sin mirar la barra del navegador.
+
+   Va debajo del logo, arriba a la izquierda, que es donde la
+   vista aterriza primero. Esta en la hoja global porque lo usan
+   dos pantallas: el ingreso y el resto de la aplicacion.
+
+   Ambar y no rojo a proposito: el rojo se lee como error y la
+   gente aprende a ignorarlo.
+
+   No existe en el build de produccion: environment.demo es false
+   alli, asi que el elemento ni siquiera se dibuja.
+============================================================ */
+.cartel-demo {
+  position: fixed;
+  top: 66px;
+  left: 14px;
+  z-index: 2000;
+
+  padding: 3px 12px 4px;
+  border-radius: 6px;
+
+  background: #B45309;
+  color: #FFF;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  line-height: 1.5;
+
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .25);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* En pantalla chica no hay menu lateral, asi que el cartel sube
+   hasta debajo de la barra superior. */
+@media (max-width: 992px) {
+  .cartel-demo {
+    top: 64px;
+    left: 10px;
+  }
+}

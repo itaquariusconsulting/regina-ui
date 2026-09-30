@@ -11,6 +11,7 @@ import { MaestrosService } from '../../services/maestros.service';
 import { ExchangeRateService } from '../../shared/services/exchange-rate.service';
 import { AccountStatus } from '../../shared/constants/accounts';
 import { ThemeKey, ThemeService } from '../../shared/services/theme.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -21,6 +22,10 @@ import { ThemeKey, ThemeService } from '../../shared/services/theme.service';
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class LoginComponent implements OnInit, OnDestroy {
+
+  /** Cartel DEMO. Viene del entorno: en produccion es false. */
+  esDemo = environment.demo;
+
   authToken: string = "";
   username: string = ''; // Cambiado de email a username
   password: string = '';
