@@ -28,8 +28,9 @@ pipeline {
     agent any
 
     environment {
-        TOMCAT_URL  = 'http://192.168.50.248:8080'
-        TOMCAT_CRED = credentials('tomcat-manager-sicore')
+        // Servidor de TESTING (el clon). El front de testing ya NO se publica en el 248.
+        TOMCAT_URL  = 'http://192.168.2.9:9080'
+        TOMCAT_CRED = credentials('tomcat-manager-dev')
 
         WAR_NAME    = 'rendix'
         CONTEXT     = 'rendix'         // debe coincidir con el --base-href del build
