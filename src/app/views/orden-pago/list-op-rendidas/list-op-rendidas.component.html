@@ -154,17 +154,6 @@
                     title="Ver los comprobantes, planillas y devoluciones de esta orden">
               <i class="fa" [ngClass]="estaDesplegada(op) ? 'fa-chevron-up' : 'fa-magnifying-glass'"></i>
             </button>
-
-            <!-- El asiento para CONCAR. No escribe nada: arma un archivo y lo
-                 entrega. Si el asiento no cumple las reglas de CONCAR, en vez
-                 de bajar el archivo muestra por qué rebotaría. -->
-            <button class="general-button btn-info btn-sm ms-1"
-                    [disabled]="exportandoConcar === op.numOrden"
-                    (click)="exportarConcar(op)"
-                    title="Generar el Excel de asiento para CONCAR">
-              <i class="fa" [ngClass]="exportandoConcar === op.numOrden
-                                       ? 'fa-spinner fa-spin' : 'fa-file-excel'"></i>
-            </button>
           </td>
         </tr>
 

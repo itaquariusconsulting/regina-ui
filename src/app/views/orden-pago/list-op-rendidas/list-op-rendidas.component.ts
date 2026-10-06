@@ -28,8 +28,6 @@ import { OrdenPagoPlanillaMovilidadDet }
   from '../../../models/orden-pago-planilla-movilidad-det';
 import { VisorDocumentoDialogComponent, VisorDocumentoData }
   from '../../../components/dialogs/visor-documento-dialog.component';
-import { ConcarService } from '../../../services/concar.service';
-import { ObservacionConcar, RevisionConcar } from '../../../models/concar';
 
 /**
  * Órdenes de pago rendidas, para que contabilidad continúe con la
@@ -107,15 +105,6 @@ export class ListOpRendidasComponent implements OnInit {
   motivos: Motivo[] = [];
   guardando = false;
 
-  /**
-   * El numero de orden que se esta exportando a CONCAR, o null.
-   *
-   * Se guarda el numero y no un booleano porque la exportacion tarda —arma el
-   * asiento y escribe un xlsx— y con un booleano global se bloquearia el boton
-   * de todas las filas, no el de la que se apreto.
-   */
-  exportandoConcar: string | null = null;
-
   constructor(
     private location: Location,
     private loadingService: LoadingService,
@@ -126,7 +115,6 @@ export class ListOpRendidasComponent implements OnInit {
     private publicacionService: PublicacionPlanillaService,
     private rendicionService: RendicionService,
     private planillaDetService: OrdenPagoPlanillaMovilidadDetService,
-    private concarService: ConcarService,
     private dialog: MatDialog
   ) {
     this.isLoading$ = this.loadingService.loading$;
@@ -1376,146 +1364,5 @@ export class ListOpRendidasComponent implements OnInit {
 
   mesEtiqueta(codPeriodo?: string): string {
     return this.meses.find(m => m.valor === codPeriodo)?.etiqueta ?? (codPeriodo ?? '');
-  }
-
-  // ======================================================================
-  //  Exportacion a CONCAR
-  // ======================================================================
-
-  /**
-   * Arma el asiento de la orden y, si pasa, baja el Excel para CONCAR.
-   *
-   * Dos pasos a proposito. Primero `revisar`, que no consume numeracion y
-   * sirve para mostrar el resumen; recien si el usuario confirma se llama a
-   * `exportar`, que si reserva el numero de comprobante.
-   *
-   * El orden evita huecos en la numeracion: si cada mirada quemara un
-   * correlativo, contabilidad tendria que explicar los saltos ante CONCAR.
-   */
-  exportarConcar(op: OpRendida): void {
-    const numOrden = op.numOrden ?? '';
-    if (!numOrden || this.exportandoConcar) { return; }
-
-    this.exportandoConcar = numOrden;
-
-    this.concarService.revisar(
-      this.codEmpresa, this.codSucursal,
-      op.anoPeriodo ?? '', op.codPeriodo ?? '', numOrden
-    ).subscribe({
-      next: (r) => {
-        this.exportandoConcar = null;
-        const rev = r?.resultado as RevisionConcar | undefined;
-        if (!rev) {
-          Swal.fire('Sin respuesta', 'El servidor no devolvió el asiento.', 'error');
-          return;
-        }
-        this.mostrarRevisionConcar(op, rev);
-      },
-      error: (err) => {
-        this.exportandoConcar = null;
-        // 409 es "falta la parametria", y el mensaje del servidor ya lo
-        // explica. Cualquier otro se muestra tal cual para no esconderlo.
-        Swal.fire('No se pudo revisar',
-          err?.error?.mensaje ?? 'No se pudo armar el asiento para CONCAR.', 'error');
-      }
-    });
-  }
-
-  /** El resumen antes de bajar: cuanto suma, cuantas lineas y que observa. */
-  private mostrarRevisionConcar(op: OpRendida, rev: RevisionConcar): void {
-
-    const errores = rev.observaciones.filter(o => o.nivel === 'ERROR');
-    const avisos = rev.observaciones.filter(o => o.nivel === 'AVISO');
-
-    const resumen =
-      `<div style="text-align:left">` +
-      `<p style="margin:0 0 .6rem"><b>Comprobante:</b> ${rev.numComprobante}<br>` +
-      `<b>Líneas:</b> ${rev.lineas}<br>` +
-      `<b>Debe:</b> ${this.soles(rev.totalDebe)} &nbsp; ` +
-      `<b>Haber:</b> ${this.soles(rev.totalHaber)}</p>` +
-      this.listaObservaciones('No se puede generar', errores, '#B91C1C') +
-      this.listaObservaciones('Para tener en cuenta', avisos, '#B45309') +
-      `</div>`;
-
-    if (!rev.puedeExportar) {
-      Swal.fire({ icon: 'error', title: 'CONCAR rechazaría este asiento',
-                  html: resumen, width: 640, confirmButtonText: 'Entendido' });
-      return;
-    }
-
-    Swal.fire({
-      icon: avisos.length ? 'warning' : 'question',
-      title: 'Generar el archivo para CONCAR',
-      html: resumen,
-      width: 640,
-      showCancelButton: true,
-      confirmButtonText: 'Descargar',
-      cancelButtonText: 'Cancelar'
-    }).then(res => { if (res.isConfirmed) { this.descargarConcar(op); } });
-  }
-
-  /** La descarga de verdad. Esta si reserva el numero de comprobante. */
-  private descargarConcar(op: OpRendida): void {
-    const numOrden = op.numOrden ?? '';
-    this.exportandoConcar = numOrden;
-
-    this.concarService.exportar(
-      this.codEmpresa, this.codSucursal,
-      op.anoPeriodo ?? '', op.codPeriodo ?? '', numOrden
-    ).subscribe({
-      next: (res) => {
-        this.exportandoConcar = null;
-        this.concarService.descargar(res, numOrden);
-      },
-      error: async (err) => {
-        this.exportandoConcar = null;
-
-        // Un 422 no es una falla: el asiento cambió entre la revisión y la
-        // descarga —otro usuario cerró una planilla, se cargó un
-        // comprobante— y ahora no cumple. El cuerpo trae el detalle, pero
-        // llega como Blob porque la llamada pidió blob.
-        const cuerpo = await this.concarService.leerError(err);
-        const obs = (cuerpo?.resultado ?? []) as ObservacionConcar[];
-
-        if (obs.length) {
-          Swal.fire({
-            icon: 'error', width: 640,
-            title: 'El asiento quedó observado',
-            html: `<div style="text-align:left">` +
-                  this.listaObservaciones('Qué rechazaría CONCAR', obs, '#B91C1C') +
-                  `</div>`
-          });
-          return;
-        }
-
-        Swal.fire('No se pudo generar',
-          cuerpo?.mensaje ?? 'No se pudo generar el archivo para CONCAR.', 'error');
-      }
-    });
-  }
-
-  /**
-   * Las observaciones como lista, con la fila y el origen.
-   *
-   * El origen es lo que vuelve util el mensaje: "comprobante FT F001-123" se
-   * busca en pantalla, "fila 6" obliga a abrir el Excel y contar.
-   */
-  private listaObservaciones(titulo: string, obs: ObservacionConcar[], color: string): string {
-    if (!obs.length) { return ''; }
-
-    const filas = obs.map(o => {
-      const donde = o.origen ? ` <i>(${o.origen})</i>`
-                  : o.fila ? ` <i>(fila ${o.fila})</i>` : '';
-      const col = o.columna ? `<b>${o.columna}:</b> ` : '';
-      return `<li style="margin-bottom:.25rem">${col}${o.mensaje}${donde}</li>`;
-    }).join('');
-
-    return `<p style="margin:.5rem 0 .25rem;color:${color}"><b>${titulo}</b></p>` +
-           `<ul style="margin:0;padding-left:1.1rem;font-size:.86rem">${filas}</ul>`;
-  }
-
-  private soles(n: number | undefined): string {
-    return 'S/ ' + (n ?? 0).toLocaleString('es-PE',
-      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 }
