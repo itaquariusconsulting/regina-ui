@@ -29,6 +29,7 @@ import { VencimientosComponent } from './views/reportes/vencimientos/vencimiento
 import { CentroCostosComponent } from './views/reportes/centro-costos/centro-costos.component';
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 import { ListPlanillasMovilidadComponent } from './views/reportes/list-planillas-movilidad/list-planillas-movilidad.component';
+import { ListOrdenesPagoComponent } from './views/orden-pago/list-ordenes-pago/list-ordenes-pago.component';
 
 export const routes: Routes = [
 
@@ -117,6 +118,13 @@ export const routes: Routes = [
         // dejaria el menu roto en produccion.
         path: 'list-planillas-movilidad',
         component: ListPlanillasMovilidadComponent
+      },
+      {
+        // Solo en RENDIX CONCAR: aca la orden de pago nace en el sistema.
+        // En la version de Aquarius las OP vienen del ERP y esta pantalla
+        // no se usa.
+        path: 'list-ordenes-pago',
+        component: ListOrdenesPagoComponent
       },
       {
         path: 'planilla-movilidad',

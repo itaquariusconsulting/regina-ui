@@ -1,0 +1,147 @@
+<div class="container-fluid">
+
+  <div class="bar-buttons-top w-100">
+    <h4 class="titulo-pantalla">Órdenes de Pago por Rendir</h4>
+  </div>
+
+  <!-- ===================== FILTROS ===================== -->
+  <div class="card card-filtros mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold">Año</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtro.anio">
+            <option [ngValue]="undefined">Todos</option>
+            <option *ngFor="let a of anios" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold">Mes</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtro.mes">
+            <option [ngValue]="undefined">Todos</option>
+            <option *ngFor="let m of meses" [value]="m.cod">{{ m.des }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label small fw-semibold">Nro. de OP</label>
+          <input class="form-control form-control-sm" [(ngModel)]="filtro.numOrden"
+                 placeholder="Ej.: 000000012" (keyup.enter)="buscar()">
+        </div>
+
+        <div class="col-12 col-md-2">
+          <label class="form-label small fw-semibold">Persona</label>
+          <input class="form-control form-control-sm" [(ngModel)]="filtro.persona"
+                 placeholder="Código" (keyup.enter)="buscar()">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold">Estado</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtro.estado">
+            <option [ngValue]="undefined">Todos</option>
+            <option value="PE">Pendiente</option>
+            <option value="RE">Rendida</option>
+            <option value="LI">Liquidada</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-2 d-flex gap-2">
+          <button class="general-button btn-primary flex-fill" (click)="buscar()">
+            <i class="fa fa-search"></i> Buscar
+          </button>
+          <button class="general-button btn-secondary" (click)="limpiar()" title="Quitar los filtros">
+            <i class="fa fa-eraser"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== RESUMEN Y ALTA ===================== -->
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <div class="small text-muted" *ngIf="ordenes.length">
+      <strong>{{ ordenes.length }}</strong> orden(es) ·
+      entregado <strong>S/ {{ totalEntregado | number:'1.2-2' }}</strong> ·
+      pendiente de rendir <strong>S/ {{ totalPendiente | number:'1.2-2' }}</strong>
+    </div>
+    <div *ngIf="!ordenes.length"></div>
+
+    <button class="general-button btn-primary" (click)="nueva()" [disabled]="guardando">
+      <i class="fa fa-plus"></i> Nueva orden
+    </button>
+  </div>
+
+  <!-- ===================== GRILLA ===================== -->
+
+  <div class="grilla-vacia" *ngIf="!cargando && !ordenes.length">
+    No hay órdenes de pago con esos filtros. Use <strong>Nueva orden</strong> para cargar la primera.
+  </div>
+
+  <div class="grilla-vacia" *ngIf="cargando">Buscando…</div>
+
+  <div class="table-responsive" *ngIf="!cargando && ordenes.length">
+    <table class="table table-hover align-middle tabla-op">
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Periodo</th>
+          <th>Fecha</th>
+          <th>Persona</th>
+          <th>Glosa</th>
+          <th class="text-end">Entregado</th>
+          <th class="text-end">Rendido</th>
+          <th class="text-end">Saldo</th>
+          <th class="text-center">Estado</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let op of ordenes">
+          <td data-rx="Orden" class="fw-semibold">{{ op.numOrden }}</td>
+          <td data-rx="Periodo">{{ op.codPeriodo }}-{{ op.anoPeriodo }}</td>
+          <td data-rx="Fecha">{{ op.fecOrden | date:'dd-MM-yyyy' }}</td>
+          <td data-rx="Persona">{{ op.desAuxiliar || op.codAuxiliar }}</td>
+          <td data-rx="Glosa" class="glosa">{{ op.glosa || '—' }}</td>
+
+          <td data-rx="Entregado" class="text-end">
+            {{ moneda(op) }} {{ op.impOrdPago | number:'1.2-2' }}
+          </td>
+          <td data-rx="Rendido" class="text-end">
+            {{ moneda(op) }} {{ op.impRendido | number:'1.2-2' }}
+            <small class="d-block text-muted" *ngIf="op.numComprobantes">
+              {{ op.numComprobantes }} comp.
+            </small>
+          </td>
+          <td data-rx="Saldo" class="text-end fw-semibold" [ngClass]="claseSaldo(op)">
+            {{ moneda(op) }} {{ op.saldo | number:'1.2-2' }}
+          </td>
+
+          <td data-rx="Estado" class="text-center">
+            <span class="badge-estado" [ngClass]="claseEstado(op)">{{ estadoLegible(op) }}</span>
+          </td>
+
+          <td data-rx="Acciones" class="text-center">
+            <!-- Deshabilitado con su motivo en el tooltip: un botón gris sin
+                 explicación es lo que termina en una llamada. -->
+            <button class="general-button btn-success btn-sm me-1"
+                    [disabled]="!op.editable"
+                    [title]="op.editable ? 'Modificar' : op.motivoNoEditable"
+                    (click)="editar(op)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="general-button btn-danger btn-sm"
+                    [disabled]="!op.editable"
+                    [title]="op.editable ? 'Borrar' : op.motivoNoEditable"
+                    (click)="borrar(op)">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
