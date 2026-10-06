@@ -1,0 +1,258 @@
+/* ============================================================================
+   RENDIX CONCAR - frontend
+   ----------------------------------------------------------------------------
+   Rama `concar`. Compila con --configuration=concar, que reemplaza el
+   environment por el que apunta a los backends -concar, y publica en
+   /rendix-concar del Tomcat del 2.9.
+
+   Convive con /rendix (testing contra el ERP) y /ren-aquarius (produccion).
+   Tres contextos, tres versiones, el mismo Tomcat.
+   ========================================================================== */
+
+// ============================================================================
+//  REGINA-UI-CONCAR  -  regina-ui  (Angular 19)   *** RENDIX CONCAR ***
+//
+//  Rama: concar   |   Tomcat del 2.9, contexto propio: /rendix-concar
+//
+//  Es la version del producto: sin ERP del otro lado, con sus propios
+//  backends (-concar) y su propia base (DB_RENDIX_CONCAR). No comparte una
+//  sola tabla con la instalacion de Aquarius.
+//
+//  En el mismo Tomcat conviven tres contextos a proposito:
+//
+//    /ren-aquarius    produccion de Aquarius, contra su ERP
+//    /rendix          testing de Aquarius, contra su ERP
+//    /rendix-concar   el producto, sin ERP
+//
+//  Asi se pueden mirar las dos versiones a la vez sin bajar ninguna.
+//
+//  Lo que cambia respecto de Jenkinsfile.rendix:
+//    - la rama          (concar)
+//    - el contexto      (/rendix-concar)
+//    - la configuracion (--configuration=concar, que trae environment.concar.ts)
+//
+//  El baseHref sale de angular.json y tiene que coincidir con el contexto:
+//  si no, el WAR se despliega bien pero el index.html pide los bundles a la
+//  ruta equivocada y la pantalla sale en blanco.
+// ============================================================================
+
+pipeline {
+    agent any
+
+    environment {
+        // Servidor de TESTING (el clon). El front de testing ya NO se publica en el 248.
+        TOMCAT_URL  = 'http://192.168.2.9:9080'
+        TOMCAT_CRED = credentials('tomcat-manager-dev')
+
+        WAR_NAME    = 'rendix-concar'
+        CONTEXT     = 'rendix-concar'         // debe coincidir con el --base-href del build
+        NODE_OPTIONS = '--max_old_space_size=4096'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+        timeout(time: 40, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Dependencias') {
+            steps {
+                script { env.SHA = env.GIT_COMMIT.take(7) }
+                echo "Commit a desplegar: ${env.SHA}"
+                // ng-bootstrap 17 declara Angular 18 como peer y el proyecto va en Angular 19.
+                // El arbol nunca ha sido resoluble en estricto; se instala como siempre
+                // se instalo. PENDIENTE: subir @ng-bootstrap/ng-bootstrap a 18.x.
+                //
+                // EBUSY al instalar
+                // -----------------
+                // npm ci borra node_modules entero antes de instalar. En este
+                // Windows Server el antivirus abre los archivos para escanearlos
+                // y, si justo esta mirando uno, el borrado falla con
+                // "EBUSY: resource busy or locked, rmdir". Es el mismo problema
+                // que ya obliga a reintentar el empaquetado con jar mas abajo:
+                // intermitente, y el mismo commit pasa al segundo intento.
+                //
+                // El reintento va en Groovy y NO en un bucle de batch. Dos
+                // razones, las dos aprendidas a los golpes:
+                //
+                //   1. npm en Windows es npm.cmd. Si se lo llama sin "call"
+                //      dentro de un bloque entre parentesis, el "&&" posterior
+                //      nunca se evalua: la instalacion termina bien y el script
+                //      igual sigue de largo como si hubiera fallado.
+                //
+                //   2. "timeout /t" necesita una consola de verdad. En Jenkins
+                //      no la hay y aborta con "No es compatible la redireccion
+                //      de entradas". El sleep de Groovy no depende de eso.
+                //
+                // Ademas asi se ve el codigo de salida real de npm en el log,
+                // en vez de tener que deducirlo.
+                script {
+                    int intento = 0
+                    while (true) {
+                        intento++
+
+                        // Un borrado a medias no es motivo de fallo: npm ci
+                        // vuelve a limpiar lo que quede. Se ignora su codigo.
+                        bat(returnStatus: true, script: 'if exist node_modules rmdir /S /Q node_modules')
+
+                        def rc = bat(returnStatus: true, script: 'npm ci --legacy-peer-deps')
+                        if (rc == 0) {
+                            echo "Dependencias instaladas en el intento ${intento}."
+                            break
+                        }
+                        if (intento >= 3) {
+                            error("No se pudieron instalar las dependencias despues de ${intento} intentos (ultimo codigo ${rc}).")
+                        }
+                        echo "Intento ${intento} fallido al instalar dependencias (codigo ${rc}). Espero 20 segundos."
+                        sleep time: 20, unit: 'SECONDS'
+                    }
+                }
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                // Configuracion "demo", no "production". Cambia dos cosas:
+                //
+                //   baseHref  /rendix/ en vez de /ren-aquarius/. Sin esto el
+                //             WAR se despliega en /rendix pero el index.html
+                //             sigue pidiendo los bundles a /ren-aquarius/: la
+                //             pantalla queda en blanco y todo da 404.
+                //
+                //   entorno   environment.demo.ts en vez de environment.prod.ts,
+                //             que apunta a los backends del 192.168.2.9 y no a
+                //             los de produccion.
+                //
+                // Los dos van en angular.json y no como parametros sueltos: asi
+                // un build a mano sale igual que el del pipeline.
+                bat 'npx ng build --configuration=concar'
+            }
+        }
+
+        stage('Empaquetar WAR') {
+            steps {
+                script {
+                    // Angular 17+ (builder "application") deja la salida en dist/<app>/browser
+                    def dir = fileExists('dist/ren-aquarius/browser/index.html') ?
+                              'dist\\ren-aquarius\\browser' : 'dist\\ren-aquarius'
+                    echo "Empaquetando desde ${dir}"
+                    // Se usa 'jar' del JDK y no Compress-Archive ni ZipFile:
+                    // en Windows esos escriben las rutas de subcarpetas con barra
+                    // invertida (assets\config.ini) y Tomcat no las encuentra.
+                    // Sintoma: los bundles de la raiz cargan y assets/ y media/ dan 404.
+                    // El temporal de 'jar' va al workspace y no a %TEMP%.
+                    //
+                    // jar escribe el WAR en un temporal y al terminar lo
+                    // borra. En este Windows Server ese borrado falla cada
+                    // tanto -"el proceso no tiene acceso al archivo"- porque
+                    // el antivirus todavia lo tiene abierto escaneandolo, y
+                    // el WAR no llega a quedar armado.
+                    //
+                    // El reintento estaba en un bucle de batch con
+                    // "timeout /t 5". En Jenkins no hay consola y timeout
+                    // aborta al instante con "No es compatible la redireccion
+                    // de entradas": los tres intentos corrian en el MISMO
+                    // segundo, con el archivo todavia bloqueado. Es decir,
+                    // habia reintento en el papel y ninguno en los hechos.
+                    //
+                    // Ahora el bucle va en Groovy y la espera es el sleep de
+                    // Jenkins, que no depende de ninguna consola.
+                    def jarCmd = """
+                        @echo off
+                        if exist "%WORKSPACE%\\%WAR_NAME%.war" del /F /Q "%WORKSPACE%\\%WAR_NAME%.war"
+                        if not exist "%WORKSPACE%\\_tmp" mkdir "%WORKSPACE%\\_tmp"
+                        set "TMP=%WORKSPACE%\\_tmp"
+                        set "TEMP=%WORKSPACE%\\_tmp"
+                        set "JARX=jar"
+                        if exist "%JAVA_HOME%\\bin\\jar.exe" set "JARX=%JAVA_HOME%\\bin\\jar.exe"
+                        cd /d "%WORKSPACE%\\${dir}"
+                        "%JARX%" -cf "%WORKSPACE%\\%WAR_NAME%.war" .
+                    """
+
+                    int intento = 0
+                    while (true) {
+                        intento++
+                        bat(returnStatus: true, script: jarCmd)
+
+                        // Vale el archivo, no el codigo de salida: jar puede
+                        // fallar al limpiar su temporal habiendo dejado el
+                        // WAR bien armado.
+                        if (fileExists("${env.WAR_NAME}.war")) {
+                            echo "WAR empaquetado en el intento ${intento}."
+                            break
+                        }
+                        if (intento >= 4) {
+                            error("No se pudo empaquetar el WAR despues de ${intento} intentos.")
+                        }
+                        echo "Intento ${intento} fallido al empaquetar. Espero 15 segundos."
+                        sleep time: 15, unit: 'SECONDS'
+                    }
+                    bat """
+                        @echo off
+                        set "JARX=jar"
+                        if exist "%JAVA_HOME%\\bin\\jar.exe" set "JARX=%JAVA_HOME%\\bin\\jar.exe"
+                        echo --- verificacion: rutas de assets/ y media/ dentro del WAR ---
+                        "%JARX%" -tf "%WORKSPACE%\\%WAR_NAME%.war" | findstr /i "assets/ media/ icons/"
+                    """
+                }
+            }
+        }
+
+        stage('Aprobacion') {
+            steps {
+                timeout(time: 60, unit: 'MINUTES') {
+                    input message: "Publicar RENDIX CONCAR (${env.SHA}) en /rendix-concar? No toca /rendix ni /ren-aquarius.", ok: 'Publicar'
+                }
+            }
+        }
+
+        stage('Publicar') {
+            steps {
+                bat """
+                    @echo off
+                    curl -f -u %TOMCAT_CRED_USR%:%TOMCAT_CRED_PSW% ^
+                         --upload-file %WAR_NAME%.war ^
+                         "%TOMCAT_URL%/manager/text/deploy?path=/%CONTEXT%&update=true"
+                """
+            }
+        }
+
+        stage('Health-check') {
+            steps {
+                script {
+                    def running = false
+                    for (int i = 1; i <= 12 && !running; i++) {
+                        sleep 5
+                        def rc = bat(returnStatus: true, script:
+                            '@curl -f -s -u %TOMCAT_CRED_USR%:%TOMCAT_CRED_PSW% ' +
+                            '"%TOMCAT_URL%/manager/text/list" | findstr /C:"/%CONTEXT%:running" >nul')
+                        if (rc == 0) { running = true }
+                        else { echo "Intento ${i}: el contexto aun no figura como running" }
+                    }
+                    if (!running) { error("Health-check FALLIDO: Tomcat no reporta /%CONTEXT% como running.") }
+
+                    // A diferencia de los backends, aqui el 200 SI es exigible:
+                    // es un sitio estatico, la raiz debe devolver index.html.
+                    def out = bat(returnStdout: true, script:
+                        '@echo off\ncurl -s -o nul -w "%%{http_code}" "%TOMCAT_URL%/%CONTEXT%/"').trim()
+                    def code = out.tokenize().last()
+                    echo "La raiz del frontend respondio HTTP ${code}"
+                    if (code != '200') { error("Health-check FALLIDO: index.html no se sirve (HTTP ${code}).") }
+                    echo "Health-check OK."
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: "${WAR_NAME}.war", fingerprint: true
+            echo "RENDIX CONCAR publicado: ${TOMCAT_URL}/rendix-concar/  (commit ${env.SHA})"
+        }
+        failure {
+            echo "FALLO la vista previa. No afecta a /ren-aquarius: son dos contextos distintos."
+        }
+    }
+}
