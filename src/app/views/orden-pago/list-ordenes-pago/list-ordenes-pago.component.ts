@@ -1,23 +1,27 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
-import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
-import { OrdenPagoDialogComponent } from '../../../components/dialogs/orden-pago-dialog.component';
 import { ImportarOpDialogComponent } from '../../../components/dialogs/importar-op-dialog.component';
+import { OrdenPagoDialogComponent } from '../../../components/dialogs/orden-pago-dialog.component';
 import { LoadingService } from '../../../services/loading.service';
 import { OrdenPagoPropiaService } from '../../../services/orden-pago-propia.service';
-import { FiltroOrdenPagoPropia, OrdenPagoPropia } from '../../../models/orden-pago-propia';
+import { OrdenPagoPropia } from '../../../models/orden-pago-propia';
 
 /**
- * Órdenes de pago por rendir, de RENDIX CONCAR.
+ * Carga de órdenes de pago de RENDIX CONCAR.
  *
- * Es la pantalla que no existe en la versión de Aquarius: allá la OP viene del
- * ERP y acá nace en el sistema. Todo lo que pasa después —cargar comprobantes,
- * planillas, devoluciones, aprobar, exportar el asiento— ya funcionaba; esto
- * es la pieza que faltaba al principio del recorrido.
+ * Es solo una puerta de entrada: por Excel o una por una. **No lista nada**,
+ * y eso es deliberado. La lista de órdenes de pago es la de Rendición de
+ * Cuentas, que es donde el usuario después carga comprobantes, planillas y
+ * devoluciones. Dos grillas con las mismas órdenes obligan a preguntarse cuál
+ * es la buena cada vez que los números no coinciden.
+ *
+ * En la instalación de Aquarius esta pantalla no existe: allá las órdenes
+ * vienen del ERP y no hay nada que cargar.
  */
 @Component({
   selector: 'app-list-ordenes-pago',
@@ -26,78 +30,25 @@ import { FiltroOrdenPagoPropia, OrdenPagoPropia } from '../../../models/orden-pa
   templateUrl: './list-ordenes-pago.component.html',
   styleUrls: ['./list-ordenes-pago.component.scss']
 })
-export class ListOrdenesPagoComponent implements OnInit {
+export class ListOrdenesPagoComponent {
 
   codEmpresa: string = sessionStorage.getItem('codempresa') ?? '';
   codSucursal: string = sessionStorage.getItem('codsucursal') ?? '001';
 
-  ordenes: OrdenPagoPropia[] = [];
-  cargando = false;
   guardando = false;
 
-  filtro: FiltroOrdenPagoPropia = {};
-
-  /** Para el combo de año: el actual y los dos anteriores. */
-  anios: string[] = [];
-
-  readonly meses = [
-    { cod: '01', des: 'Enero' },     { cod: '02', des: 'Febrero' },
-    { cod: '03', des: 'Marzo' },     { cod: '04', des: 'Abril' },
-    { cod: '05', des: 'Mayo' },      { cod: '06', des: 'Junio' },
-    { cod: '07', des: 'Julio' },     { cod: '08', des: 'Agosto' },
-    { cod: '09', des: 'Setiembre' }, { cod: '10', des: 'Octubre' },
-    { cod: '11', des: 'Noviembre' }, { cod: '12', des: 'Diciembre' }
-  ];
+  /** Cuántas se cargaron en esta visita. Solo para el aviso de la pantalla. */
+  cargadasEnEstaSesion = 0;
 
   constructor(
     private servicio: OrdenPagoPropiaService,
     private loadingService: LoadingService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {}
 
-  ngOnInit(): void {
-    const hoy = new Date();
-    for (let i = 0; i < 3; i++) { this.anios.push(String(hoy.getFullYear() - i)); }
+  /* ------------------------------------------------------ carga por Excel */
 
-    // Arranca en el periodo en curso, que es lo que casi siempre se quiere ver.
-    this.filtro.anio = String(hoy.getFullYear());
-    this.filtro.mes = String(hoy.getMonth() + 1).padStart(2, '0');
-
-    this.buscar();
-  }
-
-  /* ------------------------------------------------------------- lectura */
-
-  buscar(): void {
-    this.cargando = true;
-    this.servicio.listar(this.codEmpresa, this.codSucursal, this.filtro).subscribe({
-      next: (r) => {
-        this.ordenes = (r?.resultado ?? []) as OrdenPagoPropia[];
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.ordenes = [];
-        // 409 es "falta el esquema" y el mensaje del servidor ya lo explica.
-        Swal.fire('No se pudo buscar',
-          err?.error?.mensaje ?? 'No se pudieron traer las órdenes de pago.', 'error');
-      }
-    });
-  }
-
-  limpiar(): void {
-    this.filtro = {};
-    this.buscar();
-  }
-
-  /* ------------------------------------------------------------ escritura */
-
-  /**
-   * Abre la carga masiva desde Excel.
-   *
-   * El diálogo se encarga de revisar y confirmar; acá solo se refresca la
-   * lista si llegó a grabar algo.
-   */
   importar(): void {
     this.dialog.open(ImportarOpDialogComponent, {
       width: '1000px',
@@ -108,20 +59,14 @@ export class ListOrdenesPagoComponent implements OnInit {
         userId: this.userId()
       }
     }).afterClosed().subscribe((cargo: boolean) => {
-      if (cargo) { this.buscar(); }
+      if (cargo) { this.cargadasEnEstaSesion++; }
     });
   }
 
+  /* ------------------------------------------------------- carga de a una */
+
   nueva(): void {
     this.abrirDialogo(undefined, []);
-  }
-
-  editar(op: OrdenPagoPropia): void {
-    if (!op.editable) {
-      Swal.fire('No se puede modificar', op.motivoNoEditable ?? '', 'info');
-      return;
-    }
-    this.abrirDialogo(op, []);
   }
 
   /**
@@ -146,24 +91,19 @@ export class ListOrdenesPagoComponent implements OnInit {
     this.guardando = true;
     this.loadingService.show();
 
-    const esNueva = !op.numOrden;
     const dto: OrdenPagoPropia = {
       ...op,
       codEmpresa: this.codEmpresa,
       codSucursal: this.codSucursal
     };
 
-    const peticion = esNueva
-      ? this.servicio.crear(dto, this.userId())
-      : this.servicio.actualizar(dto);
-
-    peticion.subscribe({
+    this.servicio.crear(dto, this.userId()).subscribe({
       next: (r) => {
         this.guardando = false;
         this.loadingService.hide();
+        this.cargadasEnEstaSesion++;
         Swal.fire({ icon: 'success', title: r?.mensaje ?? 'Listo',
                     timer: 1800, showConfirmButton: false });
-        this.buscar();
       },
       error: (err) => {
         this.guardando = false;
@@ -182,77 +122,11 @@ export class ListOrdenesPagoComponent implements OnInit {
     });
   }
 
-  borrar(op: OrdenPagoPropia): void {
-    if (!op.editable) {
-      Swal.fire('No se puede borrar', op.motivoNoEditable ?? '', 'info');
-      return;
-    }
+  /* -------------------------------------------------------------- navegar */
 
-    this.dialog.open(ConfirmDialogComponent, {
-      width: '320px',
-      data: {
-        title: 'Borrar orden de pago',
-        message: `¿Borrar la orden ${op.numOrden} de ${op.codAuxiliar}, ` +
-                 `por ${this.moneda(op)} ${(op.impOrdPago ?? 0).toFixed(2)}?`,
-        type: 'confirm'
-      }
-    }).afterClosed().subscribe(confirmado => {
-      if (!confirmado) { return; }
-
-      this.loadingService.show();
-      this.servicio.borrar(this.codEmpresa, this.codSucursal, op.numOrden!).subscribe({
-        next: () => {
-          this.loadingService.hide();
-          this.ordenes = this.ordenes.filter(o => o.numOrden !== op.numOrden);
-        },
-        error: (err) => {
-          this.loadingService.hide();
-          Swal.fire('No se pudo borrar',
-            err?.error?.mensaje ?? 'No se pudo borrar la orden.', 'error');
-        }
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------- apoyo */
-
-  moneda(op: OrdenPagoPropia): string {
-    return op.codMoneda === 'US' ? 'US$' : 'S/';
-  }
-
-  /** Cómo se ve el estado. Los dos caracteres del ERP no le dicen nada a nadie. */
-  estadoLegible(op: OrdenPagoPropia): string {
-    switch (op.tipEstado) {
-      case 'PE': return 'PENDIENTE';
-      case 'RE': return 'RENDIDA';
-      case 'LI': return 'LIQUIDADA';
-      default:   return op.tipEstado ?? '—';
-    }
-  }
-
-  claseEstado(op: OrdenPagoPropia): string {
-    switch (op.tipEstado) {
-      case 'PE': return 'estado-pendiente';
-      case 'RE': return 'estado-rendida';
-      case 'LI': return 'estado-liquidada';
-      default:   return '';
-    }
-  }
-
-  /** Rojo cuando se rindió de más: es el caso que hay que mirar. */
-  claseSaldo(op: OrdenPagoPropia): string {
-    const s = op.saldo ?? 0;
-    if (s < 0) { return 'saldo-excedido'; }
-    if (s === 0) { return 'saldo-cerrado'; }
-    return '';
-  }
-
-  get totalEntregado(): number {
-    return this.ordenes.reduce((a, o) => a + (o.impOrdPago ?? 0), 0);
-  }
-
-  get totalPendiente(): number {
-    return this.ordenes.reduce((a, o) => a + (o.saldo ?? 0), 0);
+  /** A donde están las órdenes de verdad. */
+  verOrdenes(): void {
+    this.router.navigate(['/list-orders']);
   }
 
   private userId(): number | undefined {
