@@ -148,7 +148,7 @@ export interface ImportarOpDialogData {
                   <td class="small">{{ f.op?.codAuxiliar || marcar(f.crudoPersona) }}</td>
                   <td class="small">{{ f.op?.glosa || '—' }}</td>
                   <td class="small text-end">
-                    {{ f.op?.codMoneda === 'US' ? 'US$' : 'S/' }}
+                    {{ f.op?.codMoneda === '02' ? 'US$' : 'S/' }}
                     {{ f.op?.impOrdPago != null
                         ? (f.op?.impOrdPago | number:'1.2-2')
                         : marcar(f.crudoImporte) }}

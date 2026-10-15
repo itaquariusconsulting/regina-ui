@@ -67,8 +67,8 @@ export interface OrdenPagoDialogData {
         <div class="col-6 col-md-4">
           <label class="form-label fw-semibold">Moneda <span class="text-danger">*</span></label>
           <select class="form-select" [(ngModel)]="orden.codMoneda" (ngModelChange)="limpiarAviso()">
-            <option value="MN">Soles</option>
-            <option value="US">Dólares</option>
+            <option value="01">Soles</option>
+            <option value="02">Dólares</option>
           </select>
         </div>
 
@@ -148,7 +148,7 @@ export class OrdenPagoDialogComponent {
     // tiene que quedar como estaba.
     this.orden = data?.orden
       ? { ...data.orden }
-      : { codMoneda: 'MN', fecOrden: this.hoy };
+      : { codMoneda: '01', fecOrden: this.hoy };
   }
 
   get anioDeLaFecha(): string {
