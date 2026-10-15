@@ -18,15 +18,29 @@ export const environment = {
   /** Enciende el cartel de entorno. Se quita cuando haya una instalacion real. */
   demo: true,
 
-  // ── Backends propios de RENDIX CONCAR ────────────────────────────────
-  apiUrlAuth:     'http://192.168.2.9:9080/regina-billing-concar',
-  apiUrlProcess:  'http://192.168.2.9:9080/regina-process-concar/api/',
-  apiUrlMaestros: 'http://192.168.2.9:9080/regina-process-concar/api/',
-  apiUrlOcr:      'http://192.168.2.9:9080/regina-process-concar/api',
+
+  /* ── Rutas RELATIVAS, a proposito ────────────────────────────────────────
+     Los cuatro backends viven en el mismo Tomcat que sirve esta pantalla, en
+     contextos vecinos. Escribirlas relativas hace que el navegador las pida
+     al MISMO host por el que entro: 192.168.2.9 desde la red interna,
+     38.187.16.148 desde afuera, o el dominio que se le ponga manana.
+
+     Con la IP privada escrita a mano, la app cargaba bien desde internet
+     -el bundle lo sirve el Tomcat- pero ninguna llamada al backend llegaba a
+     destino: el navegador del cliente intentaba alcanzar una direccion de
+     nuestra LAN. El sintoma es una peticion en rojo sin codigo de estado,
+     que no se parece en nada a un problema de configuracion.
+
+     Consecuencia practica: el mismo WAR sirve para cualquier instalacion.
+     No hay que recompilar el front para cambiar de servidor.             */
+  apiUrlAuth:     '/regina-billing-concar',
+  apiUrlProcess:  '/regina-process-concar/api/',
+  apiUrlMaestros: '/regina-process-concar/api/',
+  apiUrlOcr:      '/regina-process-concar/api',
 
   /* La IA es la unica que se comparte: no hay una instancia propia todavia.
      Mientras siga asi, el chat responde con el conocimiento de la otra
      instalacion. Para una demostracion no molesta; para un cliente real hay
      que levantarle la suya. */
-  apiUrlIA:       'http://192.168.2.9:9080/reginaIA-1/ai'
+  apiUrlIA:       '/reginaIA-1/ai'
 };
