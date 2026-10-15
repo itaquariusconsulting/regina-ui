@@ -60,6 +60,64 @@ export class OrdenPagoPropiaService {
     return this.http.delete<Response>(`${this.base}/${codEmpresa}/${codSucursal}/${numOrden}`);
   }
 
+  /* ------------------------------------------------- carga masiva por Excel */
+
+  /** La ruta de importación cuelga de la misma base. */
+  private get baseImport(): string { return `${this.base}/importar`; }
+
+  /**
+   * Baja la plantilla de carga.
+   *
+   * Se pide como blob y no como JSON porque lo que vuelve es un xlsx. El
+   * nombre del archivo lo pone acá el front y no se lee del Content-Disposition
+   * para no depender de que el proxy exponga esa cabecera.
+   */
+  descargarPlantilla(): Observable<Blob> {
+    return this.http.get(`${this.baseImport}/plantilla`, { responseType: 'blob' });
+  }
+
+  /** Lee el archivo y devuelve lo que pasaría. No graba nada. */
+  importarRevisar(codEmpresa: string, codSucursal: string, archivo: File): Observable<Response> {
+    return this.http.post<Response>(`${this.baseImport}/revisar`,
+      this.cuerpo(archivo),
+      { params: new HttpParams().set('codEmpresa', codEmpresa).set('codSucursal', codSucursal) });
+  }
+
+  /**
+   * Graba las OP del archivo. Todo o nada.
+   *
+   * Se manda el archivo otra vez y no el resultado de la revisión: el que
+   * decide qué se graba es el servidor leyendo el Excel, no el navegador
+   * devolviendo lo que le dijeron antes.
+   */
+  importarConfirmar(codEmpresa: string, codSucursal: string, archivo: File,
+                    userId?: number): Observable<Response> {
+    let p = new HttpParams().set('codEmpresa', codEmpresa).set('codSucursal', codSucursal);
+    if (userId) { p = p.set('userId', String(userId)); }
+    return this.http.post<Response>(`${this.baseImport}/confirmar`, this.cuerpo(archivo), { params: p });
+  }
+
+  /**
+   * El multipart.
+   *
+   * No se fija Content-Type a propósito: el navegador tiene que ponerlo él
+   * para incluir el boundary. Fijarlo a mano es la forma más rápida de que el
+   * backend reciba el cuerpo vacío.
+   */
+  private cuerpo(archivo: File): FormData {
+    const fd = new FormData();
+    fd.append('archivo', archivo, archivo.name);
+    return fd;
+  }
+
+  /**
+   * El detalle de un 422 de importación, que trae el resultado completo.
+   */
+  resultadoDe(err: unknown): unknown | null {
+    const e = err as { status?: number; error?: Response };
+    return e?.status === 422 ? (e.error?.resultado ?? null) : null;
+  }
+
   /**
    * Los reparos de un 422, listos para mostrar.
    *

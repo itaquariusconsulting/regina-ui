@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 
 import { ConfirmDialogComponent } from '../../../components/dialogs/confirm-dialog.component';
 import { OrdenPagoDialogComponent } from '../../../components/dialogs/orden-pago-dialog.component';
+import { ImportarOpDialogComponent } from '../../../components/dialogs/importar-op-dialog.component';
 import { LoadingService } from '../../../services/loading.service';
 import { OrdenPagoPropiaService } from '../../../services/orden-pago-propia.service';
 import { FiltroOrdenPagoPropia, OrdenPagoPropia } from '../../../models/orden-pago-propia';
@@ -90,6 +91,26 @@ export class ListOrdenesPagoComponent implements OnInit {
   }
 
   /* ------------------------------------------------------------ escritura */
+
+  /**
+   * Abre la carga masiva desde Excel.
+   *
+   * El diálogo se encarga de revisar y confirmar; acá solo se refresca la
+   * lista si llegó a grabar algo.
+   */
+  importar(): void {
+    this.dialog.open(ImportarOpDialogComponent, {
+      width: '1000px',
+      maxWidth: '96vw',
+      data: {
+        codEmpresa: this.codEmpresa,
+        codSucursal: this.codSucursal,
+        userId: this.userId()
+      }
+    }).afterClosed().subscribe((cargo: boolean) => {
+      if (cargo) { this.buscar(); }
+    });
+  }
 
   nueva(): void {
     this.abrirDialogo(undefined, []);

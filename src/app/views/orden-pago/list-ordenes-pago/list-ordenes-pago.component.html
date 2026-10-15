@@ -69,9 +69,15 @@
     </div>
     <div *ngIf="!ordenes.length"></div>
 
-    <button class="general-button btn-primary" (click)="nueva()" [disabled]="guardando">
-      <i class="fa fa-plus"></i> Nueva orden
-    </button>
+    <div class="d-flex gap-2">
+      <button class="general-button btn-secondary" (click)="importar()" [disabled]="guardando"
+              title="Cargar varias órdenes desde un Excel">
+        <i class="fa fa-file-excel"></i> Importar Excel
+      </button>
+      <button class="general-button btn-primary" (click)="nueva()" [disabled]="guardando">
+        <i class="fa fa-plus"></i> Nueva orden
+      </button>
+    </div>
   </div>
 
   <!-- ===================== GRILLA ===================== -->
