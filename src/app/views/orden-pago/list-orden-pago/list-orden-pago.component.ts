@@ -1339,15 +1339,25 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Abre la pantalla para cargar comprobantes contra esta orden.
+   *
+   * `fecRendicion` es el PLAZO para rendir, no la fecha en que se rindió, y
+   * puede no existir: en RENDIX CONCAR no hay plazo configurado porque esa
+   * columna vivía en el ERP.
+   *
+   * Antes TODA la navegación estaba dentro del `if`, así que una orden sin
+   * plazo hacía que el botón no hiciera absolutamente nada: ni navegaba, ni
+   * avisaba, ni dejaba un error en la consola. El vencimiento es una
+   * advertencia, no un permiso; se avisa si corresponde y se entra igual.
+   */
   openEditRendirCuenta(orden: OrdenPago) {
-    const hoy = new Date();
-    if (orden.fecRendicion) {
 
+    if (orden.fecRendicion) {
       const fechaRendicion = new Date(orden.fecRendicion);
 
-      if (fechaRendicion.getTime() < hoy.getTime()) {
-        console.log("Fecha de Rendición vencida");
-        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      if (fechaRendicion.getTime() < new Date().getTime()) {
+        this.dialog.open(ConfirmDialogComponent, {
           width: '280px',
           disableClose: true,
           data: {
@@ -1359,7 +1369,9 @@ export class ListOrdenPagoComponent implements OnInit, OnDestroy {
           }
         });
       }
-      this.router.navigate(['/edit-rendir-cuenta'], { state: { data: { orden: orden, movilidad: 'N' } } });
     }
+
+    this.router.navigate(['/edit-rendir-cuenta'],
+      { state: { data: { orden: orden, movilidad: 'N' } } });
   }
 }
