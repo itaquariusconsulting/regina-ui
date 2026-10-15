@@ -1853,20 +1853,32 @@ export class EditRendirCuentaComponent implements OnInit {
     //this.subTotal = Number(this.dataImagen.amount) - Number(this.dataImagen.igv);
 
     this.dataImagen.documentCurrency = detected.documentCurrency;
+
     if (detected.documentCurrency) {
-      this.monedas = this.monedasGeneral.filter(mon => mon.desAbreviatura === detected.documentCurrency
+      const coincidentes = this.monedasGeneral.filter(mon =>
+           mon.desAbreviatura === detected.documentCurrency
         || mon.desMoneda === detected.documentCurrency
         || mon.codMoneda === detected.documentCurrency
         || mon.codSunat === detected.documentCurrency
         || mon.codEquiv === detected.documentCurrency
       );
+
+      // Si el OCR lee una moneda que el catalogo no reconoce -"PEN" cuando la
+      // tabla dice "SOLES"-, el filtro dejaba la lista VACIA: el combo salia
+      // sin ninguna opcion y no habia forma de elegir moneda ni de seguir
+      // cargando el comprobante. Ofrecer todas es peor que acertar, pero
+      // infinitamente mejor que no ofrecer ninguna.
+      this.monedas = coincidentes.length ? coincidentes : this.monedasGeneral;
     } else {
-      if (this.monedas.length > 0) {
-        this.ordenPagoDet.codMoneda = this.monedas[0].codMoneda ?? '01';
-      } else {
-        this.monedas = this.monedasGeneral;
-        this.ordenPagoDet.codMoneda = '01';
-      }
+      this.monedas = this.monedasGeneral;
+    }
+
+    // Y ademas hay que SELECCIONAR una. El filtro de arriba acotaba la lista
+    // pero nunca tocaba codMoneda, asi que aunque quedara una sola moneda
+    // posible el combo seguia en blanco.
+    const actual = this.ordenPagoDet.codMoneda;
+    if (!actual || !this.monedas.some(mon => mon.codMoneda === actual)) {
+      this.ordenPagoDet.codMoneda = this.monedas[0]?.codMoneda ?? '01';
     }
 
     this.dataImagen.items = detected.items;

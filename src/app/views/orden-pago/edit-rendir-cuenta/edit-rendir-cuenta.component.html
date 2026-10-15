@@ -503,7 +503,9 @@
         <div class="col-md-2">
             <label class="form-label fw-semibold mb-2 d-block">Cta.Gasto</label>
             <input readonly type="text" class="form-control"
-                [value]="codDocumentoGeneral != 'SD' ? tipoGastoSeleccionado.codCuentaSoles : ''" />
+                [value]="codDocumentoGeneral != 'SD'
+                           ? (tipoGastoSeleccionado?.codCuentaSoles || '')
+                           : ''" />
         </div>
 
     </div>
