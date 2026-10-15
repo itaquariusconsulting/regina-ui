@@ -136,6 +136,23 @@
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.concar.ts"
                 }
+              ],
+              "assets": [
+                "src/favicon.ico",
+                {
+                  "glob": "**/*",
+                  "input": "src/assets",
+                  "output": "assets",
+                  "ignore": [
+                    "config.ini"
+                  ]
+                },
+                {
+                  "glob": "config.ini",
+                  "input": "src/assets-concar",
+                  "output": "assets"
+                },
+                "src/manifest.webmanifest"
               ]
             }
           },
