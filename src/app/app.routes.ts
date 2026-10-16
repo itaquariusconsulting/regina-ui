@@ -30,6 +30,7 @@ import { CentroCostosComponent } from './views/reportes/centro-costos/centro-cos
 import { CoreNotStartedComponent } from './views/no-core/core-not-started.component';
 import { ListPlanillasMovilidadComponent } from './views/reportes/list-planillas-movilidad/list-planillas-movilidad.component';
 import { ListOrdenesPagoComponent } from './views/orden-pago/list-ordenes-pago/list-ordenes-pago.component';
+import { ParametriaConcarComponent } from './views/parametria-concar/parametria-concar.component';
 
 export const routes: Routes = [
 
@@ -125,6 +126,12 @@ export const routes: Routes = [
         // no se usa.
         path: 'list-ordenes-pago',
         component: ListOrdenesPagoComponent
+      },
+      {
+        // Solo en RENDIX CONCAR: los parametros del asiento. En la version de
+        // Aquarius el asiento lo arma el ERP y no hay nada que parametrizar.
+        path: 'parametria-concar',
+        component: ParametriaConcarComponent
       },
       {
         path: 'planilla-movilidad',

@@ -3574,13 +3574,17 @@ export class EditRendirCuentaComponent implements OnInit {
     }
     this._saldoDebounce = setTimeout(() => {
       const importe = Number.isFinite(this.total) ? this.total : 0;
-      // Determinar la moneda del documento para imputar el descuento al saldo
-      // correcto. En Regina '01' = SOLES y cualquier otro código = DÓLARES.
-      // Si no hay moneda en el detalle, se usa la moneda de la OP.
+      // Moneda del documento, para imputar el descuento al saldo correcto.
+      // En todo el sistema '01' = soles y '02' = dólares.
+      //
+      // La prueba es "es '02'", no "no es '01'". Con la prueba anterior
+      // cualquier valor inesperado —'1' sin cero, 'PEN' que a veces deja el
+      // OCR, o un código con espacios— caía del lado de los dólares y
+      // descontaba del saldo equivocado.
       const codMon = (this.ordenPagoDet?.codMoneda ||
                       this.orden?.codMoneda ||
-                      '01').toString();
-      const esDolares = codMon !== '01';
+                      '01').toString().trim();
+      const esDolares = codMon === '02';
 
       if (esDolares) {
         this.saldoDolares = (this._saldoBaseDolares || 0) - importe;

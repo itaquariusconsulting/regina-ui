@@ -1,0 +1,338 @@
+<div class="container-fluid">
+
+  <div class="bar-buttons-top w-100">
+    <h4 class="titulo-pantalla">Parámetros del asiento</h4>
+  </div>
+
+  <p class="text-muted small mb-3">
+    Con esto se arma el asiento que va a CONCAR. Las filas en ámbar todavía son
+    una <strong>suposición nuestra</strong>: las pusimos para que el exportador
+    arrancara y nadie de contabilidad las confirmó. Guardar una fila la da por
+    revisada.
+  </p>
+
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="seccion === 'cuentas'" (click)="ir('cuentas')">
+        Cuentas por tipo de gasto
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="seccion === 'parametros'" (click)="ir('parametros')">
+        Parámetros
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="seccion === 'equivalencias'" (click)="ir('equivalencias')">
+        Equivalencias
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="seccion === 'tipocambio'" (click)="ir('tipocambio')">
+        Tipo de cambio
+      </a>
+    </li>
+  </ul>
+
+  <div class="alert alert-warning py-2 px-3 small"
+       *ngIf="provisionales && seccion !== 'tipocambio'">
+    <i class="fa fa-triangle-exclamation me-1"></i>
+    {{ provisionales }} fila(s) sin confirmar. Revíselas con contabilidad antes de
+    generar un archivo para CONCAR.
+  </div>
+
+  <div class="text-muted small py-4" *ngIf="cargando">Cargando…</div>
+
+  <!-- ======================= CUENTAS POR TIPO DE GASTO ======================= -->
+  <div *ngIf="seccion === 'cuentas' && !cargando">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th style="width:110px;">Tipo gasto</th>
+            <th>Descripción</th>
+            <th style="width:120px;">Cuenta</th>
+            <th style="width:90px;">C. costo</th>
+            <th style="width:90px;">Anexo</th>
+            <th style="width:110px;">Modificado</th>
+            <th style="width:150px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of cuentas"
+              [class.fila-provisional]="c.indProvisional === 'S' && editando !== c">
+
+            <ng-container *ngIf="editando !== c">
+              <td class="small">
+                <strong>{{ c.codTipoGasto }}</strong>
+                <span *ngIf="c.codTipoGasto === '*'" class="badge-comodin ms-1">comodín</span>
+              </td>
+              <td class="small">{{ c.descripcion || '—' }}</td>
+              <td class="small"><code>{{ c.cuentaGasto }}</code></td>
+              <td class="small">{{ c.indCCostos === 'S' ? 'Sí' : 'No' }}</td>
+              <td class="small">{{ c.indAnexo === 'S' ? 'Sí' : 'No' }}</td>
+              <td class="small text-muted">
+                {{ c.fecModifica || (c.indProvisional === 'S' ? 'sin confirmar' : '—') }}
+              </td>
+              <td class="text-end">
+                <button class="general-button btn-secondary btn-sm" (click)="editar(c)">
+                  <i class="fa fa-pen"></i>
+                </button>
+                <button class="general-button btn-danger btn-sm ms-1"
+                        *ngIf="c.codTipoGasto !== '*'" (click)="borrar(c)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </ng-container>
+
+            <ng-container *ngIf="editando === c">
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.codTipoGasto"
+                         name="g" maxlength="4" placeholder="MOV"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.descripcion"
+                         name="d" maxlength="100"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.cuentaGasto"
+                         name="cta" maxlength="8" placeholder="631123"></td>
+              <td>
+                <select class="form-select form-select-sm" [(ngModel)]="borrador.indCCostos" name="cc">
+                  <option value="S">Sí</option><option value="N">No</option>
+                </select>
+              </td>
+              <td>
+                <select class="form-select form-select-sm" [(ngModel)]="borrador.indAnexo" name="ax">
+                  <option value="S">Sí</option><option value="N">No</option>
+                </select>
+              </td>
+              <td></td>
+              <td class="text-end">
+                <button class="general-button btn-primary btn-sm" (click)="guardar()"
+                        [disabled]="guardando"><i class="fa fa-check"></i></button>
+                <button class="general-button btn-secondary btn-sm ms-1" (click)="cancelar()">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              </td>
+            </ng-container>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="general-button btn-secondary btn-sm" (click)="agregar()" [disabled]="!!editando">
+      <i class="fa fa-plus"></i> Agregar tipo de gasto
+    </button>
+
+    <p class="form-text mt-2">
+      La fila <strong>comodín</strong> (<code>*</code>) atrapa los tipos de gasto que no
+      tienen cuenta propia, para que la exportación nunca se corte a mitad del archivo.
+      Por eso no se puede borrar.
+    </p>
+  </div>
+
+  <!-- ============================= PARÁMETROS ============================= -->
+  <div *ngIf="seccion === 'parametros' && !cargando">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th style="width:190px;">Clave</th>
+            <th style="width:180px;">Valor</th>
+            <th>Para qué sirve</th>
+            <th style="width:110px;">Modificado</th>
+            <th style="width:110px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of parametros"
+              [class.fila-provisional]="p.indProvisional === 'S' && editando !== p">
+
+            <ng-container *ngIf="editando !== p">
+              <td class="small"><strong>{{ p.clave }}</strong></td>
+              <td class="small"><code>{{ p.valor }}</code></td>
+              <td class="small text-muted">{{ p.descripcion || '—' }}</td>
+              <td class="small text-muted">
+                {{ p.fecModifica || (p.indProvisional === 'S' ? 'sin confirmar' : '—') }}
+              </td>
+              <td class="text-end">
+                <button class="general-button btn-secondary btn-sm" (click)="editar(p)">
+                  <i class="fa fa-pen"></i>
+                </button>
+              </td>
+            </ng-container>
+
+            <ng-container *ngIf="editando === p">
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.clave"
+                         name="k" maxlength="40"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.valor"
+                         name="v" maxlength="100"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.descripcion"
+                         name="dp" maxlength="200"></td>
+              <td></td>
+              <td class="text-end">
+                <button class="general-button btn-primary btn-sm" (click)="guardar()"
+                        [disabled]="guardando"><i class="fa fa-check"></i></button>
+                <button class="general-button btn-secondary btn-sm ms-1" (click)="cancelar()">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              </td>
+            </ng-container>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="general-button btn-secondary btn-sm" (click)="agregar()" [disabled]="!!editando">
+      <i class="fa fa-plus"></i> Agregar parámetro
+    </button>
+  </div>
+
+  <!-- ============================ EQUIVALENCIAS ============================ -->
+  <div *ngIf="seccion === 'equivalencias' && !cargando">
+    <p class="text-muted small">
+      Cómo se llama cada cosa en RENDIX y cómo la espera CONCAR. Si falta una, el
+      archivo no sale y el error dice exactamente cuál agregar.
+    </p>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th style="width:140px;">Tipo</th>
+            <th style="width:140px;">En RENDIX</th>
+            <th style="width:140px;">En CONCAR</th>
+            <th>Descripción</th>
+            <th style="width:150px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let q of equivalencias"
+              [class.fila-provisional]="q.indProvisional === 'S' && editando !== q">
+
+            <ng-container *ngIf="editando !== q">
+              <td class="small">{{ q.tipo }}</td>
+              <td class="small"><code>{{ q.valorErp }}</code></td>
+              <td class="small"><code>{{ q.valorConcar }}</code></td>
+              <td class="small text-muted">{{ q.descripcion || '—' }}</td>
+              <td class="text-end">
+                <button class="general-button btn-secondary btn-sm" (click)="editar(q)">
+                  <i class="fa fa-pen"></i>
+                </button>
+                <button class="general-button btn-danger btn-sm ms-1" (click)="borrar(q)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </ng-container>
+
+            <ng-container *ngIf="editando === q">
+              <td>
+                <select class="form-select form-select-sm" [(ngModel)]="borrador.tipo" name="t">
+                  <option value="DOCUMENTO">DOCUMENTO</option>
+                  <option value="C_COSTO">C_COSTO</option>
+                </select>
+              </td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.valorErp"
+                         name="ve" maxlength="20"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.valorConcar"
+                         name="vc" maxlength="20"></td>
+              <td><input class="form-control form-control-sm" [(ngModel)]="borrador.descripcion"
+                         name="dq" maxlength="150"></td>
+              <td class="text-end">
+                <button class="general-button btn-primary btn-sm" (click)="guardar()"
+                        [disabled]="guardando"><i class="fa fa-check"></i></button>
+                <button class="general-button btn-secondary btn-sm ms-1" (click)="cancelar()">
+                  <i class="fa fa-xmark"></i>
+                </button>
+              </td>
+            </ng-container>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="general-button btn-secondary btn-sm" (click)="agregar()" [disabled]="!!editando">
+      <i class="fa fa-plus"></i> Agregar equivalencia
+    </button>
+  </div>
+
+  <!-- ============================ TIPO DE CAMBIO ============================ -->
+  <div *ngIf="seccion === 'tipocambio' && !cargando">
+
+    <div class="card mb-3">
+      <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-auto">
+            <button class="general-button btn-primary" (click)="actualizarTc()" [disabled]="guardando">
+              <i class="fa fa-cloud-arrow-down"></i>
+              {{ guardando ? 'Consultando…' : 'Traer de SUNAT' }}
+            </button>
+          </div>
+          <div class="col-12 col-md">
+            <div class="form-text mb-0">
+              Trae lo que falte de los últimos 10 días. Corre solo todas las mañanas;
+              este botón es para cuando no se puede esperar. Sábados, domingos y
+              feriados no tienen publicación: eso no es una falla.
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="row g-2 align-items-end">
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Fecha</label>
+            <input type="date" class="form-control form-control-sm"
+                   [(ngModel)]="tcNuevo.fecha" name="tcf">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Venta</label>
+            <input type="number" step="0.001" class="form-control form-control-sm text-end"
+                   [(ngModel)]="tcNuevo.venta" name="tcv" placeholder="3.751">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Compra</label>
+            <input type="number" step="0.001" class="form-control form-control-sm text-end"
+                   [(ngModel)]="tcNuevo.compra" name="tcc" placeholder="3.742">
+          </div>
+          <div class="col-6 col-md-auto">
+            <button class="general-button btn-secondary" (click)="guardarTcManual()"
+                    [disabled]="guardando">
+              <i class="fa fa-floppy-disk"></i> Cargar a mano
+            </button>
+          </div>
+          <div class="col-12">
+            <div class="form-text">
+              Un valor cargado a mano no lo pisa después el proceso automático.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th style="width:140px;">Fecha</th>
+            <th style="width:120px;" class="text-end">Venta</th>
+            <th style="width:120px;" class="text-end">Compra</th>
+            <th>Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tiposDeCambio">
+            <td class="small">{{ t.fecha }}</td>
+            <td class="small text-end">{{ t.venta != null ? (t.venta | number:'1.3-3') : '—' }}</td>
+            <td class="small text-end">{{ t.compra != null ? (t.compra | number:'1.3-3') : '—' }}</td>
+            <td class="small text-muted">
+              {{ t.origen === 'M' ? 'cargado a mano' : 'automático' }}
+            </td>
+          </tr>
+          <tr *ngIf="!tiposDeCambio.length">
+            <td colspan="4" class="text-muted small py-3">
+              No hay ningún tipo de cambio cargado. Apriete <strong>Traer de SUNAT</strong>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

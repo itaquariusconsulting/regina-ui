@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
+import { ImportarAnexosDialogComponent } from '../../../components/dialogs/importar-anexos-dialog.component';
 import { ImportarOpDialogComponent } from '../../../components/dialogs/importar-op-dialog.component';
 import { OrdenPagoDialogComponent } from '../../../components/dialogs/orden-pago-dialog.component';
 import { LoadingService } from '../../../services/loading.service';
@@ -12,16 +13,17 @@ import { OrdenPagoPropiaService } from '../../../services/orden-pago-propia.serv
 import { OrdenPagoPropia } from '../../../models/orden-pago-propia';
 
 /**
- * Carga de órdenes de pago de RENDIX CONCAR.
+ * Importaciones de RENDIX CONCAR.
  *
- * Es solo una puerta de entrada: por Excel o una por una. **No lista nada**,
- * y eso es deliberado. La lista de órdenes de pago es la de Rendición de
- * Cuentas, que es donde el usuario después carga comprobantes, planillas y
+ * Es la puerta de entrada de todo lo que viene de afuera: las órdenes de pago
+ * y los maestros que el asiento necesita para salir completo. **No lista
+ * nada**, y eso es deliberado. La lista de órdenes de pago es la de Rendición
+ * de Cuentas, que es donde el usuario después carga comprobantes, planillas y
  * devoluciones. Dos grillas con las mismas órdenes obligan a preguntarse cuál
  * es la buena cada vez que los números no coinciden.
  *
- * En la instalación de Aquarius esta pantalla no existe: allá las órdenes
- * vienen del ERP y no hay nada que cargar.
+ * En la instalación de Aquarius esta pantalla no existe: allá las órdenes y
+ * los maestros vienen del ERP y no hay nada que cargar.
  */
 @Component({
   selector: 'app-list-ordenes-pago',
@@ -39,6 +41,9 @@ export class ListOrdenesPagoComponent {
 
   /** Cuántas se cargaron en esta visita. Solo para el aviso de la pantalla. */
   cargadasEnEstaSesion = 0;
+
+  /** Si en esta visita se tocó el maestro de anexos. */
+  anexosCargados = false;
 
   constructor(
     private servicio: OrdenPagoPropiaService,
@@ -60,6 +65,28 @@ export class ListOrdenesPagoComponent {
       }
     }).afterClosed().subscribe((cargo: boolean) => {
       if (cargo) { this.cargadasEnEstaSesion++; }
+    });
+  }
+
+  /* ---------------------------------------------------------- los anexos */
+
+  /**
+   * Carga del maestro de anexos.
+   *
+   * Es lo primero que hay que cargar en una instalación nueva: sin anexos, la
+   * importación de órdenes rechaza toda fila que traiga un DNI y la
+   * contrapartida del asiento sale sin código de anexo.
+   */
+  importarAnexos(): void {
+    this.dialog.open(ImportarAnexosDialogComponent, {
+      width: '1000px',
+      maxWidth: '96vw',
+      data: {
+        codEmpresa: this.codEmpresa,
+        usuario: sessionStorage.getItem('username') ?? undefined
+      }
+    }).afterClosed().subscribe((cargo: boolean) => {
+      if (cargo) { this.anexosCargados = true; }
     });
   }
 
@@ -127,6 +154,11 @@ export class ListOrdenesPagoComponent {
   /** A donde están las órdenes de verdad. */
   verOrdenes(): void {
     this.router.navigate(['/list-orders']);
+  }
+
+  /** A los parámetros del asiento. */
+  verParametria(): void {
+    this.router.navigate(['/parametria-concar']);
   }
 
   private userId(): number | undefined {

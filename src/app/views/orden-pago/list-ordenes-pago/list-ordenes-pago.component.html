@@ -1,17 +1,83 @@
 <div class="container-fluid">
 
   <div class="bar-buttons-top w-100">
-    <h4 class="titulo-pantalla">Cargar Órdenes de Pago</h4>
+    <h4 class="titulo-pantalla">Importaciones</h4>
   </div>
 
   <p class="text-muted small mb-3">
-    Las órdenes que cargue acá quedan pendientes de rendir. Para verlas, rendirlas
-    o darlas de baja, vaya a <strong>Rendición de Cuentas</strong>.
+    Todo lo que entra a RENDIX desde afuera. Las órdenes que cargue acá quedan
+    pendientes de rendir; para verlas, rendirlas o darlas de baja, vaya a
+    <strong>Rendición de Cuentas</strong>.
+  </p>
+
+  <!-- ===================== LOS MAESTROS ===================== -->
+  <h6 class="titulo-grupo">Maestros</h6>
+  <p class="text-muted small mb-2">
+    Se cargan una vez al empezar, y después solo cuando el CONCAR cambia.
+  </p>
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 card-carga">
+        <div class="card-body d-flex flex-column">
+
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="fa fa-address-book icono-carga"></i>
+            <h6 class="mb-0 fw-semibold">Anexos</h6>
+            <span class="badge rounded-pill badge-primero">empiece por acá</span>
+          </div>
+
+          <p class="text-muted small flex-grow-1 mb-3">
+            El maestro de anexos del CONCAR: las personas y las empresas con su
+            código. Sin esto, una orden a nombre de un DNI no se puede cargar y el
+            asiento sale sin anexo en la contrapartida. Acepta el Excel del CONCAR
+            o un archivo de texto.
+          </p>
+
+          <button class="general-button btn-primary" (click)="importarAnexos()"
+                  [disabled]="guardando">
+            <i class="fa fa-upload"></i> Importar anexos
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 card-carga">
+        <div class="card-body d-flex flex-column">
+
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="fa fa-list-ol icono-carga"></i>
+            <h6 class="mb-0 fw-semibold">Parámetros del asiento</h6>
+          </div>
+
+          <p class="text-muted small flex-grow-1 mb-3">
+            La cuenta de gasto de cada tipo de gasto, los parámetros del asiento
+            (subdiario, cuenta de entrega, cuenta de devolución), las equivalencias
+            con CONCAR y el tipo de cambio. Marca en ámbar lo que todavía es una
+            suposición nuestra.
+          </p>
+
+          <button class="general-button btn-secondary" (click)="verParametria()">
+            <i class="fa fa-pen"></i> Editar parámetros
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== LAS ÓRDENES ===================== -->
+  <h6 class="titulo-grupo">Órdenes de pago</h6>
+  <p class="text-muted small mb-2">
+    Las entregas a rendir. Es la carga de todos los días.
   </p>
 
   <div class="row g-3">
 
-    <!-- ===================== IMPORTAR DESDE EXCEL ===================== -->
     <div class="col-12 col-lg-6">
       <div class="card h-100 card-carga">
         <div class="card-body d-flex flex-column">
@@ -35,7 +101,6 @@
       </div>
     </div>
 
-    <!-- ===================== CARGAR UNA SOLA ===================== -->
     <div class="col-12 col-lg-6">
       <div class="card h-100 card-carga">
         <div class="card-body d-flex flex-column">
@@ -69,6 +134,13 @@
     <button class="general-button btn-primary btn-sm" (click)="verOrdenes()">
       <i class="fa fa-list"></i> Ver en Rendición de Cuentas
     </button>
+  </div>
+
+  <div class="alert alert-success mt-3" *ngIf="anexosCargados">
+    <span class="small mb-0">
+      El maestro de anexos quedó actualizado. Ya puede cargar órdenes a nombre de
+      esas personas.
+    </span>
   </div>
 
 </div>
