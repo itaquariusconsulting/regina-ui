@@ -8,6 +8,7 @@ import { OpRendidaService } from '../../services/op-rendida.service';
 import { FiltroOpRendida, OpRendida } from '../../models/op-rendida';
 import { LlaveMesConcar, ObservacionConcar, RevisionMesConcar } from '../../models/concar';
 import { Response } from '../../models/response';
+import { RegSecUser } from '../../models/reg-sec-user';
 
 /**
  * El archivo del mes para CONCAR.
@@ -59,8 +60,7 @@ export class ExportarConcarComponent implements OnInit {
               private opRendida: OpRendidaService) {}
 
   ngOnInit(): void {
-    this.iniciales = this.inicialesDe(sessionStorage.getItem('username')
-                                   ?? sessionStorage.getItem('user') ?? '');
+    this.iniciales = this.inicialesDelUsuario();
     this.buscar();
   }
 
@@ -208,18 +208,37 @@ export class ExportarConcarComponent implements OnInit {
   }
 
   /**
-   * "CARLOS JARA" -> "CJ".
+   * "Carlos" + "Jara" -> "CJ".
    *
    * Es la costumbre que describió contabilidad para el número del documento:
    * el mes y las siglas de la persona encargada. Se puede corregir a mano.
+   *
+   * El usuario logueado se guarda en sessionStorage como JSON bajo la clave
+   * `user`, no como texto, y la clave `username` no la escribe nadie. Leerlo
+   * crudo ponía los primeros caracteres del JSON en el campo.
    */
-  private inicialesDe(nombre: string): string {
-    return nombre
-      .split(/[\s.,]+/)
-      .filter(p => p.length > 0)
-      .slice(0, 2)
-      .map(p => p[0].toUpperCase())
-      .join('');
+  private inicialesDelUsuario(): string {
+    let u: RegSecUser;
+    try {
+      u = JSON.parse(sessionStorage.getItem('user') ?? '{}') as RegSecUser;
+    } catch {
+      return '';
+    }
+
+    /* Solo letras: un nombre con puntos, guiones o numeros no debe meter
+       basura en el numero del documento, que va al Excel de contabilidad. */
+    const letras = (t?: string) => (t ?? '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+
+    const nombre = letras(u.userName);
+    const apellido = letras(u.userLastName) || letras(u.userMiddleName);
+
+    if (nombre || apellido) {
+      return ((nombre.charAt(0)) + (apellido.charAt(0))).toUpperCase();
+    }
+
+    /* Ultimo recurso: las dos primeras letras del usuario de login. Si queda
+       vacio tampoco es grave: el servidor cae en INICIALES_POR_DEFECTO. */
+    return letras(u.userUsername).slice(0, 2).toUpperCase();
   }
 
   private dosDigitos(n: number): string {
