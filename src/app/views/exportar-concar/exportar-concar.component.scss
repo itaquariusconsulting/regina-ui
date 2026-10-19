@@ -1,0 +1,19 @@
+.titulo-pantalla {
+  margin: 0;
+}
+
+/* Las observaciones van pegadas a su fila, sin el borde que las separaría
+   visualmente de la orden a la que pertenecen. */
+tbody tr td {
+  border-top: 0;
+}
+
+tbody tr:first-child td {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+code {
+  background: var(--bs-light);
+  padding: 0 .25rem;
+  border-radius: .2rem;
+}

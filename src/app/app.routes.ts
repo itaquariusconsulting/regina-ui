@@ -31,6 +31,7 @@ import { CoreNotStartedComponent } from './views/no-core/core-not-started.compon
 import { ListPlanillasMovilidadComponent } from './views/reportes/list-planillas-movilidad/list-planillas-movilidad.component';
 import { ListOrdenesPagoComponent } from './views/orden-pago/list-ordenes-pago/list-ordenes-pago.component';
 import { ParametriaConcarComponent } from './views/parametria-concar/parametria-concar.component';
+import { ExportarConcarComponent } from './views/exportar-concar/exportar-concar.component';
 
 export const routes: Routes = [
 
@@ -132,6 +133,12 @@ export const routes: Routes = [
         // Aquarius el asiento lo arma el ERP y no hay nada que parametrizar.
         path: 'parametria-concar',
         component: ParametriaConcarComponent
+      },
+      {
+        // Solo en RENDIX CONCAR: el Excel del mes que contabilidad sube a
+        // mano. En la version de Aquarius el asiento viaja por el ERP.
+        path: 'exportar-concar',
+        component: ExportarConcarComponent
       },
       {
         path: 'planilla-movilidad',

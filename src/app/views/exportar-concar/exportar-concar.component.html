@@ -1,0 +1,180 @@
+<div class="container-fluid">
+
+  <div class="bar-buttons-top w-100">
+    <h4 class="titulo-pantalla">Archivo del mes para CONCAR</h4>
+  </div>
+
+  <p class="text-muted small mb-3">
+    Un solo Excel con los asientos de todas las órdenes que marque, cada uno con
+    su número de comprobante. <strong>Revisar</strong> no consume numeración y se
+    puede repetir; <strong>descargar</strong> sí la reserva, y solo se habilita
+    si todas las órdenes pasan.
+  </p>
+
+  <!-- ------------------------------------------------------- filtros -->
+  <div class="card mb-3">
+    <div class="card-body row g-2 align-items-end">
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Año</label>
+        <input class="form-control form-control-sm" [(ngModel)]="anio" maxlength="4">
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Mes</label>
+        <input class="form-control form-control-sm" [(ngModel)]="mes" maxlength="2"
+               placeholder="08">
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label class="form-label small mb-1">Persona</label>
+        <input class="form-control form-control-sm" [(ngModel)]="filtro.persona">
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label class="form-label small mb-1">N° de orden</label>
+        <input class="form-control form-control-sm" [(ngModel)]="filtro.numOrden">
+      </div>
+
+      <div class="col-12 col-md-2">
+        <button class="btn btn-sm btn-outline-primary w-100"
+                (click)="buscar()" [disabled]="buscando">
+          <span *ngIf="buscando" class="spinner-border spinner-border-sm me-1"></span>
+          Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- --------------------------------------------- documento VR -->
+  <div class="card mb-3">
+    <div class="card-body row g-2 align-items-end">
+
+      <div class="col-12">
+        <p class="text-muted small mb-2">
+          La línea que cierra el anticipo va con tipo de documento <code>VR</code>
+          (varios). El número lo arma el sistema con el año, el mes y sus
+          iniciales; si contabilidad le pidió otro, escríbalo acá.
+        </p>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Iniciales</label>
+        <input class="form-control form-control-sm" [(ngModel)]="iniciales"
+               maxlength="4" placeholder="CJ">
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label small mb-1">N° de documento (opcional)</label>
+        <input class="form-control form-control-sm" [(ngModel)]="numDocumento"
+               maxlength="20" placeholder="lo arma el sistema">
+      </div>
+
+      <div class="col-12 col-md-4" *ngIf="revision?.numDocumento">
+        <div class="alert alert-light border py-1 px-2 mb-0 small">
+          Va a salir como <strong>VR {{ revision?.numDocumento }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------- la grilla -->
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 38px">
+            <input type="checkbox" class="form-check-input"
+                   [checked]="todasMarcadas"
+                   (change)="marcarTodas(!todasMarcadas)">
+          </th>
+          <th>Orden</th>
+          <th>Persona</th>
+          <th>Glosa</th>
+          <th class="text-end">Rendido S/</th>
+          <th class="text-end">Movilidad S/</th>
+          <th>Estado</th>
+          <th>Comprobante</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <ng-container *ngFor="let o of ordenes">
+          <tr [class.table-danger]="erroresDe(o.numOrden ?? '') > 0"
+              [class.table-warning]="erroresDe(o.numOrden ?? '') === 0
+                                  && avisosDe(o.numOrden ?? '') > 0">
+            <td>
+              <input type="checkbox" class="form-check-input"
+                     [checked]="marcada(o)" (change)="alternar(o)">
+            </td>
+            <td class="fw-semibold">{{ o.numOrden }}</td>
+            <td>{{ o.desAuxiliar }}</td>
+            <td class="text-truncate" style="max-width: 280px">{{ o.glosa }}</td>
+            <td class="text-end">{{ o.impRendidoSoles | number:'1.2-2' }}</td>
+            <td class="text-end">{{ o.impMovilidad | number:'1.2-2' }}</td>
+            <td><span class="badge bg-secondary">{{ o.estProceso }}</span></td>
+            <td class="text-muted small">{{ comprobanteDe(o.numOrden ?? '') }}</td>
+          </tr>
+
+          <tr *ngIf="observacionesDe(o.numOrden ?? '').length > 0">
+            <td colspan="8" class="py-1">
+              <div *ngFor="let ob of observacionesDe(o.numOrden ?? '')"
+                   class="small d-flex gap-2">
+                <span class="badge"
+                      [class.bg-danger]="ob.nivel === 'ERROR'"
+                      [class.bg-warning]="ob.nivel === 'AVISO'"
+                      [class.text-dark]="ob.nivel === 'AVISO'">{{ ob.nivel }}</span>
+                <span class="text-muted" *ngIf="ob.fila">fila {{ ob.fila }}</span>
+                <span class="text-muted" *ngIf="ob.columna">{{ ob.columna }}:</span>
+                <span>{{ ob.mensaje }}</span>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+
+        <tr *ngIf="ordenes.length === 0 && !buscando">
+          <td colspan="8" class="text-center text-muted py-4">
+            No hay órdenes rendidas en {{ anio }}-{{ mes }} con esos filtros.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ------------------------------------------------ acciones -->
+  <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between
+              border-top pt-3 mt-2">
+
+    <div class="small text-muted">
+      <strong>{{ marcadas.size }}</strong> de {{ ordenes.length }} marcadas
+      &middot; S/ {{ totalMarcado | number:'1.2-2' }}
+      <span *ngIf="revision">
+        &middot; {{ revision.lineas }} líneas
+        <span class="text-danger fw-semibold" *ngIf="totalErrores > 0">
+          &middot; {{ totalErrores }} errores
+        </span>
+      </span>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary"
+              (click)="revisar()" [disabled]="revisando || marcadas.size === 0">
+        <span *ngIf="revisando" class="spinner-border spinner-border-sm me-1"></span>
+        Revisar
+      </button>
+
+      <button class="btn btn-sm btn-primary"
+              (click)="descargar()"
+              [disabled]="descargando || !revision?.puedeExportar">
+        <span *ngIf="descargando" class="spinner-border spinner-border-sm me-1"></span>
+        Descargar Excel
+      </button>
+    </div>
+  </div>
+
+  <p class="text-muted small mt-2 mb-4" *ngIf="revision && !revision.puedeExportar">
+    No se puede generar mientras haya errores: CONCAR rechaza el archivo completo,
+    no las filas sueltas. Corrija lo marcado en rojo o desmarque esa orden.
+  </p>
+
+</div>

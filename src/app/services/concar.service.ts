@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { Response } from '../models/response';
-import { RevisionConcar } from '../models/concar';
+import { LlaveMesConcar, RevisionConcar } from '../models/concar';
 
 /**
  * La exportacion de asientos al formato de importacion de CONCAR.
@@ -86,6 +86,46 @@ export class ConcarService {
     } catch {
       return null;
     }
+  }
+
+  /* ------------------------------------------------ el archivo del mes */
+
+  /**
+   * Revisa las OP marcadas sin consumir numeracion.
+   *
+   * Va por POST y no por GET porque lleva la lista de ordenes, que puede ser
+   * larga y no entra comoda en la query string.
+   */
+  revisarMes(llave: LlaveMesConcar): Observable<Response> {
+    return this.http.post<Response>(`${this.base}/revisar-mes`, llave);
+  }
+
+  /**
+   * Descarga un solo xlsx con los asientos de todas las OP marcadas.
+   *
+   * Mismo detalle que `exportar`: un 422 con observaciones llega como error de
+   * HttpClient, y el cuerpo es un Blob que hay que leer con `leerError`.
+   */
+  exportarMes(llave: LlaveMesConcar): Observable<HttpResponse<Blob>> {
+    return this.http.post(`${this.base}/exportar-mes`, llave, {
+      responseType: 'blob',
+      observe: 'response'
+    });
+  }
+
+  /** Dispara la descarga del archivo del mes. */
+  descargarMes(res: HttpResponse<Blob>, anio: string, mes: string): void {
+    const cuerpo = res.body;
+    if (!cuerpo) { return; }
+
+    const url = window.URL.createObjectURL(cuerpo);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.nombreDe(res) || `CONCAR_${anio}${mes}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   private nombreDe(res: HttpResponse<Blob>): string | null {
